@@ -13,7 +13,16 @@ import 'package:flutter/foundation.dart';
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
-    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+    _subscription = stream.asBroadcastStream().listen(
+      (_) => notifyListeners(),
+      // Un stream sin `onError` que emite un error se convierte en una
+      // excepción no capturada en la zona actual (por ejemplo, si
+      // Realtime no puede suscribirse a un cambio). No debe tumbar la
+      // app: se trata igual que cualquier otro evento, para que el
+      // router vuelva a evaluar el redirect con el error ya reflejado en
+      // el provider correspondiente (que sí lo maneja como AsyncError).
+      onError: (Object _, StackTrace _) => notifyListeners(),
+    );
   }
 
   late final StreamSubscription<dynamic> _subscription;
