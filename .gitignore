@@ -14,6 +14,7 @@ Thumbs.db
 .env.*
 !.env.example
 !**/.env.example
+TEST_CREDENTIALS.md
 
 # Supabase CLI: estado local, no se versiona.
 supabase/.branches/
