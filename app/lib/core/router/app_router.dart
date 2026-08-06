@@ -2,16 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/client/presentation/screens/client_home_screen.dart';
 import '../../features/shared/models/user_role.dart';
-import '../../features/shared/providers/current_user_role_provider.dart';
+import '../../features/shared/providers/current_user_profile_provider.dart';
 import '../../features/superadmin/presentation/screens/superadmin_home_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_home_screen.dart';
 import '../config/supabase_provider.dart';
 import '../theme/app_motion.dart';
 import 'app_routes.dart';
+import 'go_router_refresh_stream.dart';
+
+/// Rutas accesibles sin haber iniciado sesión.
+const _publicAuthRoutes = {
+  AppRoutes.login,
+  AppRoutes.register,
+  AppRoutes.forgotPassword,
+};
 
 /// Enrutador de la app, separado por rol.
 ///
@@ -20,29 +30,46 @@ import 'app_routes.dart';
 /// rol entre a rutas de otro rol o a pantallas de autenticación estando ya
 /// autenticado; la autorización real de datos siempre depende además de las
 /// políticas de Row Level Security en Supabase, esto es solo navegación.
+///
+/// El router se crea una sola vez (no se reconstruye en cada cambio de
+/// sesión o de perfil): usa `refreshListenable` para volver a evaluar el
+/// redirect sin perder la pila de navegación. Ver [GoRouterRefreshStream].
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateChangesProvider);
+  final client = ref.watch(supabaseClientProvider);
+
+  final refreshListenable = GoRouterRefreshStream(
+    client.auth.onAuthStateChange.asyncExpand((authState) {
+      final userId = authState.session?.user.id;
+      if (userId == null) return Stream<void>.value(null);
+      return client.from('profiles').stream(primaryKey: ['id']).eq('id', userId);
+    }),
+  );
+  ref.onDispose(refreshListenable.dispose);
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: false,
+    refreshListenable: refreshListenable,
     redirect: (context, state) {
-      final isLoading = authState.isLoading;
-      if (isLoading) return null;
+      final authAsync = ref.read(authStateChangesProvider);
+      if (authAsync.isLoading) return null; // resolviendo la sesión inicial
 
-      final session = authState.valueOrNull?.session;
-      final isAuthenticated = session != null;
-      final goingToLogin = state.matchedLocation == AppRoutes.login;
-      final goingToSplash = state.matchedLocation == AppRoutes.splash;
+      final isAuthenticated = authAsync.valueOrNull?.session != null;
+      final location = state.matchedLocation;
 
       if (!isAuthenticated) {
-        return goingToLogin ? null : AppRoutes.login;
+        return _publicAuthRoutes.contains(location) ? null : AppRoutes.login;
       }
 
-      // Autenticado: si sigue en login o splash, redirige a su panel.
-      if (goingToLogin || goingToSplash) {
-        final role = ref.read(currentUserRoleProvider);
-        return _homeRouteFor(role);
+      // Autenticado desde aquí en adelante: mientras el perfil no cargue,
+      // se queda en el splash para no mostrar el panel equivocado.
+      final profileAsync = ref.read(currentUserProfileProvider);
+      if (profileAsync.isLoading) {
+        return location == AppRoutes.splash ? null : AppRoutes.splash;
+      }
+
+      if (location == AppRoutes.splash || _publicAuthRoutes.contains(location)) {
+        return _homeRouteFor(profileAsync.valueOrNull?.role);
       }
 
       return null;
@@ -55,6 +82,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         pageBuilder: (context, state) => _fadePage(state, const LoginScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.register,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const RegisterScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const ForgotPasswordScreen()),
       ),
       GoRoute(
         path: AppRoutes.trainerHome,

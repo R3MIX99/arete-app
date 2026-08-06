@@ -19,4 +19,23 @@ enum UserRole {
         return UserRole.client;
     }
   }
+
+  /// Valor tal como se guarda en la base de datos (`profiles.role`).
+  String get raw => name;
+
+  /// Nombre visible en español (es-419).
+  String get label {
+    switch (this) {
+      case UserRole.superadmin:
+        return 'Superadministrador';
+      case UserRole.trainer:
+        return 'Entrenador';
+      case UserRole.client:
+        return 'Cliente';
+    }
+  }
+
+  /// Roles que un usuario puede elegir al registrarse. El superadministrador
+  /// se crea únicamente desde Supabase, nunca desde la app.
+  static const List<UserRole> registrable = [UserRole.trainer, UserRole.client];
 }

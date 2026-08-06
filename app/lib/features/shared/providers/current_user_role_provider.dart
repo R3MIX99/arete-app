@@ -1,13 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/user_role.dart';
+import 'current_user_profile_provider.dart';
 
-/// Rol del usuario autenticado actualmente.
-///
-/// Placeholder para esta fase: la lectura real del rol (tabla `profiles`
-/// en Supabase) se implementará junto con el módulo de autenticación. Por
-/// ahora expone `null` cuando no hay sesión, para que el enrutador tenga
-/// un contrato estable desde el día uno.
+/// Rol del usuario autenticado actualmente, derivado de su perfil real en
+/// Supabase (ver [currentUserProfileProvider]). `null` mientras no hay
+/// sesión o el perfil todavía no cargó.
 final currentUserRoleProvider = Provider<UserRole?>((ref) {
-  return null;
+  return ref.watch(currentUserProfileProvider).valueOrNull?.role;
 });

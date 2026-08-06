@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/widgets/placeholder_screen.dart';
+import '../../../auth/presentation/widgets/sign_out_button.dart';
 
 /// Punto de entrada del panel de superadministrador. Se implementará por
 /// fases (gimnasios, entrenadores, contenido de referencia para la IA).
@@ -12,6 +13,7 @@ class SuperadminHomeScreen extends StatelessWidget {
     return const PlaceholderScreen(
       title: 'Panel de superadministrador',
       subtitle: 'Aquí vivirá la administración global de gimnasios y contenido.',
+      actions: [SignOutButton()],
     );
   }
 }
