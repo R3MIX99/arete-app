@@ -23,7 +23,6 @@ import '../../features/trainer/presentation/screens/trainer_shell_screen.dart';
 import '../config/supabase_provider.dart';
 import '../theme/app_motion.dart';
 import 'app_routes.dart';
-import 'go_router_refresh_stream.dart';
 
 /// Rutas accesibles sin haber iniciado sesión.
 const _publicAuthRoutes = {
@@ -42,23 +41,24 @@ const _publicAuthRoutes = {
 ///
 /// El router se crea una sola vez (no se reconstruye en cada cambio de
 /// sesión o de perfil): usa `refreshListenable` para volver a evaluar el
-/// redirect sin perder la pila de navegación. Ver [GoRouterRefreshStream].
+/// redirect sin perder la pila de navegación. El listenable se alimenta de
+/// `ref.listen` sobre los mismos providers que ya usa `redirect` — nunca
+/// abre su propia suscripción de Supabase en paralelo. Tener dos
+/// suscripciones de Realtime independientes al mismo perfil (una aquí y
+/// otra en [currentUserProfileProvider]) chocaba entre sí y dejaba las dos
+/// colgadas para siempre; por eso el fix anterior con `GoRouterRefreshStream`
+/// no alcanzó.
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final client = ref.watch(supabaseClientProvider);
-
-  final refreshListenable = GoRouterRefreshStream(
-    client.auth.onAuthStateChange.asyncExpand((authState) {
-      final userId = authState.session?.user.id;
-      if (userId == null) return Stream<void>.value(null);
-      return client.from('profiles').stream(primaryKey: ['id']).eq('id', userId);
-    }),
-  );
-  ref.onDispose(refreshListenable.dispose);
+  final refreshNotifier = _RouterRefreshNotifier();
+  ref
+    ..listen(authStateChangesProvider, (_, _) => refreshNotifier.ping())
+    ..listen(currentUserProfileProvider, (_, _) => refreshNotifier.ping())
+    ..onDispose(refreshNotifier.dispose);
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: false,
-    refreshListenable: refreshListenable,
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
       final authAsync = ref.read(authStateChangesProvider);
       if (authAsync.isLoading) return null; // resolviendo la sesión inicial
@@ -253,4 +253,11 @@ CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
       );
     },
   );
+}
+
+/// `Listenable` mínimo para `refreshListenable`: no abre ninguna
+/// suscripción propia, solo se activa cuando algo externo llama [ping]
+/// (aquí, los `ref.listen` sobre los providers de auth y perfil).
+class _RouterRefreshNotifier extends ChangeNotifier {
+  void ping() => notifyListeners();
 }
