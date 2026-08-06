@@ -25,7 +25,7 @@ class AppTheme {
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary: AppColors.accent,
-      onPrimary: AppColors.neutral0,
+      onPrimary: AppColors.onAccent,
       secondary: AppColors.accentMuted,
       onSecondary: AppColors.neutral900,
       error: AppColors.danger,

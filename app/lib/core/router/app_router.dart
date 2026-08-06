@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,7 @@ import '../../features/shared/providers/current_user_role_provider.dart';
 import '../../features/superadmin/presentation/screens/superadmin_home_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_home_screen.dart';
 import '../config/supabase_provider.dart';
+import '../theme/app_motion.dart';
 import 'app_routes.dart';
 
 /// Enrutador de la app, separado por rol.
@@ -48,23 +50,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: AppRoutes.splash,
-        builder: (context, state) => const SplashScreen(),
+        pageBuilder: (context, state) => _fadePage(state, const SplashScreen()),
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) => _fadePage(state, const LoginScreen()),
       ),
       GoRoute(
         path: AppRoutes.trainerHome,
-        builder: (context, state) => const TrainerHomeScreen(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const TrainerHomeScreen()),
       ),
       GoRoute(
         path: AppRoutes.clientHome,
-        builder: (context, state) => const ClientHomeScreen(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const ClientHomeScreen()),
       ),
       GoRoute(
         path: AppRoutes.superadminHome,
-        builder: (context, state) => const SuperadminHomeScreen(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const SuperadminHomeScreen()),
       ),
     ],
   );
@@ -80,4 +85,34 @@ String _homeRouteFor(UserRole? role) {
     case null:
       return AppRoutes.clientHome;
   }
+}
+
+/// Transición de página compartida por todas las rutas de nivel superior:
+/// desvanecido + escala leve (nunca desde 0) al entrar, siguiendo la curva
+/// de "entrada" de [AppMotion] y respetando "reducir movimiento". Se usa
+/// la misma transición para todas las rutas de nivel superior porque son
+/// destinos de redirección (login → panel según rol), no una pila de
+/// navegación hacia adelante/atrás que necesite una dirección de
+/// deslizamiento distinta.
+CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: AppMotion.pageTransition,
+    reverseTransitionDuration: AppMotion.pageTransition,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final reduceMotion = MediaQuery.of(context).disableAnimations;
+      final curved = CurvedAnimation(parent: animation, curve: AppMotion.enter);
+      if (reduceMotion) {
+        return FadeTransition(opacity: animation, child: child);
+      }
+      return FadeTransition(
+        opacity: curved,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.98, end: 1).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
 }

@@ -24,4 +24,43 @@ void main() {
 
     expect(find.text('Areté'), findsOneWidget);
   });
+
+  testWidgets(
+    'AppCard interactiva se encoge al presionar y vuelve a su tamaño al soltar',
+    (WidgetTester tester) async {
+      var tapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: AppCard(
+              onTap: () => tapped = true,
+              child: const Text('Rutina de hoy'),
+            ),
+          ),
+        ),
+      );
+
+      AnimatedScale findScale() =>
+          tester.widget<AnimatedScale>(find.byType(AnimatedScale));
+
+      expect(findScale().scale, 1);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Rutina de hoy')),
+      );
+      await tester.pump();
+
+      // La retroalimentación aparece de inmediato al presionar, no solo
+      // al soltar (principio "responde en pointer-down" de apple-design).
+      expect(findScale().scale, lessThan(1));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(findScale().scale, 1);
+      expect(tapped, isTrue);
+    },
+  );
 }

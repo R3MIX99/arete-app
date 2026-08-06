@@ -81,6 +81,16 @@ flutter:
   assets:
     - .env
 
+  # Tipografía del sistema de diseño (Inter, variable, licencia SIL OFL).
+  # Se empaqueta localmente para que la app no dependa de conexión a
+  # internet para renderizar texto.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf
+        - asset: assets/fonts/Inter-Italic-Variable.ttf
+          style: italic
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

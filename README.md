@@ -99,6 +99,30 @@ desde la app Flutter. El prompt de sistema compartido por todas esas
 funciones vive en [`ai/system.md`](ai/system.md) y se carga una sola vez,
 sin reescribirse dentro de cada función.
 
+## Sistema de diseño
+
+Dirección visual: minimalismo elegante tipo shadcn/ui. Los tokens viven en
+`app/lib/core/theme/` y no deben usarse valores de color, tipografía o
+movimiento sueltos en las pantallas.
+
+- **Color** (`app_colors.dart`): escala de grises fría casi monocromática
+  con un único acento (`#4F46E5`) de uso deliberado (CTA principal, ítem de
+  navegación activo, foco) — nunca como fondo extendido. Paleta todavía
+  provisional a falta de la marca final del cliente.
+- **Tipografía** (`app_typography.dart`): Inter, empaquetada localmente en
+  `app/assets/fonts/` (licencia SIL OFL en esa misma carpeta) para que la
+  app no dependa de conexión a internet para renderizar texto. Tracking
+  negativo en títulos grandes, casi cero en texto de cuerpo.
+- **Movimiento** (`app_motion.dart`): duraciones bajo 300 ms, `ease-out`
+  para entradas/salidas, nunca `ease-in`, retroalimentación al presionar
+  desde el instante del toque (no al soltar), y respeto obligatorio a
+  "reducir movimiento" del sistema operativo.
+
+Estas decisiones parten de aplicar dos skills de diseño: `ui-ux-pro-max`
+(estilo, paleta y tipografía) y las skills de animación e interfaz de
+[emilkowalski/skills](https://github.com/emilkowalski/skills) (`animate`,
+`animation-vocabulary`, `apple-design`), traducidas de CSS/React a Flutter.
+
 ## Convenciones del proyecto
 
 - Sin emojis en ningún lugar de la app, notificaciones o commits.
