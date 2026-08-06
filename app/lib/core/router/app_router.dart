@@ -10,7 +10,16 @@ import '../../features/client/presentation/screens/client_home_screen.dart';
 import '../../features/shared/models/user_role.dart';
 import '../../features/shared/providers/current_user_profile_provider.dart';
 import '../../features/superadmin/presentation/screens/superadmin_home_screen.dart';
-import '../../features/trainer/presentation/screens/trainer_home_screen.dart';
+import '../../features/trainer/presentation/screens/trainer_calendar_screen.dart';
+import '../../features/trainer/presentation/screens/trainer_clients_screen.dart';
+import '../../features/trainer/presentation/screens/trainer_dashboard_screen.dart';
+import '../../features/trainer/presentation/screens/trainer_exercise_library_screen.dart';
+import '../../features/trainer/presentation/screens/trainer_nutrition_plans_screen.dart';
+import '../../features/trainer/presentation/screens/trainer_programs_screen.dart';
+import '../../features/trainer/presentation/screens/trainer_progress_screen.dart';
+import '../../features/trainer/presentation/screens/trainer_routines_screen.dart';
+import '../../features/trainer/presentation/screens/trainer_settings_screen.dart';
+import '../../features/trainer/presentation/screens/trainer_shell_screen.dart';
 import '../config/supabase_provider.dart';
 import '../theme/app_motion.dart';
 import 'app_routes.dart';
@@ -93,11 +102,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) =>
             _fadePage(state, const ForgotPasswordScreen()),
       ),
-      GoRoute(
-        path: AppRoutes.trainerHome,
-        pageBuilder: (context, state) =>
-            _fadePage(state, const TrainerHomeScreen()),
-      ),
+      _trainerShellRoute,
       GoRoute(
         path: AppRoutes.clientHome,
         pageBuilder: (context, state) =>
@@ -111,6 +116,98 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Shell de navegación del panel de entrenador: 9 módulos, cada uno con su
+/// propia pila de navegación y estado de scroll independientes
+/// (`StatefulShellRoute.indexedStack`), envueltos por [TrainerShellScreen]
+/// (drawer en teléfono, rail de navegación en tablet/escritorio).
+final _trainerShellRoute = StatefulShellRoute.indexedStack(
+  builder: (context, state, navigationShell) =>
+      TrainerShellScreen(navigationShell: navigationShell),
+  branches: [
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AppRoutes.trainerHome,
+          pageBuilder: (context, state) =>
+              _fadePage(state, const TrainerDashboardScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AppRoutes.trainerClients,
+          pageBuilder: (context, state) =>
+              _fadePage(state, const TrainerClientsScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AppRoutes.trainerRoutines,
+          pageBuilder: (context, state) =>
+              _fadePage(state, const TrainerRoutinesScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AppRoutes.trainerExerciseLibrary,
+          pageBuilder: (context, state) =>
+              _fadePage(state, const TrainerExerciseLibraryScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AppRoutes.trainerPrograms,
+          pageBuilder: (context, state) =>
+              _fadePage(state, const TrainerProgramsScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AppRoutes.trainerNutritionPlans,
+          pageBuilder: (context, state) =>
+              _fadePage(state, const TrainerNutritionPlansScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AppRoutes.trainerCalendar,
+          pageBuilder: (context, state) =>
+              _fadePage(state, const TrainerCalendarScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AppRoutes.trainerProgress,
+          pageBuilder: (context, state) =>
+              _fadePage(state, const TrainerProgressScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AppRoutes.trainerSettings,
+          pageBuilder: (context, state) =>
+              _fadePage(state, const TrainerSettingsScreen()),
+        ),
+      ],
+    ),
+  ],
+);
 
 String _homeRouteFor(UserRole? role) {
   switch (role) {
@@ -131,6 +228,10 @@ String _homeRouteFor(UserRole? role) {
 /// destinos de redirección (login → panel según rol), no una pila de
 /// navegación hacia adelante/atrás que necesite una dirección de
 /// deslizamiento distinta.
+///
+/// No aplica al cambio entre módulos del panel de entrenador: ese cambio
+/// usa `IndexedStack` (instantáneo, sin transición), lo correcto para una
+/// navegación de pestañas que se usa decenas de veces al día.
 CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
   return CustomTransitionPage<void>(
     key: state.pageKey,
