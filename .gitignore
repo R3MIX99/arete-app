@@ -1,0 +1,28 @@
+# Este .gitignore cubre la raíz del monorepo. app/ tiene su propio
+# .gitignore específico de Flutter (generado por `flutter create` y
+# ampliado para excluir .env).
+
+# Sistema operativo / editores.
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Variables de entorno y credenciales en cualquier parte del repo.
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Supabase CLI: estado local, no se versiona.
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# Node (Edge Functions usan Deno, pero por si se agregan tooling/scripts).
+node_modules/
+
+# Artefactos de build sueltos si algún comando se ejecuta desde la raíz.
+/build/
+/coverage/
