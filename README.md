@@ -84,15 +84,17 @@ docs/        Documentación del proyecto
 ## Compilar para producción (web)
 
 ```bash
-flutter build web --release --no-tree-shake-icons
+flutter build web --release
 ```
 
-**El flag `--no-tree-shake-icons` es obligatorio.** Los íconos de
-`TrainerNavItem` (y cualquier otro `IconData` guardado en un modelo en
-vez de escrito literal dentro de un `Icon(...)`) no son detectados de
-forma confiable por el analizador estático de Flutter que decide qué
-glifos de fuente conservar. Sin este flag, algunos íconos desaparecen
-en release (aparecen invisibles) aunque en modo debug se vean bien.
+**No uses `--no-tree-shake-icons`.** Ese flag hace que Flutter empaquete
+el `MaterialIcons-Regular.otf` original completo (CFF/OTTO, 1.6 MB) en
+vez del subconjunto que genera normalmente, y con ese archivo CanvasKit
+no renderiza **ningún** ícono: se ven todos en blanco. El recorte por
+defecto es el camino correcto y probado.
+
+Los íconos se toman de la clase `Icons` del SDK de Flutter, no de un
+paquete externo (ver `trainer_nav_item.dart` para el porqué).
 
 ## Backend (Supabase)
 
