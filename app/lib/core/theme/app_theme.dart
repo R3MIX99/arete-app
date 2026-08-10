@@ -37,6 +37,18 @@ class AppTheme {
       outline: isDark ? AppColors.darkBorder : AppColors.lightBorder,
     );
 
+    // Fondo del indicador de selección (pestaña activa) en navegación:
+    // en claro es el lavanda muy pálido de accentMuted; en oscuro ese
+    // mismo tono se ve como un borrón blanco sin contraste (el bug que
+    // se reportó), así que se mezcla el acento con la superficie oscura
+    // en vez de reutilizar el token pensado para fondos claros.
+    final navigationIndicatorColor = isDark
+        ? Color.alphaBlend(
+            AppColors.accent.withValues(alpha: 0.24),
+            AppColors.darkSurface,
+          )
+        : AppColors.accentMuted;
+
     final textTheme = TextTheme(
       displayLarge: AppTypography.displayLarge.copyWith(
         color: colorScheme.onSurface,
@@ -142,8 +154,61 @@ class AppTheme {
         backgroundColor: colorScheme.surface,
         elevation: 0,
         height: 64,
-        indicatorColor: colorScheme.secondary,
+        indicatorColor: navigationIndicatorColor,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? colorScheme.primary
+                : (isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary),
+          ),
+        ),
         labelTextStyle: WidgetStateProperty.all(AppTypography.labelSecondary),
+      ),
+      // El panel de entrenador usa NavigationRail (tablet/escritorio) y
+      // NavigationDrawer (teléfono); sin estos temas explícitos, Material
+      // 3 usa sus colores de indicador/ícono por defecto, que no están
+      // pensados para esta paleta y pierden contraste en modo oscuro.
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: colorScheme.surface,
+        indicatorColor: navigationIndicatorColor,
+        selectedIconTheme: IconThemeData(color: colorScheme.primary),
+        unselectedIconTheme: IconThemeData(
+          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+        ),
+        selectedLabelTextStyle: AppTypography.labelSecondary.copyWith(
+          color: colorScheme.primary,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelTextStyle: AppTypography.labelSecondary.copyWith(
+          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+        ),
+      ),
+      navigationDrawerTheme: NavigationDrawerThemeData(
+        backgroundColor: colorScheme.surface,
+        indicatorColor: navigationIndicatorColor,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? colorScheme.primary
+                : (isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary),
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => AppTypography.labelSecondary.copyWith(
+            color: states.contains(WidgetState.selected)
+                ? colorScheme.primary
+                : (isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary),
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w600
+                : FontWeight.w500,
+          ),
+        ),
       ),
       dividerTheme: DividerThemeData(
         color: colorScheme.outline,

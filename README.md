@@ -81,6 +81,19 @@ docs/        Documentación del proyecto
    flutter test
    ```
 
+## Compilar para producción (web)
+
+```bash
+flutter build web --release --no-tree-shake-icons
+```
+
+**El flag `--no-tree-shake-icons` es obligatorio.** Los íconos de
+`TrainerNavItem` (y cualquier otro `IconData` guardado en un modelo en
+vez de escrito literal dentro de un `Icon(...)`) no son detectados de
+forma confiable por el analizador estático de Flutter que decide qué
+glifos de fuente conservar. Sin este flag, algunos íconos desaparecen
+en release (aparecen invisibles) aunque en modo debug se vean bien.
+
 ## Backend (Supabase)
 
 Las migraciones, políticas de Row Level Security y Edge Functions viven en
