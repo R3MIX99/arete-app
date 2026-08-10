@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius_extension.dart';
@@ -27,7 +26,7 @@ class AuthMessageBanner extends StatelessWidget {
     final theme = Theme.of(context);
     final isError = tone == AuthMessageTone.error;
     final color = isError ? AppColors.danger : AppColors.success;
-    final icon = isError ? Symbols.error : Symbols.check_circle;
+    final icon = isError ? Icons.error_outline : Icons.check_circle_outline;
     final radius = theme.extension<AppRadiusExtension>()?.md ?? 12;
 
     return Semantics(

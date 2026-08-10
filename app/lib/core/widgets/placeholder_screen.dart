@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/app_spacing.dart';
 
@@ -24,7 +23,7 @@ class PlaceholderContent extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Symbols.construction,
+              Icons.construction_outlined,
               size: 40,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),

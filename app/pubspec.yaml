@@ -49,8 +49,11 @@ dependencies:
   # Enrutamiento declarativo, separado por rol.
   go_router: ^14.6.2
 
-  # Iconografía delgada de un solo trazo (Material Symbols), sin emojis.
-  material_symbols_icons: ^4.2801.1
+  # Iconografía: se usa la clase Icons del SDK de Flutter (variantes
+  # "_outlined", delgadas y de un solo trazo, sin emojis). No se usa un
+  # paquete de íconos externo: material_symbols_icons se probó primero,
+  # pero varios de sus glifos no renderizaban en producción aunque
+  # existieran en el paquete (ver trainer_nav_item.dart).
 
   # Formato de fechas y números en español (es-419).
   intl: ^0.20.2

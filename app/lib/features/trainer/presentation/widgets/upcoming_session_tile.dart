@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/trainer_dashboard_summary.dart';
@@ -38,7 +37,7 @@ class UpcomingSessionTile extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
           ),
           Icon(
-            Symbols.event,
+            Icons.event_outlined,
             size: 20,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
           ),

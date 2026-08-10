@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../data/auth_providers.dart';
 
@@ -13,7 +12,7 @@ class SignOutButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return IconButton(
-      icon: const Icon(Symbols.logout),
+      icon: const Icon(Icons.logout_outlined),
       tooltip: 'Cerrar sesión',
       onPressed: () => ref.read(authRepositoryProvider).signOut(),
     );

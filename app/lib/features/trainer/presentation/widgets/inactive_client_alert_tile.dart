@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -20,7 +19,7 @@ class InactiveClientAlertTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         children: [
-          const Icon(Symbols.warning, size: 20, color: AppColors.warning),
+          const Icon(Icons.warning_amber_outlined, size: 20, color: AppColors.warning),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(

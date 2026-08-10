@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -42,12 +41,12 @@ class TrainerDashboardScreen extends ConsumerWidget {
             childAspectRatio: 1.5,
             children: [
               TrainerStatCard(
-                icon: Symbols.group,
+                icon: Icons.group_outlined,
                 value: '${summary.activeClientsCount}',
                 label: 'Clientes activos',
               ),
               TrainerStatCard(
-                icon: Symbols.fitness_center,
+                icon: Icons.fitness_center,
                 value: '${summary.routinesCreatedCount}',
                 label: 'Rutinas creadas',
               ),
@@ -61,17 +60,17 @@ class TrainerDashboardScreen extends ConsumerWidget {
             runSpacing: AppSpacing.sm,
             children: [
               _QuickActionButton(
-                icon: Symbols.add_circle,
+                icon: Icons.add_circle_outline,
                 label: 'Crear rutina',
                 onPressed: () => context.go(AppRoutes.trainerRoutines),
               ),
               _QuickActionButton(
-                icon: Symbols.nutrition,
+                icon: Icons.restaurant_outlined,
                 label: 'Crear dieta',
                 onPressed: () => context.go(AppRoutes.trainerNutritionPlans),
               ),
               _QuickActionButton(
-                icon: Symbols.person_add,
+                icon: Icons.person_add_outlined,
                 label: 'Agregar cliente',
                 onPressed: () => context.go(AppRoutes.trainerClients),
               ),
