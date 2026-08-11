@@ -460,11 +460,13 @@ class _ProgramBuilderBody extends ConsumerWidget {
                   ),
                 AsyncValue(:final value?) => Column(
                     children: [
-                      for (final summary in value)
+                      for (final summary in value) ...[
                         _AssignedClientTile(
                           summary: summary,
                           slots: detail.routines,
                         ),
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
                     ],
                   ),
                 _ => const SizedBox.shrink(),
