@@ -31,12 +31,20 @@ class _SidebarTooltipState extends State<SidebarTooltip> {
         child: OverlayPortal(
           controller: _controller,
           overlayChildBuilder: (context) {
+            // Una entrada de Overlay sin envolver en `Positioned` recibe
+            // las restricciones ajustadas al tamaño completo de la
+            // pantalla, no las de su contenido — por eso sin este
+            // `UnconstrainedBox` la burbuja se estiraba para ocupar todo
+            // el overlay en vez de quedarse del tamaño del texto.
             return CompositedTransformFollower(
               link: _link,
               targetAnchor: Alignment.centerRight,
               followerAnchor: Alignment.centerLeft,
               offset: const Offset(10, 0),
-              child: _Bubble(message: widget.message),
+              child: UnconstrainedBox(
+                alignment: Alignment.topLeft,
+                child: _Bubble(message: widget.message),
+              ),
             );
           },
           child: widget.child,
