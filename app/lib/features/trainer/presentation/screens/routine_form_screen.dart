@@ -10,9 +10,11 @@ import '../../../auth/presentation/widgets/auth_message_banner.dart';
 import '../../../shared/models/client_goal.dart';
 import '../../../shared/providers/current_user_profile_provider.dart';
 import '../../../shared/widgets/app_card.dart';
+import '../../data/assignments_providers.dart';
 import '../../data/routines_providers.dart';
 import '../../domain/routine.dart';
 import '../../domain/routine_exercise.dart';
+import '../widgets/assign_to_clients_sheet.dart';
 import '../widgets/catalog_validators.dart';
 import '../widgets/exercise_picker_sheet.dart';
 import '../widgets/routine_exercise_card.dart';
@@ -290,6 +292,41 @@ class _RoutineBuilderScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _assignToClients(
+    BuildContext context,
+    WidgetRef ref,
+    Routine routine,
+  ) async {
+    final selection = await showAssignToClientsSheet(
+      context,
+      title: 'Asignar "${routine.name}"',
+    );
+    if (selection == null || !context.mounted) return;
+
+    final trainerId = ref.read(currentUserProfileProvider).valueOrNull?.id;
+    if (trainerId == null) return;
+
+    final result = await ref.read(assignmentsRepositoryProvider).assignRoutineToClients(
+          trainerId: trainerId,
+          clientIds: selection.clientIds,
+          routineId: routineId,
+          startDate: selection.startDate,
+        );
+    ref.invalidate(assignmentsForRoutineProvider(routineId));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result.hasFailures
+              ? 'Asignada a ${result.succeeded}. ${result.failedCount} ya '
+                  'la tenían asignada o no se pudo.'
+              : 'Rutina asignada a ${result.succeeded} '
+                  '${result.succeeded == 1 ? 'cliente' : 'clientes'}.',
+        ),
+      ),
+    );
+  }
+
   Future<void> _editBasicInfo(
     BuildContext context,
     WidgetRef ref,
@@ -333,6 +370,12 @@ class _RoutineBuilderScreen extends ConsumerWidget {
         title: Text(detailAsync.valueOrNull?.routine.name ?? 'Rutina'),
         actions: [
           if (detailAsync.valueOrNull != null) ...[
+            IconButton(
+              icon: const AppIcon(AppIconPaths.personAdd, size: 20),
+              tooltip: 'Asignar a clientes',
+              onPressed: () =>
+                  _assignToClients(context, ref, detailAsync.value!.routine),
+            ),
             IconButton(
               icon: const AppIcon(AppIconPaths.contentCopy, size: 20),
               tooltip: 'Duplicar rutina',

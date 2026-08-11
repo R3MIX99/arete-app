@@ -17,6 +17,12 @@ class CatalogValidators {
     return null;
   }
 
+  static String? programName(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return 'Ingresa el nombre del programa.';
+    return null;
+  }
+
   /// El video es opcional; si se cargó algo, tiene que ser un enlace de
   /// YouTube reconocible (la base de datos también lo valida, pero avisar
   /// antes de guardar ahorra un viaje al servidor).

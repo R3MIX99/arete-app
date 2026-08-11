@@ -14,6 +14,7 @@ import '../../features/superadmin/presentation/screens/superadmin_home_screen.da
 import '../../features/trainer/presentation/screens/client_detail_screen.dart';
 import '../../features/trainer/presentation/screens/client_form_screen.dart';
 import '../../features/trainer/presentation/screens/exercise_form_screen.dart';
+import '../../features/trainer/presentation/screens/program_form_screen.dart';
 import '../../features/trainer/presentation/screens/routine_form_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_calendar_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_clients_screen.dart';
@@ -163,6 +164,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _fadePage(
           state,
           RoutineFormScreen(routineId: state.pathParameters['routineId']),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.trainerProgramNew,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const ProgramFormScreen()),
+      ),
+      GoRoute(
+        path: '/trainer/programs/:programId',
+        pageBuilder: (context, state) => _fadePage(
+          state,
+          ProgramFormScreen(programId: state.pathParameters['programId']),
         ),
       ),
       GoRoute(

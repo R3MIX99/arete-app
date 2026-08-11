@@ -26,6 +26,9 @@ class AppRoutes {
   static String trainerExerciseEdit(String id) =>
       '/trainer/exercise-library/$id/editar';
   static const String trainerPrograms = '/trainer/programs';
+  static const String trainerProgramNew = '/trainer/programs/nuevo';
+  // Igual que con las rutinas: no hay vista de solo lectura separada.
+  static String trainerProgramDetail(String id) => '/trainer/programs/$id';
   static const String trainerNutritionPlans = '/trainer/nutrition-plans';
   static const String trainerCalendar = '/trainer/calendar';
   static const String trainerProgress = '/trainer/progress';

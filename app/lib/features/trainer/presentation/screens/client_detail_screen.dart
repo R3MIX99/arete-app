@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -10,6 +11,7 @@ import '../../../../core/widgets/app_icon.dart';
 import '../../../shared/models/client_goal.dart';
 import '../../../shared/models/profile.dart';
 import '../../../shared/widgets/app_card.dart';
+import '../../data/assignments_providers.dart';
 import '../../data/clients_providers.dart';
 
 /// Ficha completa de un cliente.
@@ -200,20 +202,15 @@ class _ClientDetailBodyState extends ConsumerState<_ClientDetailBody> {
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              // Estas tres secciones se llenan cuando existan los módulos
-              // de rutinas, nutrición y progreso. Se muestran vacías desde
-              // ahora para que la ficha ya tenga su forma final y no
-              // sorprenda después con un cambio de estructura.
-              const _Section(
-                title: 'Plan actual',
-                child: _Pending('Aún no hay planes disponibles.'),
+              _Section(
+                title: 'Plan asignado',
+                child: _AssignedPlan(clientId: client.id),
               ),
               const SizedBox(height: AppSpacing.md),
-              const _Section(
-                title: 'Rutina asignada',
-                child: _Pending('Todavía no le asignaste una rutina.'),
-              ),
-              const SizedBox(height: AppSpacing.md),
+              // Estas dos secciones se llenan cuando existan los módulos
+              // de nutrición y progreso. Se muestran vacías desde ahora
+              // para que la ficha ya tenga su forma final y no sorprenda
+              // después con un cambio de estructura.
               const _Section(
                 title: 'Dieta asignada',
                 child: _Pending('Todavía no le asignaste un plan nutricional.'),
@@ -372,6 +369,84 @@ class _Pending extends StatelessWidget {
       message,
       style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+      ),
+    );
+  }
+}
+
+/// Programa o rutina suelta que este cliente tiene asignado ahora mismo
+/// (el más reciente por fecha de inicio). Un toque lleva al constructor
+/// del programa o de la rutina, según corresponda.
+class _AssignedPlan extends ConsumerWidget {
+  const _AssignedPlan({required this.clientId});
+
+  final String clientId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final assignmentAsync = ref.watch(latestAssignmentForClientProvider(clientId));
+
+    if (assignmentAsync.isLoading) {
+      return const SizedBox(
+        height: 20,
+        width: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    if (assignmentAsync.hasError) {
+      return const _Pending('No se pudo cargar el plan asignado.');
+    }
+
+    // `AssignmentSummary?`: null tanto si ya cargó y no hay nada asignado
+    // como (en teoría) si el AsyncValue no tiene dato todavía; los dos
+    // casos anteriores ya descartaron lo segundo, así que acá null
+    // significa, sin ambigüedad, "no hay nada asignado".
+    final summary = assignmentAsync.value;
+    if (summary == null) {
+      return const _Pending('Todavía no le asignaste un programa ni una rutina.');
+    }
+
+    final assignment = summary.assignment;
+    return InkWell(
+      onTap: () {
+        if (assignment.isProgram) {
+          context.push(AppRoutes.trainerProgramDetail(assignment.programId!));
+        } else {
+          context.push(AppRoutes.trainerRoutineDetail(assignment.routineId!));
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        children: [
+          AppIcon(
+            assignment.isProgram
+                ? AppIconPaths.calendarViewMonth
+                : AppIconPaths.fitnessCenter,
+            size: 20,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  summary.itemName,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '${assignment.isProgram ? "Programa" : "Rutina suelta"} · '
+                  'desde el ${DateFormat('d MMM y', 'es_419').format(assignment.startDate)}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          const AppIcon(AppIconPaths.chevronRight, size: 18),
+        ],
       ),
     );
   }
