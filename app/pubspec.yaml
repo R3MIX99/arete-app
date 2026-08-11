@@ -49,11 +49,11 @@ dependencies:
   # Enrutamiento declarativo, separado por rol.
   go_router: ^14.6.2
 
-  # Iconografía: se usa la clase Icons del SDK de Flutter (variantes
-  # "_outlined", delgadas y de un solo trazo, sin emojis). No se usa un
-  # paquete de íconos externo: material_symbols_icons se probó primero,
-  # pero varios de sus glifos no renderizaban en producción aunque
-  # existieran en el paquete (ver trainer_nav_item.dart).
+  # Iconografía: se dibujan los vectores de Material Symbols directamente
+  # (rutas SVG en core/theme/app_icon_paths.dart), no una fuente de íconos.
+  # Las fuentes de íconos fallaron dos veces por motivos distintos; ver el
+  # comentario en app_icon_paths.dart.
+  flutter_svg: ^2.0.10
 
   # Formato de fechas y números en español (es-419).
   intl: ^0.20.2

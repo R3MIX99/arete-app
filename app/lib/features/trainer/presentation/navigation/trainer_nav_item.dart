@@ -1,20 +1,11 @@
-import 'package:flutter/material.dart';
-
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/theme/app_icon_paths.dart';
 
 /// Un módulo del panel de entrenador: ícono, nombre visible y ruta.
 ///
 /// Se usa el mismo ícono en estado seleccionado y no seleccionado (un solo
 /// estilo de ícono por nivel de jerarquía); la selección se distingue por
 /// color e indicador, no mezclando íconos delineados y rellenos.
-///
-/// Los íconos usan la clase `Icons` incluida en el SDK de Flutter, no el
-/// paquete `material_symbols_icons`: varios íconos de ese paquete
-/// (dashboard, fitness_center, video_library, nutrition, calendar_month,
-/// person_add) no renderizaban en la build de producción — la fuente
-/// empaquetada no tenía esos glifos aunque el flag `--no-tree-shake-icons`
-/// estuviera activo. `Icons` viene con Flutter, ya se usa en toda la app y
-/// no tiene ese riesgo.
 class TrainerNavItem {
   const TrainerNavItem({
     required this.label,
@@ -23,7 +14,9 @@ class TrainerNavItem {
   });
 
   final String label;
-  final IconData icon;
+
+  /// Ruta SVG del ícono (ver [AppIconPaths]); se dibuja con `AppIcon`.
+  final String icon;
   final String path;
 
   /// Los 9 módulos del panel de entrenador, en el orden en que deben
@@ -31,47 +24,47 @@ class TrainerNavItem {
   static const List<TrainerNavItem> all = [
     TrainerNavItem(
       label: 'Dashboard',
-      icon: Icons.dashboard_outlined,
+      icon: AppIconPaths.dashboard,
       path: AppRoutes.trainerHome,
     ),
     TrainerNavItem(
       label: 'Clientes',
-      icon: Icons.group_outlined,
+      icon: AppIconPaths.group,
       path: AppRoutes.trainerClients,
     ),
     TrainerNavItem(
       label: 'Rutinas',
-      icon: Icons.fitness_center,
+      icon: AppIconPaths.fitnessCenter,
       path: AppRoutes.trainerRoutines,
     ),
     TrainerNavItem(
       label: 'Biblioteca de ejercicios',
-      icon: Icons.video_library_outlined,
+      icon: AppIconPaths.videoLibrary,
       path: AppRoutes.trainerExerciseLibrary,
     ),
     TrainerNavItem(
       label: 'Programas',
-      icon: Icons.calendar_view_month_outlined,
+      icon: AppIconPaths.calendarViewMonth,
       path: AppRoutes.trainerPrograms,
     ),
     TrainerNavItem(
       label: 'Planes nutricionales',
-      icon: Icons.restaurant_outlined,
+      icon: AppIconPaths.nutrition,
       path: AppRoutes.trainerNutritionPlans,
     ),
     TrainerNavItem(
       label: 'Calendario',
-      icon: Icons.calendar_month_outlined,
+      icon: AppIconPaths.calendarMonth,
       path: AppRoutes.trainerCalendar,
     ),
     TrainerNavItem(
       label: 'Seguimiento de progreso',
-      icon: Icons.trending_up_outlined,
+      icon: AppIconPaths.monitoring,
       path: AppRoutes.trainerProgress,
     ),
     TrainerNavItem(
       label: 'Configuración',
-      icon: Icons.settings_outlined,
+      icon: AppIconPaths.settings,
       path: AppRoutes.trainerSettings,
     ),
   ];

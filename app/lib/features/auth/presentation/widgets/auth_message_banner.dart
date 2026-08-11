@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icon_paths.dart';
 import '../../../../core/theme/app_radius_extension.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_icon.dart';
 
 enum AuthMessageTone { error, success }
 
@@ -26,7 +28,7 @@ class AuthMessageBanner extends StatelessWidget {
     final theme = Theme.of(context);
     final isError = tone == AuthMessageTone.error;
     final color = isError ? AppColors.danger : AppColors.success;
-    final icon = isError ? Icons.error_outline : Icons.check_circle_outline;
+    final icon = isError ? AppIconPaths.error : AppIconPaths.checkCircle;
     final radius = theme.extension<AppRadiusExtension>()?.md ?? 12;
 
     return Semantics(
@@ -41,7 +43,7 @@ class AuthMessageBanner extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 20),
+            AppIcon(icon, color: color, size: 20),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/theme/app_icon_paths.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_icon.dart';
 import '../../../shared/widgets/app_card.dart';
 import '../../data/trainer_dashboard_mock_provider.dart';
 import '../widgets/inactive_client_alert_tile.dart';
@@ -41,12 +43,12 @@ class TrainerDashboardScreen extends ConsumerWidget {
             childAspectRatio: 1.5,
             children: [
               TrainerStatCard(
-                icon: Icons.group_outlined,
+                icon: AppIconPaths.group,
                 value: '${summary.activeClientsCount}',
                 label: 'Clientes activos',
               ),
               TrainerStatCard(
-                icon: Icons.fitness_center,
+                icon: AppIconPaths.fitnessCenter,
                 value: '${summary.routinesCreatedCount}',
                 label: 'Rutinas creadas',
               ),
@@ -60,17 +62,17 @@ class TrainerDashboardScreen extends ConsumerWidget {
             runSpacing: AppSpacing.sm,
             children: [
               _QuickActionButton(
-                icon: Icons.add_circle_outline,
+                icon: AppIconPaths.addCircle,
                 label: 'Crear rutina',
                 onPressed: () => context.go(AppRoutes.trainerRoutines),
               ),
               _QuickActionButton(
-                icon: Icons.restaurant_outlined,
+                icon: AppIconPaths.nutrition,
                 label: 'Crear dieta',
                 onPressed: () => context.go(AppRoutes.trainerNutritionPlans),
               ),
               _QuickActionButton(
-                icon: Icons.person_add_outlined,
+                icon: AppIconPaths.personAdd,
                 label: 'Agregar cliente',
                 onPressed: () => context.go(AppRoutes.trainerClients),
               ),
@@ -129,7 +131,8 @@ class _QuickActionButton extends StatelessWidget {
     required this.onPressed,
   });
 
-  final IconData icon;
+  /// Ruta SVG del ícono (ver [AppIconPaths]).
+  final String icon;
   final String label;
   final VoidCallback onPressed;
 
@@ -137,7 +140,7 @@ class _QuickActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 18),
+      icon: AppIcon(icon, size: 18),
       label: Text(label),
     );
   }

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_icon_paths.dart';
+import '../../../../core/widgets/app_icon.dart';
+
 /// Campo de contraseña con botón para mostrar u ocultar el texto.
 class AuthPasswordField extends StatefulWidget {
   const AuthPasswordField({
@@ -38,7 +41,9 @@ class _AuthPasswordFieldState extends State<AuthPasswordField> {
       decoration: InputDecoration(
         labelText: widget.label,
         suffixIcon: IconButton(
-          icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+          icon: AppIcon(
+            _obscure ? AppIconPaths.visibility : AppIconPaths.visibilityOff,
+          ),
           tooltip: _obscure ? 'Mostrar contraseña' : 'Ocultar contraseña',
           onPressed: () => setState(() => _obscure = !_obscure),
         ),

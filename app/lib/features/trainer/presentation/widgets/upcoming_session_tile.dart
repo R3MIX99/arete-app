@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_icon_paths.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_icon.dart';
 import '../../domain/trainer_dashboard_summary.dart';
 
 /// Una fila de "próximas sesiones de hoy": hora, cliente y tipo de sesión.
@@ -36,8 +38,8 @@ class UpcomingSessionTile extends StatelessWidget {
             color: theme.colorScheme.outline,
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
           ),
-          Icon(
-            Icons.event_outlined,
+          AppIcon(
+            AppIconPaths.event,
             size: 20,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
           ),

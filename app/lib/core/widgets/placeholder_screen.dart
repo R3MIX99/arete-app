@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_icon_paths.dart';
 import '../theme/app_spacing.dart';
+import 'app_icon.dart';
 
 /// Contenido de una pantalla temporal: usado tanto por [PlaceholderScreen]
 /// (con su propio `Scaffold`/`AppBar`) como por módulos que ya viven
@@ -22,8 +24,8 @@ class PlaceholderContent extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.construction_outlined,
+            AppIcon(
+              AppIconPaths.construction,
               size: 40,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),

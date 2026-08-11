@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/widgets/app_icon.dart';
 import '../../../auth/presentation/widgets/sign_out_button.dart';
 import '../navigation/trainer_nav_item.dart';
 
@@ -57,7 +58,7 @@ class TrainerShellScreen extends StatelessWidget {
                 ),
                 for (final item in items)
                   NavigationDrawerDestination(
-                    icon: Icon(item.icon),
+                    icon: AppIcon(item.icon),
                     label: Text(item.label),
                   ),
               ],
@@ -84,7 +85,7 @@ class TrainerShellScreen extends StatelessWidget {
                 destinations: [
                   for (final item in items)
                     NavigationRailDestination(
-                      icon: Icon(item.icon),
+                      icon: AppIcon(item.icon),
                       label: Text(item.label),
                     ),
                 ],

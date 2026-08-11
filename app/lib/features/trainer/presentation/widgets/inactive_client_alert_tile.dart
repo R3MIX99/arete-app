@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icon_paths.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_icon.dart';
 import '../../domain/trainer_dashboard_summary.dart';
 
 /// Alerta de un cliente sin actividad reciente. Combina color, ícono y
@@ -19,7 +21,7 @@ class InactiveClientAlertTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_outlined, size: 20, color: AppColors.warning),
+          const AppIcon(AppIconPaths.warning, size: 20, color: AppColors.warning),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(

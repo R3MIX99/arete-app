@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_icon.dart';
 import '../../../shared/widgets/app_card.dart';
 
 /// Tarjeta de resumen numérico del dashboard (clientes activos, rutinas
@@ -13,7 +14,8 @@ class TrainerStatCard extends StatelessWidget {
     required this.label,
   });
 
-  final IconData icon;
+  /// Ruta SVG del ícono (ver `AppIconPaths`).
+  final String icon;
   final String value;
   final String label;
 
@@ -24,7 +26,7 @@ class TrainerStatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: theme.colorScheme.primary, size: 22),
+          AppIcon(icon, color: theme.colorScheme.primary, size: 22),
           const SizedBox(height: AppSpacing.sm),
           Text(
             value,
