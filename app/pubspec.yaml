@@ -62,6 +62,13 @@ dependencies:
   # las plataformas donde no se puede embeber un reproductor con iframe.
   url_launcher: ^6.3.1
 
+  # Gráficas del módulo de Seguimiento de Progreso (peso, medidas).
+  fl_chart: ^0.69.0
+
+  # Elegir una foto de progreso desde el dispositivo para subirla a
+  # Supabase Storage.
+  image_picker: ^1.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

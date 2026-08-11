@@ -21,6 +21,11 @@ class Profile {
     this.goal,
     this.healthNotes,
     this.phone,
+    this.businessName,
+    this.notifyEmail = true,
+    this.notifyPush = true,
+    this.subscriptionPlan = 'free',
+    this.subscriptionStatus = 'active',
   });
 
   final String id;
@@ -39,6 +44,16 @@ class Profile {
   /// dieta. Solo aplica cuando [role] es cliente.
   final String? healthNotes;
   final String? phone;
+
+  /// Nombre del gimnasio o marca personal. Solo aplica a entrenadores.
+  final String? businessName;
+  final bool notifyEmail;
+  final bool notifyPush;
+
+  /// Solo visualización por ahora (Fase 6); la lógica de pago real se
+  /// conecta en la Fase 15.
+  final String subscriptionPlan;
+  final String subscriptionStatus;
 
   bool get isActive => status == ClientStatus.active;
 
@@ -60,6 +75,11 @@ class Profile {
       goal: ClientGoal.fromRaw(json['goal'] as String?),
       healthNotes: json['health_notes'] as String?,
       phone: json['phone'] as String?,
+      businessName: json['business_name'] as String?,
+      notifyEmail: json['notify_email'] as bool? ?? true,
+      notifyPush: json['notify_push'] as bool? ?? true,
+      subscriptionPlan: json['subscription_plan'] as String? ?? 'free',
+      subscriptionStatus: json['subscription_status'] as String? ?? 'active',
     );
   }
 }
