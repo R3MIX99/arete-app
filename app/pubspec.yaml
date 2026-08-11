@@ -58,6 +58,10 @@ dependencies:
   # Formato de fechas y números en español (es-419).
   intl: ^0.20.2
 
+  # Abrir enlaces externos (ver un video de YouTube en su app/pestaña) en
+  # las plataformas donde no se puede embeber un reproductor con iframe.
+  url_launcher: ^6.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

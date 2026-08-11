@@ -13,6 +13,8 @@ import '../../features/shared/providers/current_user_profile_provider.dart';
 import '../../features/superadmin/presentation/screens/superadmin_home_screen.dart';
 import '../../features/trainer/presentation/screens/client_detail_screen.dart';
 import '../../features/trainer/presentation/screens/client_form_screen.dart';
+import '../../features/trainer/presentation/screens/exercise_form_screen.dart';
+import '../../features/trainer/presentation/screens/routine_form_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_calendar_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_clients_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_dashboard_screen.dart';
@@ -136,6 +138,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.trainerExerciseNew,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const ExerciseFormScreen()),
+      ),
+      GoRoute(
+        path: '/trainer/exercise-library/:exerciseId/editar',
+        pageBuilder: (context, state) => _fadePage(
+          state,
+          ExerciseFormScreen(
+            exerciseId: state.pathParameters['exerciseId'],
+          ),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.trainerRoutineNew,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const RoutineFormScreen()),
+      ),
+      GoRoute(
+        path: '/trainer/routines/:routineId',
+        pageBuilder: (context, state) => _fadePage(
+          state,
+          RoutineFormScreen(routineId: state.pathParameters['routineId']),
+        ),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,

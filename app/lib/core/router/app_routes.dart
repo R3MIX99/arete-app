@@ -17,7 +17,14 @@ class AppRoutes {
   static String trainerClientDetail(String id) => '/trainer/clients/$id';
   static String trainerClientEdit(String id) => '/trainer/clients/$id/editar';
   static const String trainerRoutines = '/trainer/routines';
+  static const String trainerRoutineNew = '/trainer/routines/nueva';
+  // No hay vista de solo lectura separada: abrir una rutina existente
+  // lleva directo al mismo constructor que se usa para crearla.
+  static String trainerRoutineDetail(String id) => '/trainer/routines/$id';
   static const String trainerExerciseLibrary = '/trainer/exercise-library';
+  static const String trainerExerciseNew = '/trainer/exercise-library/nuevo';
+  static String trainerExerciseEdit(String id) =>
+      '/trainer/exercise-library/$id/editar';
   static const String trainerPrograms = '/trainer/programs';
   static const String trainerNutritionPlans = '/trainer/nutrition-plans';
   static const String trainerCalendar = '/trainer/calendar';
