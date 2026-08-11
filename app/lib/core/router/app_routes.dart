@@ -13,6 +13,9 @@ class AppRoutes {
   // core/router/app_router.dart).
   static const String trainerHome = '/trainer/dashboard';
   static const String trainerClients = '/trainer/clients';
+  static const String trainerClientNew = '/trainer/clients/nuevo';
+  static String trainerClientDetail(String id) => '/trainer/clients/$id';
+  static String trainerClientEdit(String id) => '/trainer/clients/$id/editar';
   static const String trainerRoutines = '/trainer/routines';
   static const String trainerExerciseLibrary = '/trainer/exercise-library';
   static const String trainerPrograms = '/trainer/programs';
@@ -23,6 +26,12 @@ class AppRoutes {
 
   // Panel de cliente.
   static const String clientHome = '/client';
+
+  /// Enlace que el entrenador comparte con su cliente. Es accesible sin
+  /// sesión iniciada: el cliente lo abre, crea su cuenta como prefiera
+  /// (correo o Google) y el token lo vincula a ese entrenador.
+  static const String invitationPattern = '/invitacion/:token';
+  static String invitation(String token) => '/invitacion/$token';
 
   // Panel de superadministrador.
   static const String superadminHome = '/superadmin';

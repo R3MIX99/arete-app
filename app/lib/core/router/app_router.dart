@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../../features/auth/presentation/screens/invitation_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
@@ -10,6 +11,8 @@ import '../../features/client/presentation/screens/client_home_screen.dart';
 import '../../features/shared/models/user_role.dart';
 import '../../features/shared/providers/current_user_profile_provider.dart';
 import '../../features/superadmin/presentation/screens/superadmin_home_screen.dart';
+import '../../features/trainer/presentation/screens/client_detail_screen.dart';
+import '../../features/trainer/presentation/screens/client_form_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_calendar_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_clients_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_dashboard_screen.dart';
@@ -66,6 +69,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAuthenticated = authAsync.valueOrNull?.session != null;
       final location = state.matchedLocation;
 
+      // El enlace de invitación es la puerta de entrada de un cliente
+      // nuevo: tiene que funcionar tanto sin sesión (para que pueda crear
+      // su cuenta) como con sesión (para canjearlo), así que queda fuera
+      // de la redirección normal en ambos casos.
+      if (location.startsWith('/invitacion/')) return null;
+
       if (!isAuthenticated) {
         return _publicAuthRoutes.contains(location) ? null : AppRoutes.login;
       }
@@ -96,6 +105,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.register,
         pageBuilder: (context, state) =>
             _fadePage(state, const RegisterScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.invitationPattern,
+        pageBuilder: (context, state) => _fadePage(
+          state,
+          InvitationScreen(token: state.pathParameters['token'] ?? ''),
+        ),
+      ),
+      // Alta, detalle y edición de cliente van fuera del shell del panel
+      // (no como pestañas): son pantallas completas con su propia barra y
+      // botón de volver, apiladas encima del listado.
+      GoRoute(
+        path: AppRoutes.trainerClientNew,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const ClientFormScreen()),
+      ),
+      GoRoute(
+        path: '/trainer/clients/:clientId',
+        pageBuilder: (context, state) => _fadePage(
+          state,
+          ClientDetailScreen(clientId: state.pathParameters['clientId']!),
+        ),
+        routes: [
+          GoRoute(
+            path: 'editar',
+            pageBuilder: (context, state) => _fadePage(
+              state,
+              ClientFormScreen(clientId: state.pathParameters['clientId']),
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
