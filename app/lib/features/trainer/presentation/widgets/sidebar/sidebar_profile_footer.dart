@@ -8,6 +8,7 @@ import '../../../../auth/data/auth_providers.dart';
 import '../../../../shared/models/profile.dart';
 import '../../../../shared/providers/current_user_profile_provider.dart';
 import 'sidebar_colors.dart';
+import 'sidebar_tooltip.dart';
 
 /// Pie de la barra lateral: quién tiene la sesión iniciada, con un ícono
 /// directo para cerrar sesión (con confirmación visual solo por el
@@ -83,7 +84,7 @@ class _SignOutIconButtonState extends ConsumerState<_SignOutIconButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
+    return SidebarTooltip(
       message: 'Cerrar sesión',
       child: MouseRegion(
         cursor: SystemMouseCursors.click,

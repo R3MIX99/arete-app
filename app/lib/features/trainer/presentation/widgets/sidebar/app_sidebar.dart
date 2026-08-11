@@ -8,6 +8,7 @@ import 'sidebar_boost_card.dart';
 import 'sidebar_colors.dart';
 import 'sidebar_nav_tile.dart';
 import 'sidebar_profile_footer.dart';
+import 'sidebar_tooltip.dart';
 
 /// Barra lateral del panel de entrenador: logo, navegación con efecto de
 /// franja al pasar el mouse o al estar activa, tarjeta de promoción de las
@@ -213,7 +214,7 @@ class _ToggleButtonState extends State<_ToggleButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
+    return SidebarTooltip(
       message: widget.collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral',
       child: MouseRegion(
         cursor: SystemMouseCursors.click,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_motion.dart';
 import '../../../../../core/widgets/app_icon.dart';
 import 'sidebar_colors.dart';
+import 'sidebar_tooltip.dart';
 
 /// Un destino de navegación de la barra lateral.
 ///
@@ -70,9 +71,8 @@ class _SidebarNavTileState extends State<SidebarNavTile> {
     );
 
     return Center(
-      child: Tooltip(
+      child: SidebarTooltip(
         message: widget.label,
-        waitDuration: const Duration(milliseconds: 400),
         child: MouseRegion(
           onEnter: (_) => _setHovered(true),
           onExit: (_) => _setHovered(false),
