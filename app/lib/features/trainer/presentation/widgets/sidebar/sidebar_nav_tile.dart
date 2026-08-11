@@ -6,12 +6,15 @@ import 'sidebar_colors.dart';
 
 /// Un destino de navegación de la barra lateral.
 ///
-/// Tres estados visuales, igual que la referencia: apagado (ícono y texto
-/// en gris), sobre el mouse (franja tenue, texto casi blanco) y activo
-/// (franja en degradé del acento de marca, ícono y texto blancos). El
-/// cambio de estado nunca depende solo del color de fondo: el ícono y el
-/// texto también cambian de tono, así que sigue siendo legible si alguien
-/// no distingue bien el degradé.
+/// Expandida: una franja delgada de luz pegada al borde derecho marca el
+/// ítem activo — no toda la tarjeta se llena de color, solo esa luz (con
+/// un resplandor suave), igual que la referencia. Colapsada: el ícono se
+/// dibuja en un cuadrado (nunca más ancho que alto) y el activo lleva un
+/// degradé diagonal, del acento en la esquina inferior derecha hacia el
+/// color normal del fondo en la superior izquierda.
+///
+/// En los dos casos el ícono y el texto también cambian de tono al estar
+/// activos u hover: la selección nunca depende solo del color de fondo.
 class SidebarNavTile extends StatefulWidget {
   const SidebarNavTile({
     super.key,
@@ -42,35 +45,50 @@ class _SidebarNavTileState extends State<SidebarNavTile> {
 
   @override
   Widget build(BuildContext context) {
+    return widget.collapsed ? _buildCollapsed(context) : _buildExpanded(context);
+  }
+
+  Widget _buildCollapsed(BuildContext context) {
+    final iconColor = widget.selected
+        ? Colors.white
+        : (_hovered ? SidebarColors.textPrimary : SidebarColors.textSecondary);
+
+    final square = AnimatedContainer(
+      duration: AppMotion.resolve(context, AppMotion.dropdown),
+      curve: AppMotion.hover,
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: widget.selected ? SidebarColors.collapsedActiveGradient : null,
+        color: widget.selected
+            ? null
+            : (_hovered ? SidebarColors.hoverFill : Colors.transparent),
+      ),
+      child: AppIcon(widget.icon, size: 22, color: iconColor),
+    );
+
+    return Center(
+      child: Tooltip(
+        message: widget.label,
+        waitDuration: const Duration(milliseconds: 400),
+        child: MouseRegion(
+          onEnter: (_) => _setHovered(true),
+          onExit: (_) => _setHovered(false),
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(onTap: widget.onTap, child: square),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpanded(BuildContext context) {
     final contentColor = widget.selected || _hovered
         ? SidebarColors.textPrimary
         : SidebarColors.textSecondary;
 
-    final row = Row(
-      mainAxisAlignment: widget.collapsed
-          ? MainAxisAlignment.center
-          : MainAxisAlignment.start,
-      children: [
-        AppIcon(widget.icon, size: 20, color: contentColor),
-        if (!widget.collapsed) ...[
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              widget.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: contentColor,
-                fontSize: 14,
-                fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-
-    final tile = MouseRegion(
+    return MouseRegion(
       onEnter: (_) => _setHovered(true),
       onExit: (_) => _setHovered(false),
       cursor: SystemMouseCursors.click,
@@ -80,33 +98,62 @@ class _SidebarNavTileState extends State<SidebarNavTile> {
           duration: AppMotion.resolve(context, AppMotion.dropdown),
           curve: AppMotion.hover,
           height: 40,
-          padding: EdgeInsets.symmetric(horizontal: widget.collapsed ? 0 : 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            gradient: widget.selected ? SidebarColors.accentGradient : null,
             color: widget.selected
-                ? null
+                ? SidebarColors.selectedFill
                 : (_hovered ? SidebarColors.hoverFill : Colors.transparent),
-            border: widget.selected
-                ? Border.all(color: SidebarColors.glassBorderBright)
-                : null,
-            boxShadow: widget.selected
-                ? [
-                    BoxShadow(
-                      color: SidebarColors.accentStart.withValues(alpha: 0.35),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
           ),
-          alignment: Alignment.centerLeft,
-          child: row,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Row(
+                children: [
+                  AppIcon(widget.icon, size: 20, color: contentColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.label,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: contentColor,
+                        fontSize: 14,
+                        fontWeight:
+                            widget.selected ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (widget.selected)
+                Positioned(
+                  right: -12,
+                  top: 2,
+                  bottom: 2,
+                  width: 4,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: SidebarColors.edgeGlowGradient,
+                      borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(4),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: SidebarColors.accentStart.withValues(alpha: 0.7),
+                          blurRadius: 14,
+                          spreadRadius: 0.5,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
-
-    if (!widget.collapsed) return tile;
-    return Tooltip(message: widget.label, waitDuration: const Duration(milliseconds: 400), child: tile);
   }
 }

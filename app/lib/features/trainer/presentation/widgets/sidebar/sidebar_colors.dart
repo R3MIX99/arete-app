@@ -42,5 +42,28 @@ class SidebarColors {
         colors: [accentStart, accentEnd],
       );
 
+  // Relleno casi imperceptible del ítem activo: la selección la marca la
+  // franja de luz del borde (ver [edgeGlowGradient]), no un fondo de
+  // color completo. Este wash solo da un poquito de contraste al área.
+  static const Color selectedFill = Color(0x14FFFFFF); // ~8%
+
+  // Franja de luz vertical pegada al borde derecho del ítem activo
+  // (barra angosta con resplandor), en vez de llenar toda la tarjeta.
+  static LinearGradient get edgeGlowGradient => const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [accentStart, accentEnd],
+      );
+
+  // Ícono cuadrado activo cuando la barra está colapsada: degradé
+  // diagonal desde el acento en la esquina inferior derecha (la
+  // "pulsación") hacia el color normal del fondo en la esquina superior
+  // izquierda.
+  static LinearGradient get collapsedActiveGradient => const LinearGradient(
+        begin: Alignment.bottomRight,
+        end: Alignment.topLeft,
+        colors: [accentStart, background],
+      );
+
   static const Color danger = AppColors.danger;
 }

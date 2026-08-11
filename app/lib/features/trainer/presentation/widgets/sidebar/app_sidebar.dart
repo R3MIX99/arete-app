@@ -35,18 +35,40 @@ class AppSidebar extends StatefulWidget {
 }
 
 class _AppSidebarState extends State<AppSidebar> {
+  // `_collapsed` es el ancho que se pide; `_contentReady` es si ya hay que
+  // dibujar texto/tarjetas. Van desfasados a propósito: al colapsar, el
+  // texto se esconde de inmediato (no tiene sentido esperar, total se está
+  // achicando). Al expandir, el texto se queda escondido hasta que el
+  // ancho terminó de crecer (`onEnd` del AnimatedContainer) y recién ahí
+  // aparece de un golpe. Así nunca se dibuja una etiqueta larga dentro de
+  // una caja todavía angosta a mitad de la animación — que es lo que se
+  // veía como texto "compactándose"/saltando de línea.
   bool _collapsed = false;
+  bool _contentReady = true;
 
   bool get _effectiveCollapsed => widget.forceExpanded ? false : _collapsed;
+
+  void _setCollapsed(bool value) {
+    setState(() {
+      _collapsed = value;
+      if (value) _contentReady = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final collapsed = _effectiveCollapsed;
+    // Mientras se expande, el contenido con texto sigue oculto (se ve como
+    // "colapsado") hasta que la caja termina de crecer.
+    final contentCollapsed = widget.forceExpanded ? false : (collapsed || !_contentReady);
 
     return AnimatedContainer(
       duration: AppMotion.resolve(context, AppMotion.pageTransition),
       curve: AppMotion.reposition,
       width: collapsed ? 76 : 264,
+      onEnd: () {
+        if (!_collapsed && !_contentReady) setState(() => _contentReady = true);
+      },
       decoration: const BoxDecoration(
         color: SidebarColors.background,
         border: Border(
@@ -59,9 +81,9 @@ class _AppSidebarState extends State<AppSidebar> {
           child: Column(
             children: [
               _Header(
-                collapsed: collapsed,
+                collapsed: contentCollapsed,
                 showToggle: !widget.forceExpanded,
-                onToggle: () => setState(() => _collapsed = !_collapsed),
+                onToggle: () => _setCollapsed(!_collapsed),
               ),
               const SizedBox(height: 24),
               Expanded(
@@ -75,19 +97,19 @@ class _AppSidebarState extends State<AppSidebar> {
                       icon: item.icon,
                       label: item.label,
                       selected: index == widget.selectedIndex,
-                      collapsed: collapsed,
+                      collapsed: contentCollapsed,
                       onTap: () => widget.onSelect(index),
                     );
                   },
                 ),
               ),
-              if (!collapsed) ...[
+              if (!contentCollapsed) ...[
                 const SidebarBoostCard(),
                 const SizedBox(height: 12),
               ],
               const Divider(color: SidebarColors.glassBorderDim, height: 1),
               const SizedBox(height: 8),
-              SidebarProfileFooter(collapsed: collapsed),
+              SidebarProfileFooter(collapsed: contentCollapsed),
             ],
           ),
         ),
@@ -128,6 +150,9 @@ class _Header extends StatelessWidget {
         const Expanded(
           child: Text(
             'Areté',
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: SidebarColors.textPrimary,
               fontSize: 18,
