@@ -62,4 +62,42 @@ class CatalogValidators {
     if (parsed == null || parsed < 0) return 'Ingresa un peso válido.';
     return null;
   }
+
+  static String? foodName(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return 'Ingresa el nombre del alimento.';
+    return null;
+  }
+
+  static String? dishName(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return 'Ingresa el nombre del platillo.';
+    return null;
+  }
+
+  static String? dietPlanName(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return 'Ingresa el nombre del plan.';
+    return null;
+  }
+
+  /// Un número (puede tener decimales) mayor o igual a cero — por
+  /// ejemplo, calorías o gramos de un macronutriente por 100 g.
+  static String? nonNegativeNumber(String? value, {required String label}) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return 'Ingresa $label.';
+    final parsed = double.tryParse(trimmed.replaceAll(',', '.'));
+    if (parsed == null || parsed < 0) return 'Ingresa un número válido.';
+    return null;
+  }
+
+  /// Un número (puede tener decimales) mayor a cero — por ejemplo, los
+  /// gramos de un ingrediente.
+  static String? positiveNumber(String? value, {required String label}) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return 'Ingresa $label.';
+    final parsed = double.tryParse(trimmed.replaceAll(',', '.'));
+    if (parsed == null || parsed <= 0) return 'Ingresa un número válido.';
+    return null;
+  }
 }

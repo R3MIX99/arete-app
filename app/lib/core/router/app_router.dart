@@ -13,7 +13,10 @@ import '../../features/shared/providers/current_user_profile_provider.dart';
 import '../../features/superadmin/presentation/screens/superadmin_home_screen.dart';
 import '../../features/trainer/presentation/screens/client_detail_screen.dart';
 import '../../features/trainer/presentation/screens/client_form_screen.dart';
+import '../../features/trainer/presentation/screens/diet_plan_form_screen.dart';
+import '../../features/trainer/presentation/screens/dish_form_screen.dart';
 import '../../features/trainer/presentation/screens/exercise_form_screen.dart';
+import '../../features/trainer/presentation/screens/food_form_screen.dart';
 import '../../features/trainer/presentation/screens/program_form_screen.dart';
 import '../../features/trainer/presentation/screens/routine_form_screen.dart';
 import '../../features/trainer/presentation/screens/trainer_calendar_screen.dart';
@@ -176,6 +179,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _fadePage(
           state,
           ProgramFormScreen(programId: state.pathParameters['programId']),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.trainerFoodNew,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const FoodFormScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.trainerDishNew,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const DishFormScreen()),
+      ),
+      GoRoute(
+        path: '/trainer/nutrition-plans/platillos/:dishId',
+        pageBuilder: (context, state) => _fadePage(
+          state,
+          DishFormScreen(dishId: state.pathParameters['dishId']),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.trainerDietPlanNew,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const DietPlanFormScreen()),
+      ),
+      GoRoute(
+        path: '/trainer/nutrition-plans/:dietPlanId',
+        pageBuilder: (context, state) => _fadePage(
+          state,
+          DietPlanFormScreen(dietPlanId: state.pathParameters['dietPlanId']),
         ),
       ),
       GoRoute(

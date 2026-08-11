@@ -10,9 +10,13 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icon.dart';
 import '../../../shared/models/client_goal.dart';
 import '../../../shared/models/profile.dart';
+import '../../../shared/providers/current_user_profile_provider.dart';
 import '../../../shared/widgets/app_card.dart';
 import '../../data/assignments_providers.dart';
 import '../../data/clients_providers.dart';
+import '../../data/diet_plan_assignments_providers.dart';
+import '../widgets/diet_plan_picker_sheet.dart';
+import '../widgets/diet_plan_scale_dialog.dart';
 
 /// Ficha completa de un cliente.
 class ClientDetailScreen extends ConsumerWidget {
@@ -207,15 +211,15 @@ class _ClientDetailBodyState extends ConsumerState<_ClientDetailBody> {
                 child: _AssignedPlan(clientId: client.id),
               ),
               const SizedBox(height: AppSpacing.md),
-              // Estas dos secciones se llenan cuando existan los módulos
-              // de nutrición y progreso. Se muestran vacías desde ahora
-              // para que la ficha ya tenga su forma final y no sorprenda
-              // después con un cambio de estructura.
-              const _Section(
+              _Section(
                 title: 'Dieta asignada',
-                child: _Pending('Todavía no le asignaste un plan nutricional.'),
+                child: _AssignedDietPlan(clientId: client.id),
               ),
               const SizedBox(height: AppSpacing.md),
+              // Esta sección se llena cuando exista el módulo de
+              // progreso. Se muestra vacía desde ahora para que la ficha
+              // ya tenga su forma final y no sorprenda después con un
+              // cambio de estructura.
               const _Section(
                 title: 'Progreso reciente',
                 child: _Pending('Sin registros de progreso todavía.'),
@@ -440,6 +444,136 @@ class _AssignedPlan extends ConsumerWidget {
                 Text(
                   '${assignment.isProgram ? "Programa" : "Rutina suelta"} · '
                   'desde el ${DateFormat('d MMM y', 'es_419').format(assignment.startDate)}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          const AppIcon(AppIconPaths.chevronRight, size: 18),
+        ],
+      ),
+    );
+  }
+}
+
+/// Plan de alimentación que este cliente tiene asignado ahora mismo (el
+/// más reciente por fecha de inicio), con un acceso directo para
+/// asignarle uno sin pasar por el listado de "Planes Nutricionales": útil
+/// para casos puntuales que el entrenador arma pensando en un solo
+/// cliente.
+class _AssignedDietPlan extends ConsumerWidget {
+  const _AssignedDietPlan({required this.clientId});
+
+  final String clientId;
+
+  Future<void> _assign(BuildContext context, WidgetRef ref) async {
+    final plan = await showDietPlanPicker(context);
+    if (plan == null || !context.mounted) return;
+
+    final startDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+    if (startDate == null || !context.mounted) return;
+
+    var scaleFactor = 1.0;
+    double? targetCalories;
+    if (plan.dailyCalorieTarget != null) {
+      final scaleResult = await showDietPlanScaleDialog(
+        context,
+        planDailyCalorieTarget: plan.dailyCalorieTarget!,
+      );
+      if (scaleResult == null || !context.mounted) return;
+      scaleFactor = scaleResult.scaleFactor;
+      targetCalories = scaleResult.targetDailyCalories;
+    }
+
+    final trainerId = ref.read(currentUserProfileProvider).valueOrNull?.id;
+    if (trainerId == null) return;
+
+    try {
+      await ref.read(dietPlanAssignmentsRepositoryProvider).assignPlanToClients(
+            trainerId: trainerId,
+            clientIds: [clientId],
+            dietPlanId: plan.id,
+            startDate: startDate,
+            targetDailyCalories: targetCalories,
+            scaleFactor: scaleFactor,
+          );
+      ref.invalidate(latestDietPlanAssignmentForClientProvider(clientId));
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"${plan.name}" asignado.')),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text((error as dynamic).message as String)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final assignmentAsync =
+        ref.watch(latestDietPlanAssignmentForClientProvider(clientId));
+
+    if (assignmentAsync.isLoading) {
+      return const SizedBox(
+        height: 20,
+        width: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    if (assignmentAsync.hasError) {
+      return const _Pending('No se pudo cargar el plan asignado.');
+    }
+
+    final summary = assignmentAsync.value;
+    if (summary == null) {
+      return Row(
+        children: [
+          const Expanded(
+            child: _Pending('Todavía no le asignaste un plan nutricional.'),
+          ),
+          TextButton.icon(
+            onPressed: () => _assign(context, ref),
+            icon: const AppIcon(AppIconPaths.personAdd, size: 16),
+            label: const Text('Asignar'),
+          ),
+        ],
+      );
+    }
+
+    final assignment = summary.assignment;
+    return InkWell(
+      onTap: () =>
+          context.push(AppRoutes.trainerDietPlanDetail(assignment.dietPlanId)),
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        children: [
+          AppIcon(
+            AppIconPaths.nutrition,
+            size: 20,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  summary.planName,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Desde el '
+                  '${DateFormat('d MMM y', 'es_419').format(assignment.startDate)}',
                   style: theme.textTheme.bodyMedium,
                 ),
               ],

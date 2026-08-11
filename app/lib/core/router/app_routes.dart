@@ -30,6 +30,14 @@ class AppRoutes {
   // Igual que con las rutinas: no hay vista de solo lectura separada.
   static String trainerProgramDetail(String id) => '/trainer/programs/$id';
   static const String trainerNutritionPlans = '/trainer/nutrition-plans';
+  static const String trainerFoodNew = '/trainer/nutrition-plans/alimentos/nuevo';
+  static const String trainerDishNew = '/trainer/nutrition-plans/platillos/nuevo';
+  static String trainerDishDetail(String id) =>
+      '/trainer/nutrition-plans/platillos/$id';
+  static const String trainerDietPlanNew = '/trainer/nutrition-plans/nuevo';
+  // Igual que rutinas y programas: no hay vista de solo lectura separada.
+  static String trainerDietPlanDetail(String id) =>
+      '/trainer/nutrition-plans/$id';
   static const String trainerCalendar = '/trainer/calendar';
   static const String trainerProgress = '/trainer/progress';
   static const String trainerSettings = '/trainer/settings';
