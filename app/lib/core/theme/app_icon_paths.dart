@@ -157,4 +157,20 @@ class AppIconPaths {
   /// Material Symbols: add
   static const String add =
       'M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z';
+
+  /// Material Symbols: left_panel_close
+  static const String leftPanelClose =
+      'M660-320v-320L500-480l160 160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm120-80v-560H200v560h120Zm80 0h360v-560H400v560Zm-80 0H200h120Z';
+
+  /// Material Symbols: left_panel_open
+  static const String leftPanelOpen =
+      'M500-640v320l160-160-160-160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm120-80v-560H200v560h120Zm80 0h360v-560H400v560Zm-80 0H200h120Z';
+
+  /// Material Symbols: auto_awesome
+  static const String autoAwesome =
+      'm760-600-50-110-110-50 110-50 50-110 50 110 110 50-110 50-50 110Zm0 560-50-110-110-50 110-50 50-110 50 110 110 50-110 50-50 110ZM360-160 260-380 40-480l220-100 100-220 100 220 220 100-220 100-100 220Zm0-194 40-86 86-40-86-40-40-86-40 86-86 40 86 40 40 86Zm0-126Z';
+
+  /// Material Symbols: expand_more
+  static const String expandMore =
+      'M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z';
 }

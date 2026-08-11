@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/widgets/app_icon.dart';
-import '../../../auth/presentation/widgets/sign_out_button.dart';
 import '../navigation/trainer_nav_item.dart';
+import '../widgets/sidebar/app_sidebar.dart';
+import '../widgets/sidebar/sidebar_colors.dart';
 
 /// Estructura de navegación del panel de entrenador, adaptable al tamaño
 /// de pantalla:
 ///
-/// - **Angosto** (teléfono, &lt;720px): `NavigationDrawer` desplegable
-///   desde un botón de menú en la barra superior. Con 9 módulos, un menú
-///   inferior no alcanza (máximo recomendado: 5 destinos).
-/// - **Ancho** (tablet/escritorio, ≥720px): `NavigationRail` fijo a la
-///   izquierda; se expande con etiquetas visibles a partir de 1000px.
+/// - **Angosto** (teléfono, &lt;720px): la misma [AppSidebar] dentro de un
+///   `Drawer` desplegable desde un botón de menú en la barra superior. Con
+///   9 módulos, un menú inferior no alcanza (máximo recomendado: 5
+///   destinos).
+/// - **Ancho** (tablet/escritorio, ≥720px): [AppSidebar] fija a la
+///   izquierda, colapsable a solo íconos con el botón de su encabezado.
 ///
 /// [navigationShell] viene de `StatefulShellRoute.indexedStack` (ver
 /// core/router/app_router.dart): cada módulo mantiene su propia pila de
@@ -22,7 +23,7 @@ class TrainerShellScreen extends StatelessWidget {
 
   final StatefulNavigationShell navigationShell;
 
-  void _onSelect(int index) {
+  void _onSelect(BuildContext context, int index) {
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,
@@ -41,57 +42,41 @@ class TrainerShellScreen extends StatelessWidget {
 
         if (!isWide) {
           return Scaffold(
-            appBar: AppBar(
-              title: Text(currentTitle),
-              actions: const [SignOutButton()],
-            ),
-            drawer: NavigationDrawer(
-              selectedIndex: selectedIndex,
-              onDestinationSelected: (index) {
-                Navigator.of(context).pop();
-                _onSelect(index);
-              },
-              children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(28, 16, 16, 10),
-                  child: Text('Areté'),
-                ),
-                for (final item in items)
-                  NavigationDrawerDestination(
-                    icon: AppIcon(item.icon),
-                    label: Text(item.label),
-                  ),
-              ],
+            appBar: AppBar(title: Text(currentTitle)),
+            drawer: Drawer(
+              width: 264,
+              backgroundColor: SidebarColors.background,
+              child: AppSidebar(
+                items: items,
+                selectedIndex: selectedIndex,
+                forceExpanded: true,
+                onSelect: (index) {
+                  Navigator.of(context).pop();
+                  _onSelect(context, index);
+                },
+              ),
             ),
             body: navigationShell,
           );
         }
 
-        final extended = constraints.maxWidth >= 1000;
         return Scaffold(
-          appBar: AppBar(
-            title: Text(currentTitle),
-            actions: const [SignOutButton()],
-          ),
           body: Row(
             children: [
-              NavigationRail(
-                extended: extended,
+              AppSidebar(
+                items: items,
                 selectedIndex: selectedIndex,
-                onDestinationSelected: _onSelect,
-                labelType: extended
-                    ? NavigationRailLabelType.none
-                    : NavigationRailLabelType.all,
-                destinations: [
-                  for (final item in items)
-                    NavigationRailDestination(
-                      icon: AppIcon(item.icon),
-                      label: Text(item.label),
-                    ),
-                ],
+                onSelect: (index) => _onSelect(context, index),
               ),
-              const VerticalDivider(width: 1),
-              Expanded(child: navigationShell),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppBar(title: Text(currentTitle)),
+                    Expanded(child: navigationShell),
+                  ],
+                ),
+              ),
             ],
           ),
         );
