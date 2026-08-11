@@ -90,7 +90,7 @@ class _AppSidebarState extends State<AppSidebar> {
                 child: ListView.separated(
                   padding: EdgeInsets.zero,
                   itemCount: widget.items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 3),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final item = widget.items[index];
                     return SidebarNavTile(

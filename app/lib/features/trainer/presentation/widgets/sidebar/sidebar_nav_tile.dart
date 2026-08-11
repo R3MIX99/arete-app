@@ -99,6 +99,7 @@ class _SidebarNavTileState extends State<SidebarNavTile> {
           curve: AppMotion.hover,
           height: 40,
           padding: const EdgeInsets.symmetric(horizontal: 12),
+          alignment: Alignment.centerLeft,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: widget.selected
@@ -107,6 +108,7 @@ class _SidebarNavTileState extends State<SidebarNavTile> {
           ),
           child: Stack(
             clipBehavior: Clip.none,
+            alignment: Alignment.centerLeft,
             children: [
               Row(
                 children: [
