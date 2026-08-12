@@ -133,11 +133,11 @@ export function SidebarNav({
                 {!collapsed && <span className="truncate">{item.label}</span>}
                 {active && !collapsed && (
                   <span
-                    className="absolute right-0 top-1.5 bottom-1.5 w-[3px] rounded-full"
+                    className="absolute right-2 top-2 bottom-2 w-[3px] rounded-full"
                     style={{
                       background:
                         "linear-gradient(to bottom, var(--sb-accent-start), var(--sb-accent-end))",
-                      boxShadow: "0 0 8px 0 var(--sb-accent-start)",
+                      boxShadow: "0 0 6px 0 var(--sb-accent-start)",
                     }}
                   />
                 )}
