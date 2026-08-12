@@ -26,10 +26,16 @@ export function SidebarProfileFooter({
   userName,
   userEmail,
   collapsed = false,
+  // En el drawer de teléfono el Sheet le da foco a lo primero enfocable
+  // apenas se abre, y eso disparaba el tooltip de "Cerrar sesión" sin que
+  // el usuario tocara nada. En touch no hay hover que lo justifique, así
+  // que ahí no se envuelve en Tooltip.
+  showTooltips = true,
 }: {
   userName: string;
   userEmail: string;
   collapsed?: boolean;
+  showTooltips?: boolean;
 }) {
   const router = useRouter();
 
@@ -99,10 +105,14 @@ export function SidebarProfileFooter({
           {userEmail}
         </p>
       </div>
-      <Tooltip>
-        <TooltipTrigger asChild>{logoutButton}</TooltipTrigger>
-        <TooltipContent side="right">Cerrar sesión</TooltipContent>
-      </Tooltip>
+      {showTooltips ? (
+        <Tooltip>
+          <TooltipTrigger asChild>{logoutButton}</TooltipTrigger>
+          <TooltipContent side="right">Cerrar sesión</TooltipContent>
+        </Tooltip>
+      ) : (
+        logoutButton
+      )}
     </div>
   );
 }

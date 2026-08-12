@@ -81,7 +81,11 @@ export function MobileNav({
         </nav>
 
         <div className="border-t" style={{ borderColor: "var(--sb-border-dim)" }}>
-          <SidebarProfileFooter userName={userName} userEmail={userEmail} />
+          <SidebarProfileFooter
+            userName={userName}
+            userEmail={userEmail}
+            showTooltips={false}
+          />
         </div>
       </SheetContent>
     </Sheet>

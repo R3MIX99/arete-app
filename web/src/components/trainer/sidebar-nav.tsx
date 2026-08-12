@@ -28,12 +28,13 @@ export function SidebarNav({
 
   return (
     <aside
-      className="sidebar-dark hidden md:flex h-screen flex-col shrink-0 border-r transition-[width] duration-200"
+      className="sidebar-dark hidden md:flex h-screen flex-col shrink-0 border-r"
       style={{
         borderColor: "var(--sb-border-dim)",
         width: collapsed ? 76 : 256,
         minWidth: collapsed ? 76 : 256,
         maxWidth: collapsed ? 76 : 256,
+        transition: "width 200ms ease, min-width 200ms ease, max-width 200ms ease",
       }}
     >
       {/* Encabezado: logo + nombre + colapsar, todo en la misma fila. */}
