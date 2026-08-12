@@ -23,7 +23,6 @@ export interface RoutineSetInput {
   set_number: number;
   target_reps_min: number;
   target_reps_max: number;
-  suggested_weight: number | null;
   rest_seconds: number;
 }
 

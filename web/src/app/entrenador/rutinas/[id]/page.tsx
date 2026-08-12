@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { RoutineForm } from "@/components/trainer/routine-form";
@@ -19,7 +19,6 @@ interface RoutineExerciseRow {
     set_number: number;
     target_reps_min: number;
     target_reps_max: number;
-    suggested_weight: number | null;
     rest_seconds: number;
   }[];
 }
@@ -31,6 +30,10 @@ export default async function RoutineDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const [{ data: routine }, { data: routineExercises }, { data: exercises }] =
     await Promise.all([
@@ -42,7 +45,7 @@ export default async function RoutineDetailPage({
       supabase
         .from("routine_exercises")
         .select(
-          "id, exercise_id, order_index, notes, exercises(name), routine_exercise_sets(id, set_number, target_reps_min, target_reps_max, suggested_weight, rest_seconds)",
+          "id, exercise_id, order_index, notes, exercises(name), routine_exercise_sets(id, set_number, target_reps_min, target_reps_max, rest_seconds)",
         )
         .eq("routine_id", id)
         .order("order_index")
@@ -67,7 +70,6 @@ export default async function RoutineDetailPage({
         set_number: s.set_number,
         target_reps_min: s.target_reps_min,
         target_reps_max: s.target_reps_max,
-        suggested_weight: s.suggested_weight,
         rest_seconds: s.rest_seconds,
       })),
     };
@@ -79,6 +81,7 @@ export default async function RoutineDetailPage({
       routine={routine as RoutineDetail}
       initialExercises={initialExercises}
       exerciseCatalog={(exercises ?? []) as ExerciseOption[]}
+      trainerId={user.id}
     />
   );
 }

@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Trash, Dumbbell } from "lucide-react";
+import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { youtubeVideoId } from "@/lib/youtube";
@@ -48,9 +49,11 @@ const EQUIPMENT_OPTIONS = [
 export function ExerciseForm({
   mode,
   exercise,
+  trainerId,
 }: {
   mode: "create" | "edit";
   exercise?: ExerciseDetail;
+  trainerId: string;
 }) {
   const router = useRouter();
   const [name, setName] = React.useState(exercise?.name ?? "");
@@ -71,17 +74,9 @@ export function ExerciseForm({
     setError(null);
 
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setError("Tu sesión expiró. Vuelve a iniciar sesión.");
-      setSaving(false);
-      return;
-    }
 
     const payload = {
-      trainer_id: user.id,
+      trainer_id: trainerId,
       name,
       muscle_group: muscleGroup,
       equipment,
@@ -93,9 +88,11 @@ export function ExerciseForm({
       const { error: insertError } = await supabase.from("exercises").insert(payload);
       if (insertError) {
         setError("No se pudo crear el ejercicio. Intenta de nuevo.");
+        toast.error("No se pudo crear el ejercicio");
         setSaving(false);
         return;
       }
+      toast.success("Ejercicio creado");
     } else {
       const { error: updateError } = await supabase
         .from("exercises")
@@ -103,9 +100,11 @@ export function ExerciseForm({
         .eq("id", exercise!.id);
       if (updateError) {
         setError("No se pudieron guardar los cambios. Intenta de nuevo.");
+        toast.error("No se pudieron guardar los cambios");
         setSaving(false);
         return;
       }
+      toast.success("Cambios guardados");
     }
 
     router.push("/entrenador/ejercicios");
@@ -124,10 +123,14 @@ export function ExerciseForm({
       setError(
         "No se pudo eliminar — puede estar usado en alguna rutina existente.",
       );
+      toast.error("No se pudo eliminar", {
+        description: "Puede estar usado en alguna rutina existente.",
+      });
       setDeleting(false);
       setConfirmOpen(false);
       return;
     }
+    toast.success("Ejercicio eliminado");
     router.push("/entrenador/ejercicios");
     router.refresh();
   }

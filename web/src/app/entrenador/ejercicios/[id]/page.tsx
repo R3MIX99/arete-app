@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { ExerciseForm } from "@/components/trainer/exercise-form";
@@ -11,6 +11,10 @@ export default async function ExerciseDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: exercise } = await supabase
     .from("exercises")
@@ -20,5 +24,7 @@ export default async function ExerciseDetailPage({
 
   if (!exercise) notFound();
 
-  return <ExerciseForm mode="edit" exercise={exercise as ExerciseDetail} />;
+  return (
+    <ExerciseForm mode="edit" exercise={exercise as ExerciseDetail} trainerId={user.id} />
+  );
 }

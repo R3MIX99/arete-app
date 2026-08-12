@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, UserCheck, UserX } from "lucide-react";
+import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { initialsOf } from "@/lib/format";
@@ -59,8 +60,10 @@ export function ClientDetail({ client }: { client: ClientProfile }) {
 
     if (updateError) {
       setError("No se pudieron guardar los cambios. Intenta de nuevo.");
+      toast.error("No se pudieron guardar los cambios");
     } else {
       setSavedAt(Date.now());
+      toast.success("Cambios guardados");
       router.refresh();
     }
     setSaving(false);
@@ -75,7 +78,10 @@ export function ClientDetail({ client }: { client: ClientProfile }) {
       .eq("id", client.id);
     if (!updateError) {
       setStatus(next);
+      toast.success(next === "active" ? "Cliente reactivado" : "Cliente desactivado");
       router.refresh();
+    } else {
+      toast.error("No se pudo actualizar el estado");
     }
   }
 

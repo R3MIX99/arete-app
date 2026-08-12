@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Search, UserPlus, Copy, X, UserX, FilterX } from "lucide-react";
+import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { initialsOf, goalLabel } from "@/lib/format";
@@ -57,12 +58,18 @@ export function ClientsBrowser({
       .from("client_invitations")
       .update({ status: "revoked" })
       .eq("id", id);
-    if (!error) setPending((prev) => prev.filter((inv) => inv.id !== id));
+    if (!error) {
+      setPending((prev) => prev.filter((inv) => inv.id !== id));
+      toast.success("Invitación revocada");
+    } else {
+      toast.error("No se pudo revocar la invitación");
+    }
   }
 
   function copyInviteLink(token: string) {
     const url = `${window.location.origin}/registro/invitacion/${token}`;
     navigator.clipboard.writeText(url);
+    toast.success("Enlace copiado");
   }
 
   function clearFilters() {

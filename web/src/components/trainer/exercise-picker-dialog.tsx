@@ -5,6 +5,7 @@ import { Search, Dumbbell } from "lucide-react";
 
 import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
 import type { ExerciseOption } from "@/lib/types/routine";
+import type { MuscleGroup } from "@/lib/types/exercise";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,24 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const MUSCLE_GROUPS: MuscleGroup[] = [
+  "chest",
+  "back",
+  "shoulders",
+  "arms",
+  "legs",
+  "core",
+  "cardio",
+  "full_body",
+];
 
 export function ExercisePickerDialog({
   open,
@@ -26,10 +45,13 @@ export function ExercisePickerDialog({
   onPick: (exercise: ExerciseOption) => void;
 }) {
   const [query, setQuery] = React.useState("");
+  const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup | null>(null);
 
-  const filtered = exercises.filter((e) =>
-    e.name.toLowerCase().includes(query.trim().toLowerCase()),
-  );
+  const filtered = exercises.filter((e) => {
+    if (muscleGroup && e.muscle_group !== muscleGroup) return false;
+    if (!e.name.toLowerCase().includes(query.trim().toLowerCase())) return false;
+    return true;
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -47,12 +69,28 @@ export function ExercisePickerDialog({
             className="pl-9"
           />
         </div>
+        <Select
+          value={muscleGroup ?? "all"}
+          onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Grupo muscular" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los grupos</SelectItem>
+            {MUSCLE_GROUPS.map((group) => (
+              <SelectItem key={group} value={group}>
+                {muscleGroupLabel(group)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <div className="flex max-h-80 flex-col gap-1.5 overflow-y-auto">
           {filtered.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
               {exercises.length === 0
                 ? "Todavía no tienes ejercicios en tu biblioteca."
-                : "Ningún ejercicio coincide con la búsqueda."}
+                : "Ningún ejercicio coincide con la búsqueda o el filtro."}
             </p>
           ) : (
             filtered.map((exercise) => (

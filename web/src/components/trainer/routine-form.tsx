@@ -13,6 +13,7 @@ import {
   Dumbbell,
   Trash,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import type {
@@ -54,7 +55,6 @@ function defaultSet(setNumber: number, previous?: RoutineExerciseInput["sets"][n
     set_number: setNumber,
     target_reps_min: previous?.target_reps_min ?? 8,
     target_reps_max: previous?.target_reps_max ?? 12,
-    suggested_weight: previous?.suggested_weight ?? null,
     rest_seconds: previous?.rest_seconds ?? 60,
   };
 }
@@ -64,11 +64,13 @@ export function RoutineForm({
   routine,
   initialExercises,
   exerciseCatalog,
+  trainerId,
 }: {
   mode: "create" | "edit";
   routine?: RoutineDetail;
   initialExercises?: RoutineExerciseInput[];
   exerciseCatalog: ExerciseOption[];
+  trainerId: string;
 }) {
   const router = useRouter();
   const [name, setName] = React.useState(routine?.name ?? "");
@@ -171,17 +173,9 @@ export function RoutineForm({
     setError(null);
 
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setError("Tu sesión expiró. Vuelve a iniciar sesión.");
-      setSaving(false);
-      return;
-    }
 
     const routinePayload = {
-      trainer_id: user.id,
+      trainer_id: trainerId,
       name,
       description: description || null,
       level,
@@ -198,6 +192,7 @@ export function RoutineForm({
         .single();
       if (insertError || !data) {
         setError("No se pudo crear la rutina. Intenta de nuevo.");
+        toast.error("No se pudo crear la rutina");
         setSaving(false);
         return;
       }
@@ -209,6 +204,7 @@ export function RoutineForm({
         .eq("id", routineId!);
       if (updateError) {
         setError("No se pudieron guardar los cambios. Intenta de nuevo.");
+        toast.error("No se pudieron guardar los cambios");
         setSaving(false);
         return;
       }
@@ -232,6 +228,7 @@ export function RoutineForm({
 
       if (exerciseError || !exerciseRow) {
         setError("No se pudo guardar uno de los ejercicios. Intenta de nuevo.");
+        toast.error("No se pudo guardar uno de los ejercicios");
         setSaving(false);
         return;
       }
@@ -241,7 +238,6 @@ export function RoutineForm({
         set_number: s.set_number,
         target_reps_min: s.target_reps_min,
         target_reps_max: s.target_reps_max,
-        suggested_weight: s.suggested_weight,
         rest_seconds: s.rest_seconds,
       }));
       const { error: setsError } = await supabase
@@ -249,11 +245,13 @@ export function RoutineForm({
         .insert(setsPayload);
       if (setsError) {
         setError("No se pudieron guardar las series. Intenta de nuevo.");
+        toast.error("No se pudieron guardar las series");
         setSaving(false);
         return;
       }
     }
 
+    toast.success(mode === "create" ? "Rutina creada" : "Cambios guardados");
     router.push(`/entrenador/rutinas/${routineId}`);
     router.refresh();
   }
@@ -268,10 +266,12 @@ export function RoutineForm({
       .eq("id", routine.id);
     if (deleteError) {
       setError("No se pudo eliminar la rutina.");
+      toast.error("No se pudo eliminar la rutina");
       setDeleting(false);
       setConfirmOpen(false);
       return;
     }
+    toast.success("Rutina eliminada");
     router.push("/entrenador/rutinas");
     router.refresh();
   }
@@ -433,18 +433,17 @@ export function RoutineForm({
                   <Separator />
 
                   <div className="flex flex-col gap-2">
-                    <div className="grid grid-cols-[2rem_1fr_1fr_1fr_1fr_2rem] gap-2 text-[11px] font-medium text-muted-foreground uppercase">
+                    <div className="grid grid-cols-[2rem_1fr_1fr_1fr_2rem] gap-2 text-[11px] font-medium text-muted-foreground uppercase">
                       <span>Serie</span>
                       <span>Reps min</span>
                       <span>Reps max</span>
-                      <span>Peso (kg)</span>
                       <span>Descanso (s)</span>
                       <span />
                     </div>
                     {exercise.sets.map((set, setIndex) => (
                       <div
                         key={setIndex}
-                        className="grid grid-cols-[2rem_1fr_1fr_1fr_1fr_2rem] items-center gap-2"
+                        className="grid grid-cols-[2rem_1fr_1fr_1fr_2rem] items-center gap-2"
                       >
                         <span className="text-sm font-medium tabular-nums">
                           {set.set_number}
@@ -468,19 +467,6 @@ export function RoutineForm({
                               target_reps_max: Number(e.target.value),
                             })
                           }
-                        />
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.5"
-                          value={set.suggested_weight ?? ""}
-                          onChange={(e) =>
-                            updateSet(exerciseIndex, setIndex, {
-                              suggested_weight:
-                                e.target.value === "" ? null : Number(e.target.value),
-                            })
-                          }
-                          placeholder="—"
                         />
                         <Input
                           type="number"
