@@ -1,0 +1,226 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------
+ * Tokens de Areté — misma paleta que ya se usó en la app de Flutter
+ * (ver app/lib/core/theme/app_colors.dart), portada a variables CSS para
+ * que shadcn/ui las use directo. Minimalismo tipo shadcn/ui: escala de
+ * grises fría, un único acento índigo de uso deliberado.
+ * ------------------------------------------------------------------- */
+:root {
+  --radius: 0.75rem;
+
+  /* Escala neutra (modo claro) */
+  --background: oklch(98.5% 0.002 264);       /* neutral50 #FAFAFA */
+  --foreground: oklch(21% 0.006 264);          /* neutral900 #18181B */
+  --card: oklch(100% 0 0);                     /* neutral0 #FFFFFF */
+  --card-foreground: oklch(21% 0.006 264);
+  --popover: oklch(100% 0 0);
+  --popover-foreground: oklch(21% 0.006 264);
+
+  --primary: oklch(51% 0.22 273);              /* accent #4F46E5 */
+  --primary-foreground: oklch(100% 0 0);
+  --secondary: oklch(95.5% 0.02 273);          /* accentMuted #EEF0FF */
+  --secondary-foreground: oklch(21% 0.006 264);
+
+  --muted: oklch(96% 0.003 264);               /* neutral100 */
+  --muted-foreground: oklch(55% 0.012 264);    /* neutral500 */
+  --accent: oklch(95.5% 0.02 273);
+  --accent-foreground: oklch(21% 0.006 264);
+
+  --destructive: oklch(57% 0.22 27);           /* danger #DC2626 */
+  --destructive-foreground: oklch(100% 0 0);
+  --success: oklch(56% 0.16 152);              /* success #16A34A */
+  --warning: oklch(68% 0.16 60);               /* warning #D97706 */
+
+  --border: oklch(91% 0.004 264);              /* neutral200 #E4E4E7 */
+  --input: oklch(91% 0.004 264);
+  --ring: oklch(51% 0.22 273 / 0.5);
+
+  --card-glass: var(--card);
+  --card-glass-border: var(--border);
+  --card-shadow: 0 1px 2px rgba(24,24,27,0.04);
+
+  --sidebar: oklch(100% 0 0);
+  --sidebar-foreground: oklch(21% 0.006 264);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: oklch(100% 0 0);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+/* Modo oscuro por preferencia del sistema (sin toggle explícito). */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: oklch(19% 0.004 264);          /* #141417 aclarado, no negro puro */
+    --foreground: oklch(97% 0.001 264);           /* neutral50 */
+    --card: oklch(23% 0.005 264 / 0.8);           /* darkGlassFill translúcido */
+    --card-foreground: oklch(97% 0.001 264);
+    --popover: oklch(15% 0.004 264);
+    --popover-foreground: oklch(97% 0.001 264);
+
+    --primary: oklch(64% 0.19 273);               /* accent más claro en oscuro */
+    --primary-foreground: oklch(100% 0 0);
+    --secondary: oklch(27% 0.01 264);
+    --secondary-foreground: oklch(97% 0.001 264);
+
+    --muted: oklch(24% 0.005 264);
+    --muted-foreground: oklch(70% 0.008 264);     /* neutral400 */
+    --accent: oklch(27% 0.01 264);
+    --accent-foreground: oklch(97% 0.001 264);
+
+    --destructive: oklch(63% 0.2 27);
+    --destructive-foreground: oklch(100% 0 0);
+    --success: oklch(70% 0.16 152);
+    --warning: oklch(76% 0.15 65);
+
+    --border: oklch(35% 0.006 264);               /* neutral700 */
+    --input: oklch(35% 0.006 264);
+    --ring: oklch(64% 0.19 273 / 0.5);
+
+    --card-glass: oklch(23% 0.005 264 / 0.8);
+    --card-glass-border: oklch(100% 0 0 / 0.12);  /* borde vidrio visible */
+    --card-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 20px -8px rgba(0,0,0,0.5);
+
+    --sidebar: oklch(11% 0.004 264);
+    --sidebar-foreground: oklch(94% 0.002 264);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: oklch(100% 0 0);
+    --sidebar-accent: oklch(18% 0.005 264);
+    --sidebar-accent-foreground: oklch(94% 0.002 264);
+    --sidebar-border: oklch(100% 0 0 / 0.08);
+    --sidebar-ring: var(--ring);
+  }
+}
+
+/* Selector explícito .dark (por si en algún momento se agrega un toggle). */
+.dark {
+  --background: oklch(19% 0.004 264);
+  --foreground: oklch(97% 0.001 264);
+  --card: oklch(23% 0.005 264 / 0.8);
+  --card-foreground: oklch(97% 0.001 264);
+  --popover: oklch(15% 0.004 264);
+  --popover-foreground: oklch(97% 0.001 264);
+
+  --primary: oklch(64% 0.19 273);
+  --primary-foreground: oklch(100% 0 0);
+  --secondary: oklch(27% 0.01 264);
+  --secondary-foreground: oklch(97% 0.001 264);
+
+  --muted: oklch(24% 0.005 264);
+  --muted-foreground: oklch(70% 0.008 264);
+  --accent: oklch(27% 0.01 264);
+  --accent-foreground: oklch(97% 0.001 264);
+
+  --destructive: oklch(63% 0.2 27);
+  --destructive-foreground: oklch(100% 0 0);
+  --success: oklch(70% 0.16 152);
+  --warning: oklch(76% 0.15 65);
+
+  --border: oklch(35% 0.006 264);
+  --input: oklch(35% 0.006 264);
+  --ring: oklch(64% 0.19 273 / 0.5);
+
+  --card-glass: oklch(23% 0.005 264 / 0.8);
+  --card-glass-border: oklch(100% 0 0 / 0.12);
+  --card-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 20px -8px rgba(0,0,0,0.5);
+
+  --sidebar: oklch(11% 0.004 264);
+  --sidebar-foreground: oklch(94% 0.002 264);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: oklch(100% 0 0);
+  --sidebar-accent: oklch(18% 0.005 264);
+  --sidebar-accent-foreground: oklch(94% 0.002 264);
+  --sidebar-border: oklch(100% 0 0 / 0.08);
+  --sidebar-ring: var(--ring);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-card-glass: var(--card-glass);
+  --color-card-glass-border: var(--card-glass-border);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Barra lateral: fija en oscuro sin importar el tema del contenido —
+ * mismo patrón que ya se usó en la app de Flutter (Linear/Vercel/Notion
+ * usan lo mismo). Vidrio con borde en degradé, brillante arriba.
+ * ------------------------------------------------------------------- */
+.sidebar-dark {
+  --sb-bg: #18181c;
+  --sb-surface: #1f1f24;
+  --sb-border-bright: rgba(255, 255, 255, 0.15);
+  --sb-border-dim: rgba(255, 255, 255, 0.05);
+  --sb-text: #f4f4f5;
+  --sb-text-secondary: #9a9aa5;
+  --sb-text-muted: #6b6b74;
+  --sb-hover: rgba(255, 255, 255, 0.06);
+  --sb-active: rgba(255, 255, 255, 0.08);
+  --sb-accent-start: oklch(51% 0.22 273);
+  --sb-accent-end: #7c3aed;
+
+  background: var(--sb-bg);
+  color: var(--sb-text);
+}
+
+@layer utilities {
+  /* Tarjeta "de vidrio": borde visible + sombra sutil, translúcida en
+   * oscuro (deja pasar el fondo sin blur — un blur por tarjeta en una
+   * grilla se ve parchado, ya lo probamos). */
+  .glass-card {
+    background-color: var(--card-glass);
+    border: 1px solid var(--card-glass-border);
+    box-shadow: var(--card-shadow);
+  }
+}

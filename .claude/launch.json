@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "arete-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "web"],
+      "port": 3000
+    },
+    {
+      "name": "arete-flutter",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["app/scripts/serve_web.py", "8766"],
+      "port": 8766
+    }
+  ]
+}
