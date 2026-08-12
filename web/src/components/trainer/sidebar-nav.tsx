@@ -118,7 +118,7 @@ export function SidebarNav({
                     : {
                         color: active ? "var(--sb-text)" : "var(--sb-text-secondary)",
                         background: active
-                          ? "linear-gradient(to left, rgba(124,58,237,0.55), transparent 42%), var(--sb-active)"
+                          ? "linear-gradient(to left, rgba(79,70,229,0.55), transparent 42%), var(--sb-active)"
                           : "transparent",
                       }
                 }
