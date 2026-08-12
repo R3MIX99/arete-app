@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icon_paths.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icon.dart';
@@ -167,13 +166,13 @@ class TrainerCalendarScreen extends ConsumerWidget {
 
     if (!isDesktop) {
       return Scaffold(
-        backgroundColor: AppColors.neutral900,
+        backgroundColor: Colors.transparent,
         body: calendarColumn,
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.neutral900,
+      backgroundColor: Colors.transparent,
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

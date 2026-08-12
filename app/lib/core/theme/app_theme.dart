@@ -83,13 +83,22 @@ class AppTheme {
       textTheme: textTheme,
       fontFamily: AppTypography.fontFamily,
       extensions: [AppRadiusExtension.standard],
+      // En oscuro las tarjetas llevan el look "de vidrio" pedido para todo
+      // el panel: relleno translúcido, borde gris claro visible y una
+      // sombra sutil (nada de blur por tarjeta — con muchas tarjetas juntas
+      // se veía parchado/trabado). En claro se deja la estética shadcn/ui
+      // original: relleno sólido, sin sombra, borde tenue.
       cardTheme: CardThemeData(
-        color: colorScheme.surface,
-        elevation: 0,
+        color: isDark ? AppColors.darkGlassFill : colorScheme.surface,
+        elevation: isDark ? 3 : 0,
+        shadowColor: isDark ? Colors.black.withValues(alpha: 0.45) : null,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          side: BorderSide(color: colorScheme.outline, width: 1),
+          side: BorderSide(
+            color: isDark ? AppColors.darkGlassBorder : colorScheme.outline,
+            width: 1,
+          ),
         ),
       ),
       appBarTheme: AppBarTheme(

@@ -54,8 +54,18 @@ class AppColors {
   static const Color lightTextSecondary = neutral500;
 
   static const Color darkSurface = neutral900;
-  static const Color darkBackground = neutral950;
+  // Antes era neutral950 (casi negro puro); se aclaró un poco para que se
+  // lea como un gris oscuro, no como negro — pedido explícito tras ver el
+  // panel de entrenador completo.
+  static const Color darkBackground = Color(0xFF141417);
   static const Color darkBorder = neutral700;
   static const Color darkTextPrimary = neutral50;
   static const Color darkTextSecondary = neutral400;
+
+  // Tarjetas "de vidrio" del modo oscuro: relleno gris oscuro translúcido
+  // (deja pasar un poco el fondo, sin depender de blur — un blur por
+  // tarjeta en una grilla se ve parchado) y un borde gris claro visible
+  // en vez de un borde casi invisible.
+  static const Color darkGlassFill = Color(0xCC202024);
+  static const Color darkGlassBorder = Color(0x33FFFFFF);
 }

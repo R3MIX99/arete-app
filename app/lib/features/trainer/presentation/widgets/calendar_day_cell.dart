@@ -1,16 +1,7 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-
-/// Tono de vidrio de las tarjetas del calendario: gris oscuro translúcido
-/// (no negro puro) con un borde blanco a baja opacidad, sobre un blur —
-/// mismo lenguaje visual que la barra lateral, pensado para el fondo
-/// oscuro de este panel.
-const _glassFill = Color(0xB31C1C21);
-const _glassBorder = Color(0x1FFFFFFF);
 
 /// Cómo se marca que un día tiene sesiones.
 enum CalendarDayIndicator {
@@ -145,60 +136,62 @@ class CalendarDayCell extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.all(3),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         constraints: const BoxConstraints(minHeight: 68),
-        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
-                : _glassBorder,
+                : AppColors.darkGlassBorder,
           ),
+          // Mismo relleno translúcido de las tarjetas del resto de la app
+          // (ver cardTheme oscuro): un tono sólido con alpha, sin blur —
+          // con muchas celdas juntas el blur por celda se veía parchado.
+          color: isSelected
+              ? theme.colorScheme.primary.withValues(alpha: 0.18)
+              : isToday
+                  ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                  : AppColors.darkGlassFill,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            color: isSelected
-                ? theme.colorScheme.primary.withValues(alpha: 0.16)
-                : isToday
-                    ? theme.colorScheme.primary.withValues(alpha: 0.10)
-                    : _glassFill,
-            child: Stack(
-              children: [
-                content,
-                if (hasSessions && indicator == CalendarDayIndicator.count)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      constraints: const BoxConstraints(minWidth: 18),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.primary.withValues(
-                                alpha: 0.85,
-                              ),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        '$sessionCount',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onPrimary,
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
-                        ),
-                      ),
+        child: Stack(
+          children: [
+            content,
+            if (hasSessions && indicator == CalendarDayIndicator.count)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 2,
+                  ),
+                  constraints: const BoxConstraints(minWidth: 18),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.primary.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$sessionCount',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
                     ),
                   ),
-              ],
-            ),
-          ),
+                ),
+              ),
+          ],
         ),
       ),
     );
