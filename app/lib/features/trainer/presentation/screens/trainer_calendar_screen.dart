@@ -23,8 +23,9 @@ const _desktopBreakpoint = 900.0;
 /// Calendario del entrenador: sesiones programadas de todos sus clientes
 /// (calculadas a partir de sus programas/rutinas asignados, ver
 /// `calendar_logic.dart`), en vista semanal o mensual, filtrable por
-/// cliente. Cada día muestra solo un número (cuántos clientes entrenan),
-/// nunca nombres ni horarios; el detalle aparece al elegir el día.
+/// cliente. Cada día muestra solo un indicador de cuántos clientes
+/// entrenan (nunca nombres ni horarios); el detalle aparece al elegir el
+/// día.
 class TrainerCalendarScreen extends ConsumerWidget {
   const TrainerCalendarScreen({super.key});
 
@@ -39,17 +40,24 @@ class TrainerCalendarScreen extends ConsumerWidget {
     ref.read(calendarSelectedDateProvider.notifier).state = null;
   }
 
-  void _selectDay(
+  /// Escritorio y la tira de semana en teléfono: el detalle se despliega
+  /// en el propio panel/tira (sin abrir nada encima), así que solo hace
+  /// falta guardar qué día está elegido — y volver a tocarlo lo cierra.
+  void _toggleSelectedDay(WidgetRef ref, DateTime date) {
+    final current = ref.read(calendarSelectedDateProvider);
+    ref.read(calendarSelectedDateProvider.notifier).state =
+        current == date ? null : date;
+  }
+
+  /// Mes en teléfono: la celda es chica y no hay panel fijo, así que el
+  /// detalle se abre como drawer encima del contenido.
+  void _openDayDrawer(
     BuildContext context,
-    WidgetRef ref, {
-    required bool isDesktop,
-    required DateTime date,
-    required List<CalendarSession> sessions,
-  }) {
-    if (isDesktop) {
-      ref.read(calendarSelectedDateProvider.notifier).state = date;
-      return;
-    }
+    WidgetRef ref,
+    DateTime date,
+    List<CalendarSession> sessions,
+  ) {
+    ref.read(calendarSelectedDateProvider.notifier).state = date;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -66,6 +74,8 @@ class TrainerCalendarScreen extends ConsumerWidget {
           ),
         ),
       ),
+    ).whenComplete(
+      () => ref.read(calendarSelectedDateProvider.notifier).state = null,
     );
   }
 
@@ -80,6 +90,7 @@ class TrainerCalendarScreen extends ConsumerWidget {
     final clientsAsync = ref.watch(clientsProvider);
     final clientFilter = ref.watch(calendarClientFilterProvider);
     final selectedDate = ref.watch(calendarSelectedDateProvider);
+    final sessionsByDate = sessionsAsync.valueOrNull ?? const {};
 
     final rangeLabel = mode == CalendarViewMode.week
         ? '${DateFormat('d MMM', 'es_419').format(rangeStart)} - '
@@ -90,112 +101,61 @@ class TrainerCalendarScreen extends ConsumerWidget {
       right: !isDesktop,
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.sm,
-            ),
-            child: Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                SegmentedButton<CalendarViewMode>(
-                  segments: const [
-                    ButtonSegment(
-                      value: CalendarViewMode.week,
-                      label: Text('Semana'),
-                    ),
-                    ButtonSegment(
-                      value: CalendarViewMode.month,
-                      label: Text('Mes'),
-                    ),
-                  ],
-                  selected: {mode},
-                  onSelectionChanged: (selection) {
-                    ref.read(calendarViewModeProvider.notifier).state =
-                        selection.first;
-                    ref.read(calendarSelectedDateProvider.notifier).state =
-                        null;
-                  },
-                ),
-                IconButton(
-                  tooltip: 'Anterior',
-                  onPressed: () => _shift(ref, -1),
-                  icon: Transform.rotate(
-                    angle: 3.14159,
-                    child: const AppIcon(AppIconPaths.chevronRight, size: 18),
-                  ),
-                ),
-                Text(rangeLabel, style: theme.textTheme.titleMedium),
-                IconButton(
-                  tooltip: 'Siguiente',
-                  onPressed: () => _shift(ref, 1),
-                  icon: const AppIcon(AppIconPaths.chevronRight, size: 18),
-                ),
-                TextButton(
-                  onPressed: () {
-                    ref.read(calendarFocusedDateProvider.notifier).state =
-                        dateOnly(DateTime.now());
-                    ref.read(calendarSelectedDateProvider.notifier).state =
-                        null;
-                  },
-                  child: const Text('Hoy'),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: clientsAsync.when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
-              data: (clients) => _ClientFilterDropdown(
-                clients: clients,
-                selectedClientId: clientFilter,
-                onChanged: (value) => ref
-                    .read(calendarClientFilterProvider.notifier)
-                    .state = value,
-              ),
-            ),
+          _CalendarHeader(
+            mode: mode,
+            rangeLabel: rangeLabel,
+            onModeChanged: (value) {
+              ref.read(calendarViewModeProvider.notifier).state = value;
+              ref.read(calendarSelectedDateProvider.notifier).state = null;
+            },
+            onPrevious: () => _shift(ref, -1),
+            onNext: () => _shift(ref, 1),
+            onToday: () {
+              ref.read(calendarFocusedDateProvider.notifier).state =
+                  dateOnly(DateTime.now());
+              ref.read(calendarSelectedDateProvider.notifier).state = null;
+            },
+            clientsAsync: clientsAsync,
+            selectedClientId: clientFilter,
+            onClientChanged: (value) => ref
+                .read(calendarClientFilterProvider.notifier)
+                .state = value,
           ),
           const SizedBox(height: AppSpacing.sm),
           Expanded(
             child: switch (sessionsAsync) {
-              AsyncLoading() => const Center(child: CircularProgressIndicator()),
+              AsyncLoading() =>
+                const Center(child: CircularProgressIndicator()),
               AsyncError() => const ClientsEmptyState(
                   icon: AppIconPaths.error,
                   title: 'No se pudo cargar el calendario',
                   message: 'Intenta de nuevo en unos minutos.',
                 ),
               AsyncValue(:final value?) => mode == CalendarViewMode.week
-                  ? _WeekRow(
-                      rangeStart: rangeStart,
-                      sessionsByDate: value,
-                      selectedDate: selectedDate,
-                      onSelectDay: (date, sessions) => _selectDay(
-                        context,
-                        ref,
-                        isDesktop: isDesktop,
-                        date: date,
-                        sessions: sessions,
-                      ),
-                    )
+                  ? (isDesktop
+                      ? _WeekRow(
+                          rangeStart: rangeStart,
+                          sessionsByDate: value,
+                          selectedDate: selectedDate,
+                          onSelectDay: (date, _) =>
+                              _toggleSelectedDay(ref, date),
+                        )
+                      : _MobileWeekStrip(
+                          rangeStart: rangeStart,
+                          sessionsByDate: value,
+                          selectedDate: selectedDate,
+                          onSelectDay: (date) =>
+                              _toggleSelectedDay(ref, date),
+                        ))
                   : _MonthGrid(
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       focusedMonth: focused,
                       sessionsByDate: value,
                       selectedDate: selectedDate,
-                      onSelectDay: (date, sessions) => _selectDay(
-                        context,
-                        ref,
-                        isDesktop: isDesktop,
-                        date: date,
-                        sessions: sessions,
-                      ),
+                      onSelectDay: (date, sessions) => isDesktop
+                          ? _toggleSelectedDay(ref, date)
+                          : _openDayDrawer(context, ref, date, sessions),
                     ),
               _ => const SizedBox.shrink(),
             },
@@ -205,10 +165,12 @@ class TrainerCalendarScreen extends ConsumerWidget {
     );
 
     if (!isDesktop) {
-      return Scaffold(backgroundColor: Colors.transparent, body: calendarColumn);
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: calendarColumn,
+      );
     }
 
-    final sessionsByDate = sessionsAsync.valueOrNull ?? const {};
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Row(
@@ -270,9 +232,106 @@ class TrainerCalendarScreen extends ConsumerWidget {
 String _capitalize(String text) =>
     text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
-/// Selector de cliente escalable a muchos clientes: campo con buscador
-/// integrado en vez de una fila de chips que se vuelve inmanejable con
-/// decenas de clientes.
+/// Encabezado del calendario: primero cómo moverse (semana/mes, hoy),
+/// después dónde estás parado (rango de fechas, filtro de cliente).
+class _CalendarHeader extends StatelessWidget {
+  const _CalendarHeader({
+    required this.mode,
+    required this.rangeLabel,
+    required this.onModeChanged,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onToday,
+    required this.clientsAsync,
+    required this.selectedClientId,
+    required this.onClientChanged,
+  });
+
+  final CalendarViewMode mode;
+  final String rangeLabel;
+  final ValueChanged<CalendarViewMode> onModeChanged;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final VoidCallback onToday;
+  final AsyncValue<List<dynamic>> clientsAsync;
+  final String? selectedClientId;
+  final ValueChanged<String?> onClientChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SegmentedButton<CalendarViewMode>(
+                segments: const [
+                  ButtonSegment(
+                    value: CalendarViewMode.week,
+                    label: Text('Semana'),
+                  ),
+                  ButtonSegment(
+                    value: CalendarViewMode.month,
+                    label: Text('Mes'),
+                  ),
+                ],
+                selected: {mode},
+                onSelectionChanged: (selection) =>
+                    onModeChanged(selection.first),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              TextButton(onPressed: onToday, child: const Text('Hoy')),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Anterior',
+                onPressed: onPrevious,
+                icon: Transform.rotate(
+                  angle: 3.14159,
+                  child: const AppIcon(AppIconPaths.chevronRight, size: 16),
+                ),
+                visualDensity: VisualDensity.compact,
+              ),
+              Text(rangeLabel, style: theme.textTheme.titleSmall),
+              IconButton(
+                tooltip: 'Siguiente',
+                onPressed: onNext,
+                icon: const AppIcon(AppIconPaths.chevronRight, size: 16),
+                visualDensity: VisualDensity.compact,
+              ),
+              const Spacer(),
+              clientsAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+                data: (clients) => _ClientFilterDropdown(
+                  clients: clients,
+                  selectedClientId: selectedClientId,
+                  onChanged: onClientChanged,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Selector de cliente escalable a muchos clientes: campo compacto con
+/// buscador integrado en vez de una fila de chips que se vuelve
+/// inmanejable con decenas de clientes.
 class _ClientFilterDropdown extends StatelessWidget {
   const _ClientFilterDropdown({
     required this.clients,
@@ -286,27 +345,35 @@ class _ClientFilterDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 280,
-      child: DropdownMenu<String?>(
-        width: 280,
-        initialSelection: selectedClientId,
-        enableFilter: true,
-        enableSearch: true,
-        requestFocusOnTap: true,
-        leadingIcon: const AppIcon(AppIconPaths.group, size: 18),
-        hintText: 'Filtrar por cliente',
-        onSelected: onChanged,
-        dropdownMenuEntries: [
-          const DropdownMenuEntry(value: null, label: 'Todos los clientes'),
-          for (final client in clients)
-            DropdownMenuEntry(value: client.id, label: client.displayName),
-        ],
+    const width = 190.0;
+    return DropdownMenu<String?>(
+      width: width,
+      initialSelection: selectedClientId,
+      enableFilter: true,
+      enableSearch: true,
+      requestFocusOnTap: true,
+      textStyle: Theme.of(context).textTheme.bodySmall,
+      leadingIcon: const Padding(
+        padding: EdgeInsets.only(left: 4),
+        child: AppIcon(AppIconPaths.group, size: 14),
       ),
+      inputDecorationTheme: const InputDecorationTheme(
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      ),
+      hintText: 'Cliente',
+      onSelected: onChanged,
+      dropdownMenuEntries: [
+        const DropdownMenuEntry(value: null, label: 'Todos los clientes'),
+        for (final client in clients)
+          DropdownMenuEntry(value: client.id, label: client.displayName),
+      ],
     );
   }
 }
 
+/// Fila de días de escritorio: tarjetas con borde suave, número grande de
+/// sesiones en la esquina.
 class _WeekRow extends StatelessWidget {
   const _WeekRow({
     required this.rangeStart,
@@ -347,6 +414,87 @@ class _WeekRow extends StatelessWidget {
                 },
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Semana en teléfono: solo la tira de días (sin líneas, un punto si hay
+/// sesiones), un divisor tenue debajo, y — al tocar un día — el detalle
+/// se despliega ahí mismo, debajo, en vez de abrir algo encima.
+class _MobileWeekStrip extends StatelessWidget {
+  const _MobileWeekStrip({
+    required this.rangeStart,
+    required this.sessionsByDate,
+    required this.selectedDate,
+    required this.onSelectDay,
+  });
+
+  final DateTime rangeStart;
+  final Map<DateTime, List<CalendarSession>> sessionsByDate;
+  final DateTime? selectedDate;
+  final ValueChanged<DateTime> onSelectDay;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final today = dateOnly(DateTime.now());
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            child: Row(
+              children: [
+                for (var i = 0; i < 7; i++)
+                  Expanded(
+                    child: Builder(
+                      builder: (context) {
+                        final date = rangeStart.add(Duration(days: i));
+                        final sessions = sessionsByDate[date] ?? const [];
+                        return CalendarDayCell(
+                          date: date,
+                          weekdayLabel: _weekdayShortLabels[i],
+                          isToday: date == today,
+                          isSelected: date == selectedDate,
+                          sessionCount: sessions.length,
+                          bordered: false,
+                          indicator: CalendarDayIndicator.dot,
+                          onTap: () => onSelectDay(date),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: selectedDate == null
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                      0,
+                    ),
+                    child: CalendarDaySessionsPanel(
+                      date: selectedDate!,
+                      sessions: sessionsByDate[selectedDate] ?? const [],
+                    ),
+                  ),
+          ),
         ],
       ),
     );
