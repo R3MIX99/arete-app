@@ -10,6 +10,10 @@ import '../../data/routines_providers.dart';
 import '../widgets/clients_empty_state.dart';
 import '../widgets/routine_list_tile.dart';
 
+/// A partir de este ancho, el listado pasa de filas a una grilla de
+/// tarjetas cuadradas (hay espacio horizontal de sobra en escritorio).
+const _desktopBreakpoint = 900.0;
+
 /// Listado de rutinas de entrenamiento del entrenador, con buscador.
 class TrainerRoutinesScreen extends ConsumerStatefulWidget {
   const TrainerRoutinesScreen({super.key});
@@ -37,6 +41,7 @@ class _TrainerRoutinesScreenState extends ConsumerState<TrainerRoutinesScreen> {
   Widget build(BuildContext context) {
     final filtered = ref.watch(filteredRoutinesProvider);
     final query = ref.watch(routineSearchQueryProvider);
+    final isDesktop = MediaQuery.sizeOf(context).width >= _desktopBreakpoint;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -126,20 +131,43 @@ class _TrainerRoutinesScreenState extends ConsumerState<TrainerRoutinesScreen> {
                     AppSpacing.md,
                     96,
                   ),
-                  sliver: SliverList.separated(
-                    itemCount: value.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (context, index) {
-                      final routine = value[index];
-                      return RoutineListTile(
-                        routine: routine,
-                        onTap: () => context.push(
-                          AppRoutes.trainerRoutineDetail(routine.id),
+                  sliver: isDesktop
+                      ? SliverGrid(
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 240,
+                            mainAxisSpacing: AppSpacing.sm,
+                            crossAxisSpacing: AppSpacing.sm,
+                            childAspectRatio: 1,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final routine = value[index];
+                              return RoutineListTile(
+                                routine: routine,
+                                asGrid: true,
+                                onTap: () => context.push(
+                                  AppRoutes.trainerRoutineDetail(routine.id),
+                                ),
+                              );
+                            },
+                            childCount: value.length,
+                          ),
+                        )
+                      : SliverList.separated(
+                          itemCount: value.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.sm),
+                          itemBuilder: (context, index) {
+                            final routine = value[index];
+                            return RoutineListTile(
+                              routine: routine,
+                              onTap: () => context.push(
+                                AppRoutes.trainerRoutineDetail(routine.id),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               _ => const SliverToBoxAdapter(child: SizedBox.shrink()),
             },

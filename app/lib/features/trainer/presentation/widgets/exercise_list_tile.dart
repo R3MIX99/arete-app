@@ -4,42 +4,66 @@ import '../../../../core/theme/app_icon_paths.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icon.dart';
 import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/app_grid_card.dart';
 import '../../domain/exercise.dart';
 
-/// Fila de un ejercicio en el listado de la biblioteca.
+/// Fila (teléfono) o tarjeta cuadrada (`asGrid`, escritorio) de un
+/// ejercicio en el listado de la biblioteca.
 class ExerciseListTile extends StatelessWidget {
-  const ExerciseListTile({super.key, required this.exercise, required this.onTap});
+  const ExerciseListTile({
+    super.key,
+    required this.exercise,
+    required this.onTap,
+    this.asGrid = false,
+  });
 
   final Exercise exercise;
   final VoidCallback onTap;
+  final bool asGrid;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasVideo = exercise.videoUrl != null;
 
+    final leading = Container(
+      width: 44,
+      height: 44,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: hasVideo
+            ? theme.colorScheme.primary.withValues(alpha: 0.12)
+            : theme.colorScheme.onSurface.withValues(alpha: 0.06),
+      ),
+      child: AppIcon(
+        hasVideo ? AppIconPaths.playCircle : AppIconPaths.fitnessCenter,
+        size: 22,
+        color: hasVideo
+            ? theme.colorScheme.primary
+            : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+      ),
+    );
+
+    final tags = [
+      _Tag(label: exercise.muscleGroup.label),
+      _Tag(label: exercise.equipment.label),
+    ];
+
+    if (asGrid) {
+      return AppGridCard(
+        leading: leading,
+        title: exercise.name,
+        tags: tags,
+        onTap: onTap,
+      );
+    }
+
     return AppCard(
       onTap: onTap,
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: hasVideo
-                  ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.06),
-            ),
-            child: AppIcon(
-              hasVideo ? AppIconPaths.playCircle : AppIconPaths.fitnessCenter,
-              size: 22,
-              color: hasVideo
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-          ),
+          leading,
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -57,10 +81,7 @@ class ExerciseListTile extends StatelessWidget {
                 Wrap(
                   spacing: AppSpacing.xs,
                   runSpacing: AppSpacing.xs,
-                  children: [
-                    _Tag(label: exercise.muscleGroup.label),
-                    _Tag(label: exercise.equipment.label),
-                  ],
+                  children: tags,
                 ),
               ],
             ),

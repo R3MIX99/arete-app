@@ -6,18 +6,48 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icon.dart';
 import '../../../shared/models/profile.dart';
 import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/app_grid_card.dart';
 
-/// Fila de un cliente en el listado del entrenador.
+/// Fila (teléfono) o tarjeta cuadrada (`asGrid`, escritorio) de un
+/// cliente en el listado del entrenador.
 class ClientListTile extends StatelessWidget {
-  const ClientListTile({super.key, required this.client, required this.onTap});
+  const ClientListTile({
+    super.key,
+    required this.client,
+    required this.onTap,
+    this.asGrid = false,
+  });
 
   final Profile client;
   final VoidCallback onTap;
+  final bool asGrid;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isInactive = !client.isActive;
+
+    final tags = [
+      if (client.goal != null)
+        _Chip(label: client.goal!.label, color: theme.colorScheme.primary),
+    ];
+
+    if (asGrid) {
+      return AppGridCard(
+        leading: _Avatar(name: client.displayName, dimmed: isInactive),
+        title: client.displayName,
+        subtitle: client.email,
+        tags: tags,
+        trailing: isInactive
+            ? const _Chip(
+                label: 'Inactivo',
+                icon: AppIconPaths.personOff,
+                color: AppColors.warning,
+              )
+            : null,
+        onTap: onTap,
+      );
+    }
 
     return AppCard(
       onTap: onTap,
@@ -58,8 +88,7 @@ class ClientListTile extends StatelessWidget {
                         icon: AppIconPaths.personOff,
                         color: AppColors.warning,
                       ),
-                    if (client.goal != null)
-                      _Chip(label: client.goal!.label, color: theme.colorScheme.primary),
+                    ...tags,
                   ],
                 ),
               ],

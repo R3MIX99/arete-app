@@ -7,10 +7,15 @@ import '../../../../core/theme/app_icon_paths.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icon.dart';
 import '../../../shared/models/client_goal.dart';
+import '../../../shared/widgets/app_dashed_add_card.dart';
 import '../../data/clients_providers.dart';
 import '../widgets/client_list_tile.dart';
 import '../widgets/clients_empty_state.dart';
 import '../widgets/pending_invitations_section.dart';
+
+/// A partir de este ancho, el listado pasa de filas a una grilla de
+/// tarjetas cuadradas (hay espacio horizontal de sobra en escritorio).
+const _desktopBreakpoint = 900.0;
 
 /// Listado de clientes del entrenador, con buscador y filtros por estado y
 /// objetivo. Incluye arriba las invitaciones que siguen pendientes, para
@@ -42,6 +47,7 @@ class _TrainerClientsScreenState extends ConsumerState<TrainerClientsScreen> {
   Widget build(BuildContext context) {
     final filtered = ref.watch(filteredClientsProvider);
     final hasFilters = ref.watch(hasActiveClientFiltersProvider);
+    final isDesktop = MediaQuery.sizeOf(context).width >= _desktopBreakpoint;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -120,20 +126,53 @@ class _TrainerClientsScreenState extends ConsumerState<TrainerClientsScreen> {
                     // fila de la lista.
                     96,
                   ),
-                  sliver: SliverList.separated(
-                    itemCount: value.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (context, index) {
-                      final client = value[index];
-                      return ClientListTile(
-                        client: client,
-                        onTap: () => context.push(
-                          AppRoutes.trainerClientDetail(client.id),
+                  sliver: isDesktop
+                      ? SliverGrid(
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 240,
+                            mainAxisSpacing: AppSpacing.sm,
+                            crossAxisSpacing: AppSpacing.sm,
+                            childAspectRatio: 1,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              // Primer lugar de la grilla: tarjeta punteada
+                              // para agregar, alternativa al botón flotante.
+                              if (index == 0) {
+                                return AppDashedAddCard(
+                                  icon: AppIconPaths.personAdd,
+                                  label: 'Agregar cliente',
+                                  onTap: () =>
+                                      context.push(AppRoutes.trainerClientNew),
+                                );
+                              }
+                              final client = value[index - 1];
+                              return ClientListTile(
+                                client: client,
+                                asGrid: true,
+                                onTap: () => context.push(
+                                  AppRoutes.trainerClientDetail(client.id),
+                                ),
+                              );
+                            },
+                            childCount: value.length + 1,
+                          ),
+                        )
+                      : SliverList.separated(
+                          itemCount: value.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.sm),
+                          itemBuilder: (context, index) {
+                            final client = value[index];
+                            return ClientListTile(
+                              client: client,
+                              onTap: () => context.push(
+                                AppRoutes.trainerClientDetail(client.id),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               _ => const SliverToBoxAdapter(child: SizedBox.shrink()),
             },

@@ -4,37 +4,61 @@ import '../../../../core/theme/app_icon_paths.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icon.dart';
 import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/app_grid_card.dart';
 import '../../domain/routine.dart';
 
-/// Fila de una rutina en el listado del entrenador.
+/// Fila (teléfono) o tarjeta cuadrada (`asGrid`, escritorio) de una
+/// rutina en el listado del entrenador.
 class RoutineListTile extends StatelessWidget {
-  const RoutineListTile({super.key, required this.routine, required this.onTap});
+  const RoutineListTile({
+    super.key,
+    required this.routine,
+    required this.onTap,
+    this.asGrid = false,
+  });
 
   final Routine routine;
   final VoidCallback onTap;
+  final bool asGrid;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final leading = Container(
+      width: 44,
+      height: 44,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+      ),
+      child: AppIcon(
+        AppIconPaths.calendarViewMonth,
+        size: 20,
+        color: theme.colorScheme.primary,
+      ),
+    );
+
+    final tags = [
+      _Tag(label: routine.level.label),
+      if (routine.goal != null) _Tag(label: routine.goal!.label),
+    ];
+
+    if (asGrid) {
+      return AppGridCard(
+        leading: leading,
+        title: routine.name,
+        tags: tags,
+        onTap: onTap,
+      );
+    }
+
     return AppCard(
       onTap: onTap,
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: theme.colorScheme.primary.withValues(alpha: 0.12),
-            ),
-            child: AppIcon(
-              AppIconPaths.calendarViewMonth,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
-          ),
+          leading,
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -52,10 +76,7 @@ class RoutineListTile extends StatelessWidget {
                 Wrap(
                   spacing: AppSpacing.xs,
                   runSpacing: AppSpacing.xs,
-                  children: [
-                    _Tag(label: routine.level.label),
-                    if (routine.goal != null) _Tag(label: routine.goal!.label),
-                  ],
+                  children: tags,
                 ),
               ],
             ),

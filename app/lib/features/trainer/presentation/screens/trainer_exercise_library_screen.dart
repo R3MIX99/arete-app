@@ -11,6 +11,10 @@ import '../../data/exercises_providers.dart';
 import '../widgets/clients_empty_state.dart';
 import '../widgets/exercise_list_tile.dart';
 
+/// A partir de este ancho, el listado pasa de filas a una grilla de
+/// tarjetas cuadradas (hay espacio horizontal de sobra en escritorio).
+const _desktopBreakpoint = 900.0;
+
 /// Biblioteca de ejercicios del entrenador: buscador, filtros por grupo
 /// muscular y equipo, y alta/edición con previsualización de video.
 class TrainerExerciseLibraryScreen extends ConsumerStatefulWidget {
@@ -40,6 +44,7 @@ class _TrainerExerciseLibraryScreenState
   Widget build(BuildContext context) {
     final filtered = ref.watch(filteredExercisesProvider);
     final hasFilters = ref.watch(hasActiveExerciseFiltersProvider);
+    final isDesktop = MediaQuery.sizeOf(context).width >= _desktopBreakpoint;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -112,20 +117,43 @@ class _TrainerExerciseLibraryScreenState
                     AppSpacing.md,
                     96,
                   ),
-                  sliver: SliverList.separated(
-                    itemCount: value.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (context, index) {
-                      final exercise = value[index];
-                      return ExerciseListTile(
-                        exercise: exercise,
-                        onTap: () => context.push(
-                          AppRoutes.trainerExerciseEdit(exercise.id),
+                  sliver: isDesktop
+                      ? SliverGrid(
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 240,
+                            mainAxisSpacing: AppSpacing.sm,
+                            crossAxisSpacing: AppSpacing.sm,
+                            childAspectRatio: 1,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final exercise = value[index];
+                              return ExerciseListTile(
+                                exercise: exercise,
+                                asGrid: true,
+                                onTap: () => context.push(
+                                  AppRoutes.trainerExerciseEdit(exercise.id),
+                                ),
+                              );
+                            },
+                            childCount: value.length,
+                          ),
+                        )
+                      : SliverList.separated(
+                          itemCount: value.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.sm),
+                          itemBuilder: (context, index) {
+                            final exercise = value[index];
+                            return ExerciseListTile(
+                              exercise: exercise,
+                              onTap: () => context.push(
+                                AppRoutes.trainerExerciseEdit(exercise.id),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               _ => const SliverToBoxAdapter(child: SizedBox.shrink()),
             },

@@ -10,6 +10,10 @@ import '../../data/programs_providers.dart';
 import '../widgets/clients_empty_state.dart';
 import '../widgets/program_list_tile.dart';
 
+/// A partir de este ancho, el listado pasa de filas a una grilla de
+/// tarjetas cuadradas (hay espacio horizontal de sobra en escritorio).
+const _desktopBreakpoint = 900.0;
+
 /// Listado de programas del entrenador, con buscador.
 class TrainerProgramsScreen extends ConsumerStatefulWidget {
   const TrainerProgramsScreen({super.key});
@@ -37,6 +41,7 @@ class _TrainerProgramsScreenState extends ConsumerState<TrainerProgramsScreen> {
   Widget build(BuildContext context) {
     final filtered = ref.watch(filteredProgramsProvider);
     final query = ref.watch(programSearchQueryProvider);
+    final isDesktop = MediaQuery.sizeOf(context).width >= _desktopBreakpoint;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -127,20 +132,43 @@ class _TrainerProgramsScreenState extends ConsumerState<TrainerProgramsScreen> {
                     AppSpacing.md,
                     96,
                   ),
-                  sliver: SliverList.separated(
-                    itemCount: value.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (context, index) {
-                      final program = value[index];
-                      return ProgramListTile(
-                        program: program,
-                        onTap: () => context.push(
-                          AppRoutes.trainerProgramDetail(program.id),
+                  sliver: isDesktop
+                      ? SliverGrid(
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 240,
+                            mainAxisSpacing: AppSpacing.sm,
+                            crossAxisSpacing: AppSpacing.sm,
+                            childAspectRatio: 1,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final program = value[index];
+                              return ProgramListTile(
+                                program: program,
+                                asGrid: true,
+                                onTap: () => context.push(
+                                  AppRoutes.trainerProgramDetail(program.id),
+                                ),
+                              );
+                            },
+                            childCount: value.length,
+                          ),
+                        )
+                      : SliverList.separated(
+                          itemCount: value.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.sm),
+                          itemBuilder: (context, index) {
+                            final program = value[index];
+                            return ProgramListTile(
+                              program: program,
+                              onTap: () => context.push(
+                                AppRoutes.trainerProgramDetail(program.id),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               _ => const SliverToBoxAdapter(child: SizedBox.shrink()),
             },

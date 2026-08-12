@@ -6,6 +6,7 @@ import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_icon_paths.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icon.dart';
+import '../../../shared/widgets/app_pill_tabs.dart';
 import '../../data/dishes_providers.dart';
 import '../../data/diet_plans_providers.dart';
 import '../../data/foods_providers.dart';
@@ -31,10 +32,14 @@ class TrainerNutritionPlansScreen extends StatefulWidget {
 class _TrainerNutritionPlansScreenState
     extends State<TrainerNutritionPlansScreen>
     with SingleTickerProviderStateMixin {
-  late final _tabController = TabController(length: 2, vsync: this);
+  late final _tabController = TabController(length: 2, vsync: this)
+    ..addListener(_onTabChanged);
+
+  void _onTabChanged() => setState(() {});
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -44,10 +49,19 @@ class _TrainerNutritionPlansScreenState
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: TabBar(
-            controller: _tabController,
-            tabs: const [Tab(text: 'Planes'), Tab(text: 'Catálogo')],
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
+            0,
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AppPillTabs(
+              labels: const ['Planes', 'Catálogo'],
+              selectedIndex: _tabController.index,
+              onSelected: (index) => _tabController.animateTo(index),
+            ),
           ),
         ),
         Expanded(
