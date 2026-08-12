@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { MobileFab } from "@/components/trainer/mobile-fab";
 
 const LEVEL_OPTIONS = [
   { value: "beginner", label: "Principiante" },
@@ -33,7 +34,7 @@ export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
   const hasActiveFilters = query.trim() !== "" || level !== null;
 
   return (
-    <div className="flex w-full flex-col gap-6 p-4 md:p-8">
+    <div className="flex w-full flex-col gap-6 p-4 pb-24 md:p-8">
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full max-w-xs">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -44,13 +45,15 @@ export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
             className="pl-9"
           />
         </div>
-        <Button asChild className="ml-auto">
+        <Button asChild className="ml-auto hidden md:inline-flex">
           <Link href="/entrenador/rutinas/nueva">
             <Plus />
             Nueva rutina
           </Link>
         </Button>
       </div>
+
+      <MobileFab href="/entrenador/rutinas/nueva" icon={Plus} label="Nueva rutina" />
 
       <div className="flex flex-wrap items-center gap-2">
         {LEVEL_OPTIONS.map((option) => (
