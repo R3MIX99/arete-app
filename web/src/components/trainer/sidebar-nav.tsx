@@ -136,8 +136,8 @@ export function SidebarNav({
                     className="absolute right-2 top-2 bottom-2 w-[3px] rounded-full"
                     style={{
                       background:
-                        "linear-gradient(to bottom, var(--sb-accent-start), var(--sb-accent-end))",
-                      boxShadow: "0 0 6px 0 var(--sb-accent-start)",
+                        "linear-gradient(to bottom, #C4B5FD 0%, var(--sb-accent-start) 45%, var(--sb-accent-end) 75%, transparent 100%)",
+                      boxShadow: "0 0 8px 1px var(--sb-accent-start)",
                     }}
                   />
                 )}
