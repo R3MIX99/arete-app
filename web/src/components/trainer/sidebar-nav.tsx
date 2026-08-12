@@ -117,7 +117,9 @@ export function SidebarNav({
                       }
                     : {
                         color: active ? "var(--sb-text)" : "var(--sb-text-secondary)",
-                        background: active ? "var(--sb-active)" : "transparent",
+                        background: active
+                          ? "linear-gradient(to left, rgba(124,58,237,0.55), transparent 42%), var(--sb-active)"
+                          : "transparent",
                       }
                 }
                 onMouseEnter={(e) => {
@@ -135,9 +137,9 @@ export function SidebarNav({
                   <span
                     className="absolute right-2 top-2 bottom-2 w-[3px] rounded-full"
                     style={{
-                      background:
-                        "linear-gradient(to bottom, #C4B5FD 0%, var(--sb-accent-start) 45%, var(--sb-accent-end) 75%, transparent 100%)",
-                      boxShadow: "0 0 8px 1px var(--sb-accent-start)",
+                      background: "var(--sb-accent-start)",
+                      boxShadow:
+                        "0 0 10px 2px var(--sb-accent-start), 0 0 4px 0px var(--sb-accent-start)",
                     }}
                   />
                 )}
