@@ -28,6 +28,10 @@ final calendarFocusedDateProvider = StateProvider<DateTime>(
 /// `null` significa "todos los clientes".
 final calendarClientFilterProvider = StateProvider<String?>((ref) => null);
 
+/// El día seleccionado para ver su detalle (panel lateral en escritorio,
+/// drawer en teléfono). `null` cuando no hay ninguno elegido.
+final calendarSelectedDateProvider = StateProvider<DateTime?>((ref) => null);
+
 (DateTime, DateTime) _visibleRange(CalendarViewMode mode, DateTime focused) {
   if (mode == CalendarViewMode.week) {
     final start = mondayOfWeek(focused);
