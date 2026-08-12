@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ExercisePickerDialog } from "@/components/trainer/exercise-picker-dialog";
 
 const LEVEL_OPTIONS = [
@@ -80,6 +81,7 @@ export function RoutineForm({
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   function addExercise(exercise: ExerciseOption) {
@@ -258,9 +260,6 @@ export function RoutineForm({
 
   async function handleDelete() {
     if (!routine) return;
-    if (!window.confirm(`¿Eliminar la rutina "${routine.name}"? Esta acción no se puede deshacer.`)) {
-      return;
-    }
     setDeleting(true);
     const supabase = createClient();
     const { error: deleteError } = await supabase
@@ -270,6 +269,7 @@ export function RoutineForm({
     if (deleteError) {
       setError("No se pudo eliminar la rutina.");
       setDeleting(false);
+      setConfirmOpen(false);
       return;
     }
     router.push("/entrenador/rutinas");
@@ -289,10 +289,9 @@ export function RoutineForm({
             variant="ghost"
             size="sm"
             className="text-destructive hover:text-destructive"
-            onClick={handleDelete}
-            disabled={deleting}
+            onClick={() => setConfirmOpen(true)}
           >
-            {deleting ? <Loader2 className="animate-spin" /> : <Trash />}
+            <Trash />
             Eliminar rutina
           </Button>
         )}
@@ -540,6 +539,17 @@ export function RoutineForm({
         exercises={exerciseCatalog}
         onPick={addExercise}
       />
+
+      {routine && (
+        <ConfirmDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title={`¿Eliminar la rutina "${routine.name}"?`}
+          description="Esta acción no se puede deshacer."
+          loading={deleting}
+          onConfirm={handleDelete}
+        />
+      )}
     </div>
   );
 }
