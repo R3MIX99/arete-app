@@ -28,11 +28,13 @@ export function SidebarNav({
 
   return (
     <aside
-      className={cn(
-        "sidebar-dark hidden md:flex h-screen flex-col shrink-0 border-r transition-[width] duration-200",
-        collapsed ? "w-[76px]" : "w-64",
-      )}
-      style={{ borderColor: "var(--sb-border-dim)" }}
+      className="sidebar-dark hidden md:flex h-screen flex-col shrink-0 border-r transition-[width] duration-200"
+      style={{
+        borderColor: "var(--sb-border-dim)",
+        width: collapsed ? 76 : 256,
+        minWidth: collapsed ? 76 : 256,
+        maxWidth: collapsed ? 76 : 256,
+      }}
     >
       {/* Encabezado: logo + nombre + colapsar, todo en la misma fila. */}
       <div
@@ -88,8 +90,8 @@ export function SidebarNav({
         </Tooltip>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2.5 py-3">
-        <ul className="flex flex-col gap-1.5">
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <ul className={cn("flex flex-col", collapsed ? "gap-3" : "gap-2.5")}>
           {trainerNavItems.map((item) => {
             const active =
               item.href === "/entrenador"
@@ -102,7 +104,7 @@ export function SidebarNav({
                 href={item.href}
                 className={cn(
                   "relative flex items-center gap-3 rounded-lg text-sm font-medium transition-colors",
-                  collapsed ? "size-10 justify-center mx-auto" : "px-2.5 py-2",
+                  collapsed ? "size-11 justify-center mx-auto" : "px-2.5 py-2",
                 )}
                 style={
                   collapsed
@@ -110,7 +112,7 @@ export function SidebarNav({
                         color: active ? "#fff" : "var(--sb-text-secondary)",
                         background: active
                           ? "linear-gradient(135deg, var(--sb-accent-start), var(--sb-bg))"
-                          : "var(--sb-surface)",
+                          : "transparent",
                       }
                     : {
                         color: active ? "var(--sb-text)" : "var(--sb-text-secondary)",
@@ -119,15 +121,11 @@ export function SidebarNav({
                 }
                 onMouseEnter={(e) => {
                   if (active) return;
-                  e.currentTarget.style.background = collapsed
-                    ? "var(--sb-hover)"
-                    : "var(--sb-hover)";
+                  e.currentTarget.style.background = "var(--sb-hover)";
                 }}
                 onMouseLeave={(e) => {
                   if (active) return;
-                  e.currentTarget.style.background = collapsed
-                    ? "var(--sb-surface)"
-                    : "transparent";
+                  e.currentTarget.style.background = "transparent";
                 }}
               >
                 <Icon className="size-[18px] shrink-0" />

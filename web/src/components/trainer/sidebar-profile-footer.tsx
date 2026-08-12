@@ -54,14 +54,14 @@ export function SidebarProfileFooter({
       onClick={handleLogout}
       aria-label="Cerrar sesión"
       className="flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors"
-      style={{ color: "var(--sb-text-muted)" }}
+      style={{ background: "rgba(220,38,38,0.16)", color: "#fca5a5" }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = "var(--sb-hover)";
-        e.currentTarget.style.color = "var(--sb-text)";
+        e.currentTarget.style.background = "rgba(220,38,38,0.28)";
+        e.currentTarget.style.color = "#fecaca";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
-        e.currentTarget.style.color = "var(--sb-text-muted)";
+        e.currentTarget.style.background = "rgba(220,38,38,0.16)";
+        e.currentTarget.style.color = "#fca5a5";
       }}
     >
       <LogOut className="size-4" />
@@ -70,7 +70,7 @@ export function SidebarProfileFooter({
 
   if (collapsed) {
     return (
-      <div className="flex flex-col items-center gap-2 p-2.5">
+      <div className="flex flex-col items-center gap-3 p-3">
         <Tooltip>
           <TooltipTrigger asChild>{avatar}</TooltipTrigger>
           <TooltipContent side="right">
@@ -89,7 +89,7 @@ export function SidebarProfileFooter({
   }
 
   return (
-    <div className="flex items-center gap-2.5 p-2.5">
+    <div className="flex items-center gap-2.5 p-3">
       {avatar}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium" style={{ color: "var(--sb-text)" }}>
