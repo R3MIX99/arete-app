@@ -60,3 +60,26 @@ export const equipmentLabels: Record<string, string> = {
 export function equipmentLabel(value: string): string {
   return equipmentLabels[value] ?? value;
 }
+
+/** ISO 8601: 1 = lunes ... 7 = domingo. */
+export const weekdayLabels: Record<number, string> = {
+  1: "Lunes",
+  2: "Martes",
+  3: "Miércoles",
+  4: "Jueves",
+  5: "Viernes",
+  6: "Sábado",
+  7: "Domingo",
+};
+
+export function weekdayLabel(value: number): string {
+  return weekdayLabels[value] ?? String(value);
+}
+
+export function formatDate(value: string): string {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
