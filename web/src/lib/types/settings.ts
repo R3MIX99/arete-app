@@ -7,6 +7,7 @@ export interface TrainerSettings {
   email: string;
   phone: string | null;
   business_name: string | null;
+  business_logo_path: string | null;
   notify_email: boolean;
   notify_push: boolean;
   subscription_plan: SubscriptionPlan;
