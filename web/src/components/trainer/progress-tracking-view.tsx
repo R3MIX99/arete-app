@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle2, Plus, Users } from "lucide-react";
+import { CheckCircle2, ChevronsUpDown, Plus, Users } from "lucide-react";
 
-import { formatDate } from "@/lib/format";
+import { formatDate, initialsOf } from "@/lib/format";
 import {
   addDays,
   sessionsInRange,
@@ -11,7 +11,7 @@ import {
   type CalendarAssignment,
 } from "@/lib/calendar-logic";
 import { MEASUREMENT_FIELDS, type MeasurementKey, type ProgressEntry } from "@/lib/types/progress";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -24,6 +24,7 @@ import {
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { AddMeasurementDialog } from "@/components/trainer/add-measurement-dialog";
 import { ProgressPhotoThumbnail } from "@/components/trainer/progress-photo-thumbnail";
+import { ClientPickerDialog } from "@/components/trainer/client-picker-dialog";
 
 interface ClientRow {
   id: string;
@@ -47,6 +48,7 @@ export function ProgressTrackingView({
   const [selectedClientId, setSelectedClientId] = React.useState(clients[0]?.id ?? "");
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
   const [addOpen, setAddOpen] = React.useState(false);
+  const [pickerOpen, setPickerOpen] = React.useState(false);
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
@@ -97,18 +99,28 @@ export function ProgressTrackingView({
 
   return (
     <div className="flex w-full flex-col gap-5 p-4 pb-24 md:p-8">
-      <div className="flex flex-wrap gap-2 overflow-x-auto">
-        {clients.map((client) => (
-          <Badge
-            key={client.id}
-            variant={client.id === selectedClientId ? "default" : "outline"}
-            className="h-8 shrink-0 cursor-pointer px-3"
-            onClick={() => setSelectedClientId(client.id)}
-          >
-            {client.full_name}
-          </Badge>
-        ))}
-      </div>
+      <button
+        type="button"
+        onClick={() => setPickerOpen(true)}
+        className="flex w-fit items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors hover:bg-accent"
+      >
+        <Avatar className="size-8">
+          <AvatarFallback className="text-xs">
+            {initialsOf(selectedClient?.full_name ?? "") || "?"}
+          </AvatarFallback>
+        </Avatar>
+        <span className="text-sm font-medium">
+          {selectedClient?.full_name ?? "Elegir cliente"}
+        </span>
+        <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+      </button>
+
+      <ClientPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        clients={clients}
+        onPick={(client) => setSelectedClientId(client.id)}
+      />
 
       {selectedClient && (
         <>
