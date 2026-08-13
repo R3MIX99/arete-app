@@ -27,6 +27,7 @@ export interface ProgressEntry {
   calf_cm: number | null;
   forearm_cm: number | null;
   notes: string | null;
+  photo_path?: string | null;
 }
 
 export interface ExerciseWeightLog {
