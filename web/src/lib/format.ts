@@ -76,10 +76,60 @@ export function weekdayLabel(value: number): string {
   return weekdayLabels[value] ?? String(value);
 }
 
+export const mealTypeLabels: Record<string, string> = {
+  breakfast: "Desayuno",
+  lunch: "Almuerzo",
+  dinner: "Cena",
+  snack: "Snack",
+};
+
+export function mealTypeLabel(value: string): string {
+  return mealTypeLabels[value] ?? value;
+}
+
+export function formatGrams(value: number): string {
+  return `${Math.round(value)} g`;
+}
+
+export function formatKcal(value: number): string {
+  return `${Math.round(value)} kcal`;
+}
+
+export function householdMeasureFor(
+  grams: number,
+  unitName: string | null,
+  unitGrams: number | null,
+): string | null {
+  if (!unitName || !unitGrams) return null;
+  const count = Math.round((grams / unitGrams) * 4) / 4;
+  const formatted = Number.isInteger(count) ? String(count) : count.toFixed(2);
+  return `${formatted} ${unitName}`;
+}
+
 export function formatDate(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString("es-MX", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
+}
+
+/** 'YYYY-MM-DD' → "Miércoles, 12 de agosto". */
+export function formatDayHeading(key: string): string {
+  const label = new Date(`${key}T00:00:00`).toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/** year, month(1-12) → "Agosto 2026". */
+export function formatMonthYear(year: number, month: number): string {
+  const label = new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("es-MX", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
