@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, UserPlus, Copy, X, UserX, FilterX } from "lucide-react";
+import { Search, UserPlus, Copy, X, UserX, UserCheck, FilterX } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -35,10 +35,12 @@ export function ClientsBrowser({
   const [status, setStatus] = React.useState<StatusFilter>("active");
   const [goal, setGoal] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(invitations);
+  const [items, setItems] = React.useState(clients);
+  const [togglingId, setTogglingId] = React.useState<string | null>(null);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    return clients.filter((client) => {
+    return items.filter((client) => {
       if (status && client.status !== status) return false;
       if (goal && client.goal !== goal) return false;
       if (
@@ -50,7 +52,28 @@ export function ClientsBrowser({
       }
       return true;
     });
-  }, [clients, query, status, goal]);
+  }, [items, query, status, goal]);
+
+  async function toggleClientStatus(event: React.MouseEvent, client: ClientProfile) {
+    event.preventDefault();
+    event.stopPropagation();
+    const next = client.status === "active" ? "inactive" : "active";
+    setTogglingId(client.id);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ status: next })
+      .eq("id", client.id);
+    setTogglingId(null);
+    if (error) {
+      toast.error("No se pudo actualizar el estado");
+      return;
+    }
+    setItems((prev) =>
+      prev.map((c) => (c.id === client.id ? { ...c, status: next } : c)),
+    );
+    toast.success(next === "active" ? "Cliente reactivado" : "Cliente desactivado");
+  }
 
   async function revokeInvitation(id: string) {
     const supabase = createClient();
@@ -198,7 +221,7 @@ export function ClientsBrowser({
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
           <UserX className="size-8" />
           <p className="text-sm">
-            {clients.length === 0
+            {items.length === 0
               ? "Todavía no tienes clientes."
               : "Ningún cliente coincide con la búsqueda o los filtros."}
           </p>
@@ -206,9 +229,9 @@ export function ClientsBrowser({
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((client) => (
-            <Link key={client.id} href={`/entrenador/clientes/${client.id}`}>
-              <Card className="h-full transition-colors hover:border-primary/40">
-                <CardContent className="flex h-full flex-col gap-3">
+            <Card key={client.id} className="h-full transition-colors hover:border-primary/40">
+              <CardContent className="flex h-full flex-col gap-3">
+                <Link href={`/entrenador/clientes/${client.id}`} className="flex flex-1 flex-col gap-3">
                   <div className="flex items-start justify-between">
                     <Avatar className="size-10">
                       <AvatarFallback
@@ -234,9 +257,23 @@ export function ClientsBrowser({
                       </Badge>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={togglingId === client.id}
+                  onClick={(e) => toggleClientStatus(e, client)}
+                  className={
+                    client.status === "active"
+                      ? "text-destructive hover:text-destructive"
+                      : "text-success hover:text-success"
+                  }
+                >
+                  {client.status === "active" ? <UserX /> : <UserCheck />}
+                  {client.status === "active" ? "Desactivar" : "Reactivar"}
+                </Button>
+              </CardContent>
+            </Card>
           ))}
         </div>
         )}
