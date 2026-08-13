@@ -13,21 +13,24 @@ export const MEASUREMENT_FIELDS = [
 
 export type MeasurementKey = (typeof MEASUREMENT_FIELDS)[number]["key"];
 
-export interface ProgressEntry {
+/**
+ * Una medida individual (peso, pecho, cintura, etc.) en una fecha —
+ * cada una vive en su propia fila (tabla `progress_measurements`), así
+ * que editar o eliminar una no afecta a las demás medidas del mismo día.
+ */
+export interface ProgressMeasurement {
   id: string;
   entry_date: string;
-  weight_kg: number | null;
-  chest_cm: number | null;
-  waist_cm: number | null;
-  hip_cm: number | null;
-  arm_cm: number | null;
-  thigh_cm: number | null;
-  neck_cm: number | null;
-  shoulder_cm: number | null;
-  calf_cm: number | null;
-  forearm_cm: number | null;
+  metric_key: MeasurementKey;
+  value: number;
   notes: string | null;
-  photo_path?: string | null;
+}
+
+export interface ProgressPhotoEntry {
+  id: string;
+  entry_date: string;
+  photo_path: string | null;
+  notes: string | null;
 }
 
 export interface ExerciseWeightLog {

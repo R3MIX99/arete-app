@@ -11,7 +11,12 @@ import {
   todayKey,
   type CalendarAssignment,
 } from "@/lib/calendar-logic";
-import { MEASUREMENT_FIELDS, type MeasurementKey, type ProgressEntry } from "@/lib/types/progress";
+import {
+  MEASUREMENT_FIELDS,
+  type MeasurementKey,
+  type ProgressMeasurement,
+  type ProgressPhotoEntry,
+} from "@/lib/types/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { AddMeasurementDialog } from "@/components/trainer/add-measurement-dialog";
+import { EditMeasurementDialog } from "@/components/trainer/edit-measurement-dialog";
 import { ProgressPhotoThumbnail } from "@/components/trainer/progress-photo-thumbnail";
 import { ClientPickerDialog } from "@/components/trainer/client-picker-dialog";
 import { MeasurementEntriesTable } from "@/components/trainer/measurement-entries-table";
@@ -38,13 +44,15 @@ export function ProgressTrackingView({
   trainerId,
   clients,
   assignments,
-  entries,
+  measurements,
+  photos,
   loggedDatesByClient,
 }: {
   trainerId: string;
   clients: ClientRow[];
   assignments: CalendarAssignment[];
-  entries: (ProgressEntry & { client_id: string })[];
+  measurements: (ProgressMeasurement & { client_id: string })[];
+  photos: (ProgressPhotoEntry & { client_id: string })[];
   loggedDatesByClient: Record<string, string[]>;
 }) {
   const router = useRouter();
@@ -52,13 +60,19 @@ export function ProgressTrackingView({
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
   const [addOpen, setAddOpen] = React.useState(false);
   const [pickerOpen, setPickerOpen] = React.useState(false);
-  const [editingEntry, setEditingEntry] = React.useState<ProgressEntry | null>(null);
+  const [editingMeasurement, setEditingMeasurement] =
+    React.useState<ProgressMeasurement | null>(null);
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
-  const clientEntries = React.useMemo(
-    () => entries.filter((e) => e.client_id === selectedClientId),
-    [entries, selectedClientId],
+  const clientMeasurements = React.useMemo(
+    () => measurements.filter((m) => m.client_id === selectedClientId),
+    [measurements, selectedClientId],
+  );
+
+  const clientPhotos = React.useMemo(
+    () => photos.filter((p) => p.client_id === selectedClientId).slice().reverse(),
+    [photos, selectedClientId],
   );
 
   const compliance = React.useMemo(() => {
@@ -77,19 +91,20 @@ export function ProgressTrackingView({
   const activeField = MEASUREMENT_FIELDS.find((f) => f.key === metric)!;
   const chartPoints = React.useMemo(
     () =>
-      clientEntries
-        .filter((e) => e[metric] !== null)
-        .map((e) => ({ label: formatDate(e.entry_date), value: e[metric] as number })),
-    [clientEntries, metric],
+      clientMeasurements
+        .filter((m) => m.metric_key === metric)
+        .sort((a, b) => a.entry_date.localeCompare(b.entry_date))
+        .map((m) => ({ label: formatDate(m.entry_date), value: m.value })),
+    [clientMeasurements, metric],
   );
 
-  const photos = React.useMemo(
+  const weightPoints = React.useMemo(
     () =>
-      clientEntries
-        .filter((e) => e.photo_path)
-        .slice()
-        .reverse(),
-    [clientEntries],
+      clientMeasurements
+        .filter((m) => m.metric_key === "weight_kg")
+        .sort((a, b) => a.entry_date.localeCompare(b.entry_date))
+        .map((m) => ({ label: formatDate(m.entry_date), value: m.value })),
+    [clientMeasurements],
   );
 
   if (clients.length === 0) {
@@ -150,12 +165,7 @@ export function ProgressTrackingView({
                 <CardTitle className="text-sm">Peso corporal</CardTitle>
               </CardHeader>
               <CardContent>
-                <ProgressLineChart
-                  unit="kg"
-                  points={clientEntries
-                    .filter((e) => e.weight_kg !== null)
-                    .map((e) => ({ label: formatDate(e.entry_date), value: e.weight_kg as number }))}
-                />
+                <ProgressLineChart unit="kg" points={weightPoints} />
               </CardContent>
             </Card>
 
@@ -186,20 +196,20 @@ export function ProgressTrackingView({
               Registros
             </h2>
             <MeasurementEntriesTable
-              entries={clientEntries}
+              measurements={clientMeasurements}
               metric={metric}
-              onEdit={(entry) => setEditingEntry(entry)}
+              onEdit={(measurement) => setEditingMeasurement(measurement)}
               onChanged={() => router.refresh()}
             />
           </div>
 
-          {photos.length > 0 && (
+          {clientPhotos.length > 0 && (
             <div>
               <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Fotos de progreso
               </h2>
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {photos.map((entry) => (
+                {clientPhotos.map((entry) => (
                   <ProgressPhotoThumbnail
                     key={entry.id}
                     photoPath={entry.photo_path!}
@@ -222,13 +232,11 @@ export function ProgressTrackingView({
             onAdded={() => {}}
           />
 
-          <AddMeasurementDialog
-            open={editingEntry !== null}
-            onOpenChange={(open) => !open && setEditingEntry(null)}
-            clientId={selectedClient.id}
-            trainerId={trainerId}
-            entry={editingEntry}
-            onAdded={() => setEditingEntry(null)}
+          <EditMeasurementDialog
+            open={editingMeasurement !== null}
+            onOpenChange={(open) => !open && setEditingMeasurement(null)}
+            measurement={editingMeasurement}
+            onSaved={() => setEditingMeasurement(null)}
           />
         </>
       )}

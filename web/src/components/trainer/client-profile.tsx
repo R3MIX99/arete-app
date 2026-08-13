@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { initialsOf, goalLabel, formatDate } from "@/lib/format";
 import { MEASUREMENT_FIELDS, type MeasurementKey } from "@/lib/types/progress";
-import type { ExerciseProgressSummary, ProgressEntry } from "@/lib/types/progress";
+import type { ExerciseProgressSummary, ProgressMeasurement } from "@/lib/types/progress";
 import type { ClientProfile as ClientProfileType } from "@/lib/types/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -25,18 +25,19 @@ import {
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { EditClientDialog } from "@/components/trainer/edit-client-dialog";
 import { AddMeasurementDialog } from "@/components/trainer/add-measurement-dialog";
+import { EditMeasurementDialog } from "@/components/trainer/edit-measurement-dialog";
 import { ExerciseProgressDialog } from "@/components/trainer/exercise-progress-dialog";
 import { MeasurementEntriesTable } from "@/components/trainer/measurement-entries-table";
 
 export function ClientProfile({
   trainerId,
   client,
-  entries,
+  measurements,
   exerciseSummaries,
 }: {
   trainerId: string;
   client: ClientProfileType;
-  entries: ProgressEntry[];
+  measurements: ProgressMeasurement[];
   exerciseSummaries: ExerciseProgressSummary[];
 }) {
   const router = useRouter();
@@ -44,7 +45,8 @@ export function ClientProfile({
   const [togglingStatus, setTogglingStatus] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
   const [addMeasurementOpen, setAddMeasurementOpen] = React.useState(false);
-  const [editingEntry, setEditingEntry] = React.useState<ProgressEntry | null>(null);
+  const [editingMeasurement, setEditingMeasurement] =
+    React.useState<ProgressMeasurement | null>(null);
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
   const [selectedExercise, setSelectedExercise] =
     React.useState<ExerciseProgressSummary | null>(null);
@@ -70,10 +72,11 @@ export function ClientProfile({
   const activeField = MEASUREMENT_FIELDS.find((f) => f.key === metric)!;
   const chartPoints = React.useMemo(
     () =>
-      entries
-        .filter((e) => e[metric] !== null)
-        .map((e) => ({ label: formatDate(e.entry_date), value: e[metric] as number })),
-    [entries, metric],
+      measurements
+        .filter((m) => m.metric_key === metric)
+        .sort((a, b) => a.entry_date.localeCompare(b.entry_date))
+        .map((m) => ({ label: formatDate(m.entry_date), value: m.value })),
+    [measurements, metric],
   );
 
   return (
@@ -169,9 +172,9 @@ export function ClientProfile({
               <ProgressLineChart points={chartPoints} unit={activeField.unit} />
 
               <MeasurementEntriesTable
-                entries={entries}
+                measurements={measurements}
                 metric={metric}
-                onEdit={(entry) => setEditingEntry(entry)}
+                onEdit={(measurement) => setEditingMeasurement(measurement)}
                 onChanged={() => router.refresh()}
               />
             </CardContent>
@@ -243,13 +246,11 @@ export function ClientProfile({
         onAdded={() => {}}
       />
 
-      <AddMeasurementDialog
-        open={editingEntry !== null}
-        onOpenChange={(open) => !open && setEditingEntry(null)}
-        clientId={client.id}
-        trainerId={trainerId}
-        entry={editingEntry}
-        onAdded={() => setEditingEntry(null)}
+      <EditMeasurementDialog
+        open={editingMeasurement !== null}
+        onOpenChange={(open) => !open && setEditingMeasurement(null)}
+        measurement={editingMeasurement}
+        onSaved={() => setEditingMeasurement(null)}
       />
 
       <ExerciseProgressDialog

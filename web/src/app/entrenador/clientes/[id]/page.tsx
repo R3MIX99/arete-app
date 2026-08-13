@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ClientProfile } from "@/components/trainer/client-profile";
 import type { ClientProfile as ClientProfileType } from "@/lib/types/client";
-import type { ExerciseProgressSummary, ProgressEntry } from "@/lib/types/progress";
+import type { ExerciseProgressSummary, ProgressMeasurement } from "@/lib/types/progress";
 
 interface SetLogRow {
   session_date: string;
@@ -52,7 +52,7 @@ export default async function ClientDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: client }, { data: entries }, { data: setLogs }] = await Promise.all([
+  const [{ data: client }, { data: measurements }, { data: setLogs }] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name, email, phone, goal, health_notes, status, created_at")
@@ -60,10 +60,8 @@ export default async function ClientDetailPage({
       .eq("role", "client")
       .single(),
     supabase
-      .from("progress_entries")
-      .select(
-        "id, entry_date, weight_kg, chest_cm, waist_cm, hip_cm, arm_cm, thigh_cm, neck_cm, shoulder_cm, calf_cm, forearm_cm, notes",
-      )
+      .from("progress_measurements")
+      .select("id, entry_date, metric_key, value, notes")
       .eq("client_id", id)
       .order("entry_date"),
     supabase
@@ -106,7 +104,7 @@ export default async function ClientDetailPage({
     <ClientProfile
       trainerId={user.id}
       client={client as ClientProfileType}
-      entries={(entries ?? []) as ProgressEntry[]}
+      measurements={(measurements ?? []) as ProgressMeasurement[]}
       exerciseSummaries={exerciseSummaries}
     />
   );

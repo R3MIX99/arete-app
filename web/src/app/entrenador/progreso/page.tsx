@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProgressTrackingView } from "@/components/trainer/progress-tracking-view";
 import type { CalendarAssignment } from "@/lib/calendar-logic";
-import type { ProgressEntry } from "@/lib/types/progress";
+import type { ProgressMeasurement, ProgressPhotoEntry } from "@/lib/types/progress";
 
 interface ProgramRoutineRow {
   id: string;
@@ -54,26 +54,34 @@ export default async function ProgressPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: clients }, { data: assignmentRows }, { data: entries }, { data: setLogs }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, full_name, status")
-        .eq("role", "client")
-        .order("full_name"),
-      supabase
-        .from("client_assignments")
-        .select(
-          "id, client_id, start_date, programs(name, duration_weeks, program_routines(id, week_number, day_of_week, routines(name))), routines(name), assignment_overrides(program_routine_id, routines(name))",
-        ),
-      supabase
-        .from("progress_entries")
-        .select(
-          "id, client_id, entry_date, weight_kg, chest_cm, waist_cm, hip_cm, arm_cm, thigh_cm, neck_cm, shoulder_cm, calf_cm, forearm_cm, notes, photo_path",
-        )
-        .order("entry_date"),
-      supabase.from("client_set_logs").select("client_id, session_date"),
-    ]);
+  const [
+    { data: clients },
+    { data: assignmentRows },
+    { data: measurements },
+    { data: photoEntries },
+    { data: setLogs },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name, status")
+      .eq("role", "client")
+      .order("full_name"),
+    supabase
+      .from("client_assignments")
+      .select(
+        "id, client_id, start_date, programs(name, duration_weeks, program_routines(id, week_number, day_of_week, routines(name))), routines(name), assignment_overrides(program_routine_id, routines(name))",
+      ),
+    supabase
+      .from("progress_measurements")
+      .select("id, client_id, entry_date, metric_key, value, notes")
+      .order("entry_date"),
+    supabase
+      .from("progress_entries")
+      .select("id, client_id, entry_date, photo_path, notes")
+      .not("photo_path", "is", null)
+      .order("entry_date"),
+    supabase.from("client_set_logs").select("client_id, session_date"),
+  ]);
 
   const assignments: CalendarAssignment[] = ((assignmentRows ?? []) as AssignmentRow[]).map((row) => {
     const program = one(row.programs);
@@ -115,7 +123,8 @@ export default async function ProgressPage() {
       trainerId={user.id}
       clients={((clients ?? []) as ClientRow[]).filter((c) => c.status === "active")}
       assignments={assignments}
-      entries={(entries ?? []) as (ProgressEntry & { client_id: string })[]}
+      measurements={(measurements ?? []) as (ProgressMeasurement & { client_id: string })[]}
+      photos={(photoEntries ?? []) as (ProgressPhotoEntry & { client_id: string })[]}
       loggedDatesByClient={Object.fromEntries(
         Array.from(loggedDatesByClient.entries()).map(([k, v]) => [k, Array.from(v)]),
       )}
