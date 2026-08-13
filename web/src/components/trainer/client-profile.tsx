@@ -26,6 +26,7 @@ import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { EditClientDialog } from "@/components/trainer/edit-client-dialog";
 import { AddMeasurementDialog } from "@/components/trainer/add-measurement-dialog";
 import { ExerciseProgressDialog } from "@/components/trainer/exercise-progress-dialog";
+import { MeasurementEntriesTable } from "@/components/trainer/measurement-entries-table";
 
 export function ClientProfile({
   trainerId,
@@ -43,6 +44,7 @@ export function ClientProfile({
   const [togglingStatus, setTogglingStatus] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
   const [addMeasurementOpen, setAddMeasurementOpen] = React.useState(false);
+  const [editingEntry, setEditingEntry] = React.useState<ProgressEntry | null>(null);
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
   const [selectedExercise, setSelectedExercise] =
     React.useState<ExerciseProgressSummary | null>(null);
@@ -165,6 +167,13 @@ export function ClientProfile({
               </Select>
 
               <ProgressLineChart points={chartPoints} unit={activeField.unit} />
+
+              <MeasurementEntriesTable
+                entries={entries}
+                metric={metric}
+                onEdit={(entry) => setEditingEntry(entry)}
+                onChanged={() => router.refresh()}
+              />
             </CardContent>
           </Card>
         </div>
@@ -232,6 +241,15 @@ export function ClientProfile({
         clientId={client.id}
         trainerId={trainerId}
         onAdded={() => {}}
+      />
+
+      <AddMeasurementDialog
+        open={editingEntry !== null}
+        onOpenChange={(open) => !open && setEditingEntry(null)}
+        clientId={client.id}
+        trainerId={trainerId}
+        entry={editingEntry}
+        onAdded={() => setEditingEntry(null)}
       />
 
       <ExerciseProgressDialog

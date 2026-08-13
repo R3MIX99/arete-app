@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
-import { MEASUREMENT_FIELDS } from "@/lib/types/progress";
+import { MEASUREMENT_FIELDS, type ProgressEntry } from "@/lib/types/progress";
 import {
   Dialog,
   DialogContent,
@@ -23,20 +23,28 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Alta o edición de un registro de progreso — si se pasa `entry`, el
+ * formulario arranca precargado con sus valores y guarda con `update`
+ * en vez de `insert`.
+ */
 export function AddMeasurementDialog({
   open,
   onOpenChange,
   clientId,
   trainerId,
+  entry,
   onAdded,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clientId: string;
   trainerId: string;
+  entry?: ProgressEntry | null;
   onAdded: () => void;
 }) {
   const router = useRouter();
+  const isEditing = Boolean(entry);
   const [entryDate, setEntryDate] = React.useState(todayIso());
   const [values, setValues] = React.useState<Record<string, string>>({});
   const [notes, setNotes] = React.useState("");
@@ -45,12 +53,18 @@ export function AddMeasurementDialog({
 
   React.useEffect(() => {
     if (open) {
-      setEntryDate(todayIso());
-      setValues({});
-      setNotes("");
+      setEntryDate(entry?.entry_date ?? todayIso());
+      setValues(
+        entry
+          ? Object.fromEntries(
+              MEASUREMENT_FIELDS.map((f) => [f.key, entry[f.key] != null ? String(entry[f.key]) : ""]),
+            )
+          : {},
+      );
+      setNotes(entry?.notes ?? "");
       setError(null);
     }
-  }, [open]);
+  }, [open, entry]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -63,8 +77,6 @@ export function AddMeasurementDialog({
     setError(null);
 
     const payload: Record<string, unknown> = {
-      client_id: clientId,
-      trainer_id: trainerId,
       entry_date: entryDate,
       notes: notes || null,
     };
@@ -74,16 +86,20 @@ export function AddMeasurementDialog({
     }
 
     const supabase = createClient();
-    const { error: insertError } = await supabase.from("progress_entries").insert(payload);
+    const { error: saveError } = isEditing
+      ? await supabase.from("progress_entries").update(payload).eq("id", entry!.id)
+      : await supabase
+          .from("progress_entries")
+          .insert({ ...payload, client_id: clientId, trainer_id: trainerId });
 
     setSaving(false);
-    if (insertError) {
+    if (saveError) {
       setError("No se pudo guardar la medición. Intenta de nuevo.");
       toast.error("No se pudo guardar la medición");
       return;
     }
 
-    toast.success("Medición registrada");
+    toast.success(isEditing ? "Medición actualizada" : "Medición registrada");
     onOpenChange(false);
     onAdded();
     router.refresh();
@@ -93,7 +109,7 @@ export function AddMeasurementDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nueva medición</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar medición" : "Nueva medición"}</DialogTitle>
           <DialogDescription>
             Deja en blanco lo que no hayas medido esta vez.
           </DialogDescription>
@@ -147,7 +163,7 @@ export function AddMeasurementDialog({
 
           <Button type="submit" disabled={saving} className="w-fit">
             {saving ? <Loader2 className="animate-spin" /> : null}
-            Guardar medición
+            {isEditing ? "Guardar cambios" : "Guardar medición"}
           </Button>
         </form>
       </DialogContent>

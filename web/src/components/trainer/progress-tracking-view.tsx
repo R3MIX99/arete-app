@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronsUpDown, Plus, Users } from "lucide-react";
 
 import { formatDate, initialsOf } from "@/lib/format";
@@ -25,6 +26,7 @@ import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { AddMeasurementDialog } from "@/components/trainer/add-measurement-dialog";
 import { ProgressPhotoThumbnail } from "@/components/trainer/progress-photo-thumbnail";
 import { ClientPickerDialog } from "@/components/trainer/client-picker-dialog";
+import { MeasurementEntriesTable } from "@/components/trainer/measurement-entries-table";
 
 interface ClientRow {
   id: string;
@@ -45,10 +47,12 @@ export function ProgressTrackingView({
   entries: (ProgressEntry & { client_id: string })[];
   loggedDatesByClient: Record<string, string[]>;
 }) {
+  const router = useRouter();
   const [selectedClientId, setSelectedClientId] = React.useState(clients[0]?.id ?? "");
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
   const [addOpen, setAddOpen] = React.useState(false);
   const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [editingEntry, setEditingEntry] = React.useState<ProgressEntry | null>(null);
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
@@ -171,10 +175,22 @@ export function ProgressTrackingView({
                   </SelectContent>
                 </Select>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex flex-col gap-4">
                 <ProgressLineChart points={chartPoints} unit={activeField.unit} />
               </CardContent>
             </Card>
+          </div>
+
+          <div>
+            <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Registros
+            </h2>
+            <MeasurementEntriesTable
+              entries={clientEntries}
+              metric={metric}
+              onEdit={(entry) => setEditingEntry(entry)}
+              onChanged={() => router.refresh()}
+            />
           </div>
 
           {photos.length > 0 && (
@@ -204,6 +220,15 @@ export function ProgressTrackingView({
             clientId={selectedClient.id}
             trainerId={trainerId}
             onAdded={() => {}}
+          />
+
+          <AddMeasurementDialog
+            open={editingEntry !== null}
+            onOpenChange={(open) => !open && setEditingEntry(null)}
+            clientId={selectedClient.id}
+            trainerId={trainerId}
+            entry={editingEntry}
+            onAdded={() => setEditingEntry(null)}
           />
         </>
       )}
