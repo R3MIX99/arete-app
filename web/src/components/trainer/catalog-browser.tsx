@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, Utensils, Apple as AppleIcon, FilterX, Star } from "lucide-react";
+import { Search, Plus, Utensils, Apple as AppleIcon, FilterX, Star, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
 import { mealTypeLabel } from "@/lib/format";
@@ -37,6 +37,7 @@ export function CatalogBrowser({
   const [query, setQuery] = React.useState("");
   const [categoryId, setCategoryId] = React.useState<string | null>(null);
   const [favoritesOnly, setFavoritesOnly] = React.useState(false);
+  const [customOnly, setCustomOnly] = React.useState(false);
   const [selectedFood, setSelectedFood] = React.useState<FoodOption | null>(null);
   const [favoriteIds, setFavoriteIds] = React.useState(
     () => new Set(foods.filter((f) => f.is_favorite).map((f) => f.id)),
@@ -46,11 +47,12 @@ export function CatalogBrowser({
     const q = query.trim().toLowerCase();
     return foods.filter((f) => {
       if (favoritesOnly && !favoriteIds.has(f.id)) return false;
+      if (customOnly && f.trainer_id !== trainerId) return false;
       if (categoryId && f.food_category_id !== categoryId) return false;
       if (q && !f.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [foods, query, categoryId, favoritesOnly, favoriteIds]);
+  }, [foods, query, categoryId, favoritesOnly, favoriteIds, customOnly, trainerId]);
 
   const filteredDishes = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -154,6 +156,14 @@ export function CatalogBrowser({
             <Star className="size-3" fill={favoritesOnly ? "currentColor" : "none"} />
             Favoritos
           </Badge>
+          <Badge
+            variant={customOnly ? "default" : "outline"}
+            className="h-7 cursor-pointer gap-1 px-3"
+            onClick={() => setCustomOnly((v) => !v)}
+          >
+            <UserRound className="size-3" />
+            Personalizados
+          </Badge>
           <div className="mx-1 h-4 w-px bg-border" />
           {categories.map((category) => (
             <Badge
@@ -167,7 +177,7 @@ export function CatalogBrowser({
               {category.name}
             </Badge>
           ))}
-          {(categoryId || favoritesOnly) && (
+          {(categoryId || favoritesOnly || customOnly) && (
             <Button
               variant="ghost"
               size="sm"
@@ -175,6 +185,7 @@ export function CatalogBrowser({
               onClick={() => {
                 setCategoryId(null);
                 setFavoritesOnly(false);
+                setCustomOnly(false);
               }}
             >
               <FilterX /> Limpiar

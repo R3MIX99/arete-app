@@ -35,6 +35,7 @@ interface FoodRow {
   household_unit_grams: number | null;
   trainer_id: string | null;
   image_path: string | null;
+  forked_from: string | null;
   food_categories: { name: string; slug: string } | { name: string; slug: string }[] | null;
 }
 
@@ -57,7 +58,7 @@ export default async function DishDetailPage({
   const [{ data: dish }, { data: ingredients }, { data: foods }] = await Promise.all([
     supabase
       .from("dishes")
-      .select("id, name, description, meal_type, image_path")
+      .select("id, name, description, meal_type, image_path, trainer_id, forked_from")
       .eq("id", id)
       .single(),
     supabase
@@ -70,8 +71,11 @@ export default async function DishDetailPage({
     supabase
       .from("foods")
       .select(
-        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, food_categories(name, slug)",
+        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, forked_from, food_categories(name, slug)",
       )
+      // Solo mi catálogo — los ingredientes de un platillo se eligen de
+      // lo que ya tengo disponible, no de toda la comunidad.
+      .or(`trainer_id.is.null,trainer_id.eq.${user.id}`)
       .order("name"),
   ]);
 
@@ -113,6 +117,7 @@ export default async function DishDetailPage({
       trainer_id: f.trainer_id,
       image_path: f.image_path,
       is_favorite: false,
+      forked_from: f.forked_from,
     };
   });
 
@@ -125,6 +130,8 @@ export default async function DishDetailPage({
         description: dish.description,
         meal_type: dish.meal_type as MealType,
         image_path: dish.image_path,
+        trainer_id: dish.trainer_id,
+        forked_from: dish.forked_from,
       }}
       initialIngredients={initialIngredients}
       foodCatalog={foodOptions}

@@ -57,6 +57,8 @@ interface DishInfo {
   description: string | null;
   meal_type: MealType;
   image_path: string | null;
+  trainer_id: string | null;
+  forked_from: string | null;
 }
 
 export function DishBuilder({
@@ -79,6 +81,7 @@ export function DishBuilder({
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const isOwned = dish.trainer_id === trainerId;
 
   const totals = React.useMemo(() => {
     return ingredients.reduce(
@@ -176,16 +179,18 @@ export function DishBuilder({
         </Button>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil /> Editar información
+            <Pencil /> {isOwned ? "Editar información" : "Copiar y editar"}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash /> Eliminar
-          </Button>
+          {isOwned && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash /> Eliminar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -198,6 +203,13 @@ export function DishBuilder({
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="secondary">{mealTypeLabel(dish.meal_type)}</Badge>
           </div>
+          {!isOwned && (
+            <p className="rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
+              Este platillo es de {dish.trainer_id ? "otro entrenador" : "Areté"}. No puedes
+              editarlo ni agregarle ingredientes directamente — usa &quot;Copiar y editar&quot;
+              para crear tu propia versión.
+            </p>
+          )}
           {dish.description && (
             <p className="text-sm text-muted-foreground">{dish.description}</p>
           )}
@@ -214,14 +226,16 @@ export function DishBuilder({
         <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Ingredientes
         </h2>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setPickerOpen(true)}
-        >
-          <Plus /> Agregar ingrediente
-        </Button>
+        {isOwned && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setPickerOpen(true)}
+          >
+            <Plus /> Agregar ingrediente
+          </Button>
+        )}
       </div>
 
       {ingredients.length === 0 ? (
@@ -250,21 +264,23 @@ export function DishBuilder({
                       {measure ? ` · ${measure}` : ""} · {kcal} kcal
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Quitar ingrediente"
-                    className="shrink-0 text-destructive hover:text-destructive"
-                    disabled={removingId === ing.id}
-                    onClick={() => handleRemoveIngredient(ing.id)}
-                  >
-                    {removingId === ing.id ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <Trash2 />
-                    )}
-                  </Button>
+                  {isOwned && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Quitar ingrediente"
+                      className="shrink-0 text-destructive hover:text-destructive"
+                      disabled={removingId === ing.id}
+                      onClick={() => handleRemoveIngredient(ing.id)}
+                    >
+                      {removingId === ing.id ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Trash2 />
+                      )}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -392,26 +408,73 @@ function EditDishInfoDialog({
     setImagePath(path);
   }
 
+  const isOwned = dish.trainer_id === trainerId;
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
     const supabase = createClient();
-    const { error } = await supabase
+
+    if (isOwned) {
+      const { error } = await supabase
+        .from("dishes")
+        .update({
+          name,
+          description: description || null,
+          meal_type: mealType,
+          image_path: imagePath,
+        })
+        .eq("id", dish.id);
+      setSaving(false);
+      if (error) {
+        toast.error("No se pudieron guardar los cambios");
+        return;
+      }
+      toast.success("Cambios guardados");
+      onOpenChange(false);
+      router.refresh();
+      return;
+    }
+
+    // No es tuyo: crea tu propia copia con los ingredientes del
+    // original en vez de tocar el compartido.
+    const { data: newDish, error: insertError } = await supabase
       .from("dishes")
-      .update({
+      .insert({
+        trainer_id: trainerId,
+        forked_from: dish.id,
         name,
         description: description || null,
         meal_type: mealType,
         image_path: imagePath,
       })
-      .eq("id", dish.id);
-    setSaving(false);
-    if (error) {
-      toast.error("No se pudieron guardar los cambios");
+      .select("id")
+      .single();
+    if (insertError || !newDish) {
+      setSaving(false);
+      toast.error("No se pudo guardar tu copia personalizada");
       return;
     }
-    toast.success("Cambios guardados");
+
+    const { data: sourceIngredients } = await supabase
+      .from("dish_ingredients")
+      .select("food_id, quantity_grams, order_index")
+      .eq("dish_id", dish.id);
+    if (sourceIngredients && sourceIngredients.length > 0) {
+      await supabase.from("dish_ingredients").insert(
+        sourceIngredients.map((ing: { food_id: string; quantity_grams: number; order_index: number }) => ({
+          dish_id: newDish.id,
+          food_id: ing.food_id,
+          quantity_grams: ing.quantity_grams,
+          order_index: ing.order_index,
+        })),
+      );
+    }
+
+    setSaving(false);
+    toast.success("Se creó tu copia personalizada de este platillo");
     onOpenChange(false);
+    router.push(`/entrenador/nutricion/platillos/${newDish.id}`);
     router.refresh();
   }
 
@@ -419,8 +482,14 @@ function EditDishInfoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Editar información</DialogTitle>
+          <DialogTitle>{isOwned ? "Editar información" : "Copiar y editar"}</DialogTitle>
         </DialogHeader>
+        {!isOwned && (
+          <p className="rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
+            Al guardar se crea tu propia copia de este platillo (con los mismos ingredientes)
+            que podrás seguir editando libremente.
+          </p>
+        )}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label>Imagen (opcional)</Label>
@@ -492,7 +561,7 @@ function EditDishInfoDialog({
           </div>
           <Button type="submit" disabled={saving} className="w-fit">
             {saving ? <Loader2 className="animate-spin" /> : null}
-            Guardar cambios
+            {isOwned ? "Guardar cambios" : "Guardar como mi copia"}
           </Button>
         </form>
       </DialogContent>

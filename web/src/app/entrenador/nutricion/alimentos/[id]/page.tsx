@@ -16,6 +16,7 @@ interface FoodRow {
   household_unit_grams: number | null;
   trainer_id: string | null;
   image_path: string | null;
+  forked_from: string | null;
   food_categories: { name: string; slug: string } | { name: string; slug: string }[] | null;
 }
 
@@ -39,7 +40,7 @@ export default async function EditFoodPage({
     supabase
       .from("foods")
       .select(
-        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, food_categories(name, slug)",
+        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, forked_from, food_categories(name, slug)",
       )
       .eq("id", id)
       .single(),
@@ -65,6 +66,7 @@ export default async function EditFoodPage({
     trainer_id: row.trainer_id,
     image_path: row.image_path,
     is_favorite: false,
+    forked_from: row.forked_from,
   };
 
   return (

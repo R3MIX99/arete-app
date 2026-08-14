@@ -22,6 +22,9 @@ export interface FoodOption {
   trainer_id: string | null;
   image_path: string | null;
   is_favorite: boolean;
+  // Del alimento (esencial o de otro entrenador) del que se copió éste,
+  // si aplica. Ver migración 20260814150000_catalog_community_sharing.
+  forked_from: string | null;
 }
 
 export interface DishOption {
@@ -31,6 +34,20 @@ export interface DishOption {
   meal_type: MealType;
   trainer_id: string | null;
   image_path: string | null;
+  forked_from: string | null;
+}
+
+/** Un alimento tal como aparece en la pestaña Comunidad: de cualquier
+ * entrenador (o esencial de Areté), con quién lo creó y si ya está en
+ * el catálogo propio del entrenador que está viendo la lista. */
+export interface CommunityFoodOption extends FoodOption {
+  creator_name: string;
+  in_my_catalog: boolean;
+}
+
+export interface CommunityDishOption extends DishOption {
+  creator_name: string;
+  in_my_catalog: boolean;
 }
 
 export interface DishIngredientInput {

@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DietPlanBuilder } from "@/components/trainer/diet-plan-builder";
 import type {
+  CommunityDishOption,
+  CommunityFoodOption,
   DietPlanAssignmentSummary,
   DishOption,
   FoodOption,
@@ -48,7 +50,23 @@ interface FoodRow {
   household_unit_grams: number | null;
   trainer_id: string | null;
   image_path: string | null;
+  forked_from: string | null;
   food_categories: { name: string; slug: string } | { name: string; slug: string }[] | null;
+}
+
+interface CommunityFoodRow extends FoodRow {
+  profiles: { full_name: string } | { full_name: string }[] | null;
+}
+
+interface CommunityDishRow {
+  id: string;
+  name: string;
+  description: string | null;
+  meal_type: string;
+  trainer_id: string | null;
+  image_path: string | null;
+  forked_from: string | null;
+  profiles: { full_name: string } | { full_name: string }[] | null;
 }
 
 interface AssignmentRow {
@@ -83,6 +101,8 @@ export default async function DietPlanDetailPage({
     { data: dishes },
     { data: clients },
     { data: assignments },
+    { data: communityFoodRows },
+    { data: communityDishRows },
   ] = await Promise.all([
     supabase
       .from("diet_plans")
@@ -100,12 +120,16 @@ export default async function DietPlanDetailPage({
     supabase
       .from("foods")
       .select(
-        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, food_categories(name, slug)",
+        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, forked_from, food_categories(name, slug)",
       )
+      // Solo mi catálogo (esenciales + lo mío) — lo de otros
+      // entrenadores se agrega desde la pestaña Comunidad primero.
+      .or(`trainer_id.is.null,trainer_id.eq.${user.id}`)
       .order("name"),
     supabase
       .from("dishes")
-      .select("id, name, description, meal_type, trainer_id, image_path")
+      .select("id, name, description, meal_type, trainer_id, image_path, forked_from")
+      .or(`trainer_id.is.null,trainer_id.eq.${user.id}`)
       .order("name"),
     supabase
       .from("profiles")
@@ -118,6 +142,20 @@ export default async function DietPlanDetailPage({
         "id, client_id, start_date, target_daily_calories, scale_factor, profiles!diet_plan_assignments_client_id_fkey(full_name)",
       )
       .eq("diet_plan_id", id),
+    // Sin filtrar por dueño — toda la comunidad, para poder agregar a
+    // mi catálogo un alimento de otro entrenador desde el picker.
+    supabase
+      .from("foods")
+      .select(
+        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, forked_from, food_categories(name, slug), profiles!foods_trainer_id_fkey(full_name)",
+      )
+      .order("name"),
+    supabase
+      .from("dishes")
+      .select(
+        "id, name, description, meal_type, trainer_id, image_path, forked_from, profiles!dishes_trainer_id_fkey(full_name)",
+      )
+      .order("name"),
   ]);
 
   if (!plan) notFound();
@@ -200,8 +238,59 @@ export default async function DietPlanDetailPage({
       trainer_id: f.trainer_id,
       image_path: f.image_path,
       is_favorite: false,
+      forked_from: f.forked_from,
     };
   });
+
+  const myFoodIds = new Set(foodOptions.map((f) => f.id));
+  const myDishIds = new Set(((dishes ?? []) as DishOption[]).map((d) => d.id));
+  const forkedFoodIds = new Set(
+    foodOptions.filter((f) => f.trainer_id === user.id && f.forked_from).map((f) => f.forked_from!),
+  );
+  const forkedDishIds = new Set(
+    ((dishes ?? []) as DishOption[])
+      .filter((d) => d.trainer_id === user.id && d.forked_from)
+      .map((d) => d.forked_from!),
+  );
+
+  const communityFoods: CommunityFoodOption[] = ((communityFoodRows ?? []) as CommunityFoodRow[]).map(
+    (f) => {
+      const category = one(f.food_categories);
+      return {
+        id: f.id,
+        name: f.name,
+        food_category_id: f.food_category_id,
+        category_name: category?.name ?? "",
+        category_slug: category?.slug ?? "",
+        calories_per_100g: f.calories_per_100g,
+        protein_per_100g: f.protein_per_100g,
+        carbs_per_100g: f.carbs_per_100g,
+        fat_per_100g: f.fat_per_100g,
+        household_unit_name: f.household_unit_name,
+        household_unit_grams: f.household_unit_grams,
+        trainer_id: f.trainer_id,
+        image_path: f.image_path,
+        is_favorite: false,
+        forked_from: f.forked_from,
+        creator_name: f.trainer_id ? (one(f.profiles)?.full_name ?? "Entrenador") : "Areté",
+        in_my_catalog: myFoodIds.has(f.id) || forkedFoodIds.has(f.id),
+      };
+    },
+  );
+
+  const communityDishes: CommunityDishOption[] = ((communityDishRows ?? []) as CommunityDishRow[]).map(
+    (d) => ({
+      id: d.id,
+      name: d.name,
+      description: d.description,
+      meal_type: d.meal_type as MealType,
+      trainer_id: d.trainer_id,
+      image_path: d.image_path,
+      forked_from: d.forked_from,
+      creator_name: d.trainer_id ? (one(d.profiles)?.full_name ?? "Entrenador") : "Areté",
+      in_my_catalog: myDishIds.has(d.id) || forkedDishIds.has(d.id),
+    }),
+  );
 
   const assignmentSummaries: DietPlanAssignmentSummary[] = ((assignments ?? []) as AssignmentRow[]).map(
     (a) => ({
@@ -221,6 +310,8 @@ export default async function DietPlanDetailPage({
       mealItems={mealItems}
       foodCatalog={foodOptions}
       dishCatalog={(dishes ?? []) as DishOption[]}
+      communityFoods={communityFoods}
+      communityDishes={communityDishes}
       clients={(clients ?? []) as ClientProfile[]}
       assignments={assignmentSummaries}
     />

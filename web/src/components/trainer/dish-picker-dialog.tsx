@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { mealTypeLabel } from "@/lib/format";
 import { mealTypeIcon } from "@/lib/food-icons";
-import type { DishOption } from "@/lib/types/nutrition";
+import { createClient } from "@/lib/supabase/client";
+import type { CommunityDishOption, DishOption } from "@/lib/types/nutrition";
 import {
   Dialog,
   DialogContent,
@@ -19,18 +21,83 @@ export function DishPickerDialog({
   open,
   onOpenChange,
   dishes,
+  communityDishes,
+  trainerId,
   onPick,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dishes: DishOption[];
+  // Si se pasan junto con trainerId, aparece una pestaña "Comunidad"
+  // que copia el platillo elegido (con sus ingredientes) a tu catálogo
+  // antes de usarlo.
+  communityDishes?: CommunityDishOption[];
+  trainerId?: string;
   onPick: (dish: DishOption) => void;
 }) {
   const [query, setQuery] = React.useState("");
+  const [source, setSource] = React.useState<"mine" | "community">("mine");
+  const [addingId, setAddingId] = React.useState<string | null>(null);
 
-  const filtered = dishes.filter((d) =>
+  React.useEffect(() => {
+    if (open) {
+      setQuery("");
+      setSource("mine");
+    }
+  }, [open]);
+
+  const showCommunityTab = Boolean(communityDishes && trainerId);
+  const communityOnly = (communityDishes ?? []).filter((d) => !d.in_my_catalog);
+
+  const filtered = (source === "mine" ? dishes : communityOnly).filter((d) =>
     d.name.toLowerCase().includes(query.trim().toLowerCase()),
   );
+
+  async function pickCommunityDish(dish: CommunityDishOption) {
+    if (!trainerId) return;
+    setAddingId(dish.id);
+    const supabase = createClient();
+    const { data: newDish, error } = await supabase
+      .from("dishes")
+      .insert({
+        trainer_id: trainerId,
+        forked_from: dish.id,
+        name: dish.name,
+        description: dish.description,
+        meal_type: dish.meal_type,
+        image_path: dish.image_path,
+      })
+      .select("id")
+      .single();
+    if (error || !newDish) {
+      setAddingId(null);
+      toast.error("No se pudo agregar a tu catálogo");
+      return;
+    }
+
+    const { data: ingredients } = await supabase
+      .from("dish_ingredients")
+      .select("food_id, quantity_grams, order_index")
+      .eq("dish_id", dish.id);
+    if (ingredients && ingredients.length > 0) {
+      await supabase.from("dish_ingredients").insert(
+        ingredients.map(
+          (ing: { food_id: string; quantity_grams: number; order_index: number }) => ({
+            dish_id: newDish.id,
+            food_id: ing.food_id,
+            quantity_grams: ing.quantity_grams,
+            order_index: ing.order_index,
+          }),
+        ),
+      );
+    }
+
+    setAddingId(null);
+    toast.success(`"${dish.name}" agregado a tu catálogo`);
+    onPick({ ...dish, id: newDish.id, trainer_id: trainerId, forked_from: dish.id });
+    onOpenChange(false);
+    setQuery("");
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -38,6 +105,34 @@ export function DishPickerDialog({
         <DialogHeader>
           <DialogTitle>Elegir platillo</DialogTitle>
         </DialogHeader>
+
+        {showCommunityTab && (
+          <div className="inline-flex w-fit rounded-lg bg-foreground/[0.04] p-1">
+            <button
+              type="button"
+              onClick={() => setSource("mine")}
+              className={
+                source === "mine"
+                  ? "rounded-md bg-card px-3 py-1.5 text-sm font-medium shadow-sm"
+                  : "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+              }
+            >
+              Mi catálogo
+            </button>
+            <button
+              type="button"
+              onClick={() => setSource("community")}
+              className={
+                source === "community"
+                  ? "rounded-md bg-card px-3 py-1.5 text-sm font-medium shadow-sm"
+                  : "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+              }
+            >
+              Comunidad
+            </button>
+          </div>
+        )}
+
         <div className="relative">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -51,32 +146,50 @@ export function DishPickerDialog({
         <div className="flex max-h-80 flex-col gap-1.5 overflow-y-auto">
           {filtered.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              {dishes.length === 0
+              {source === "mine" && dishes.length === 0
                 ? "Todavía no tienes platillos en tu catálogo."
                 : "Ningún platillo coincide con la búsqueda."}
             </p>
           ) : (
             filtered.map((dish) => {
               const Icon = mealTypeIcon(dish.meal_type);
+              const isCommunity = source === "community";
+              const communityDish = dish as CommunityDishOption;
               return (
                 <button
                   key={dish.id}
                   type="button"
+                  disabled={addingId === dish.id}
                   onClick={() => {
+                    if (isCommunity) {
+                      void pickCommunityDish(communityDish);
+                      return;
+                    }
                     onPick(dish);
                     onOpenChange(false);
                     setQuery("");
                   }}
-                  className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors hover:border-border hover:bg-accent"
+                  className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors hover:border-border hover:bg-accent disabled:opacity-60"
                 >
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-                    <Icon className="size-4" />
+                    {addingId === dish.id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Icon className="size-4" />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{dish.name}</p>
-                    <Badge variant="secondary" className="mt-0.5 text-[10px]">
-                      {mealTypeLabel(dish.meal_type)}
-                    </Badge>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                      <Badge variant="secondary" className="text-[10px]">
+                        {mealTypeLabel(dish.meal_type)}
+                      </Badge>
+                      {isCommunity && (
+                        <span className="text-[11px] text-muted-foreground">
+                          Por {communityDish.creator_name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </button>
               );

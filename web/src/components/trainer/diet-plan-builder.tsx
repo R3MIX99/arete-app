@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { mealTypeLabel, formatDate, initialsOf } from "@/lib/format";
 import type {
+  CommunityDishOption,
+  CommunityFoodOption,
   DietPlanAssignmentSummary,
   DishOption,
   FoodOption,
@@ -64,6 +66,8 @@ export function DietPlanBuilder({
   mealItems,
   foodCatalog,
   dishCatalog,
+  communityFoods,
+  communityDishes,
   clients,
   assignments,
 }: {
@@ -72,6 +76,8 @@ export function DietPlanBuilder({
   mealItems: MealItemInput[];
   foodCatalog: FoodOption[];
   dishCatalog: DishOption[];
+  communityFoods?: CommunityFoodOption[];
+  communityDishes?: CommunityDishOption[];
   clients: ClientProfile[];
   assignments: DietPlanAssignmentSummary[];
 }) {
@@ -357,6 +363,8 @@ export function DietPlanBuilder({
         open={dishPickerMeal !== null}
         onOpenChange={(open) => !open && setDishPickerMeal(null)}
         dishes={dishCatalog}
+        communityDishes={communityDishes}
+        trainerId={trainerId}
         onPick={(dish) => {
           const mealType = dishPickerMeal!;
           setDishPickerMeal(null);
@@ -368,6 +376,8 @@ export function DietPlanBuilder({
         open={foodPickerMeal !== null}
         onOpenChange={(open) => !open && setFoodPickerMeal(null)}
         foods={foodCatalog}
+        communityFoods={communityFoods}
+        trainerId={trainerId}
         onPick={(food) => {
           const mealType = foodPickerMeal!;
           setFoodPickerMeal(null);

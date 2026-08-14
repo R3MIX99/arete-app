@@ -52,6 +52,7 @@ export function NewFoodForm({
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const imageInputRef = React.useRef<HTMLInputElement>(null);
+  const isOwned = !food || food.trainer_id === trainerId;
 
   const categorySlug = categories.find((c) => c.id === categoryId)?.slug ?? null;
   const CategoryIcon = foodCategoryIcon(categorySlug);
@@ -104,17 +105,36 @@ export function NewFoodForm({
     };
 
     if (mode === "edit" && food) {
-      const { error: updateError } = await supabase
-        .from("foods")
-        .update(payload)
-        .eq("id", food.id);
-      setLoading(false);
-      if (updateError) {
-        setError("No se pudieron guardar los cambios. Intenta de nuevo.");
-        toast.error("No se pudieron guardar los cambios");
+      if (isOwned) {
+        const { error: updateError } = await supabase
+          .from("foods")
+          .update(payload)
+          .eq("id", food.id);
+        setLoading(false);
+        if (updateError) {
+          setError("No se pudieron guardar los cambios. Intenta de nuevo.");
+          toast.error("No se pudieron guardar los cambios");
+          return;
+        }
+        toast.success("Cambios guardados");
+        router.push("/entrenador/nutricion");
+        router.refresh();
         return;
       }
-      toast.success("Cambios guardados");
+
+      // No es tuyo (esencial de Areté, o de otro entrenador): guardar
+      // crea tu propia copia personalizada en vez de tocar la
+      // compartida — a los demás no les cambia nada.
+      const { error: forkError } = await supabase
+        .from("foods")
+        .insert({ ...payload, trainer_id: trainerId, forked_from: food.id });
+      setLoading(false);
+      if (forkError) {
+        setError("No se pudo guardar tu copia personalizada. Intenta de nuevo.");
+        toast.error("No se pudo guardar tu copia personalizada");
+        return;
+      }
+      toast.success("Se creó tu copia personalizada de este alimento");
       router.push("/entrenador/nutricion");
       router.refresh();
       return;
@@ -159,7 +179,7 @@ export function NewFoodForm({
             <ArrowLeft /> Volver a nutrición
           </Link>
         </Button>
-        {mode === "edit" && (
+        {mode === "edit" && isOwned && (
           <Button
             variant="ghost"
             size="sm"
@@ -176,6 +196,12 @@ export function NewFoodForm({
           <CardTitle>{mode === "create" ? "Nuevo alimento" : "Editar alimento"}</CardTitle>
         </CardHeader>
         <CardContent>
+          {mode === "edit" && !isOwned && (
+            <p className="mb-4 rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
+              Este alimento es de {food?.trainer_id ? "otro entrenador" : "Areté"}. Al guardar se
+              creará tu propia copia personalizada — el original no cambia para nadie más.
+            </p>
+          )}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label>Imagen (opcional)</Label>
@@ -341,7 +367,11 @@ export function NewFoodForm({
 
             <Button type="submit" disabled={loading} className="mt-1 w-fit">
               {loading ? <Loader2 className="animate-spin" /> : null}
-              {mode === "create" ? "Crear alimento" : "Guardar cambios"}
+              {mode === "create"
+                ? "Crear alimento"
+                : isOwned
+                  ? "Guardar cambios"
+                  : "Guardar como mi copia"}
             </Button>
           </form>
         </CardContent>
