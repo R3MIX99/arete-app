@@ -227,13 +227,19 @@ export function ClientsBrowser({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
           {filtered.map((client) => (
-            <Card key={client.id} className="h-full card-hover-glow transition-colors hover:border-primary/40">
-              <CardContent className="flex h-full flex-col gap-3">
-                <Link href={`/entrenador/clientes/${client.id}`} className="flex flex-1 flex-col gap-3">
-                  <div className="flex items-start justify-between">
-                    <Avatar className="size-10">
+            <Card
+              key={client.id}
+              className="h-full card-hover-glow py-4 transition-colors hover:border-primary/40"
+            >
+              <CardContent className="flex h-full flex-col gap-2.5 px-4">
+                <Link
+                  href={`/entrenador/clientes/${client.id}`}
+                  className="flex flex-1 flex-col items-center gap-2 text-center"
+                >
+                  <div className="relative">
+                    <Avatar className="size-12">
                       <AvatarFallback
                         className={
                           client.status === "inactive" ? "opacity-50" : undefined
@@ -243,16 +249,16 @@ export function ClientsBrowser({
                       </AvatarFallback>
                     </Avatar>
                     {client.status === "inactive" && (
-                      <Badge variant="warning">Inactivo</Badge>
+                      <span className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-warning ring-2 ring-card">
+                        <UserX className="size-2.5 text-white" />
+                      </span>
                     )}
                   </div>
-                  <div className="mt-auto">
+                  <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{client.full_name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {client.email}
-                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{client.email}</p>
                     {client.goal && (
-                      <Badge variant="secondary" className="mt-2">
+                      <Badge variant="secondary" className="mt-1.5 text-[10px]">
                         {goalLabel(client.goal)}
                       </Badge>
                     )}

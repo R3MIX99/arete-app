@@ -83,11 +83,12 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
             className="pl-9"
           />
         </div>
+        {/* Teléfono: ícono que abre un diálogo con los filtros. */}
         <Button
           variant="outline"
           size="icon"
           aria-label="Filtros"
-          className="relative shrink-0"
+          className="relative shrink-0 md:hidden"
           onClick={() => setFiltersOpen(true)}
         >
           <SlidersHorizontal className="size-4" />
@@ -95,6 +96,54 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
             <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
           )}
         </Button>
+
+        {/* Computadora: selectores de filtro visibles en la misma barra. */}
+        <div className="hidden items-center gap-2 md:flex">
+          <Select
+            value={muscleGroup ?? "all"}
+            onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Grupo muscular" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los grupos</SelectItem>
+              {MUSCLE_GROUPS.map((group) => (
+                <SelectItem key={group} value={group}>
+                  {muscleGroupLabel(group)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={equipment ?? "all"}
+            onValueChange={(v) => setEquipment(v === "all" ? null : (v as Equipment))}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Equipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo el equipo</SelectItem>
+              {EQUIPMENT.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {equipmentLabel(item)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            disabled={!hasActiveFilters}
+            onClick={clearFilters}
+          >
+            <FilterX /> Limpiar filtros
+          </Button>
+        </div>
+
         <Button asChild className="ml-auto hidden md:inline-flex">
           <Link href="/entrenador/ejercicios/nuevo">
             <Plus />

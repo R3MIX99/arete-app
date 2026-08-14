@@ -90,15 +90,16 @@ export function ClientProfile({
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             aria-label="Editar información"
             onClick={() => setEditOpen(true)}
           >
             <Pencil />
+            <span className="hidden md:inline">Editar información</span>
           </Button>
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             aria-label={status === "active" ? "Desactivar cliente" : "Reactivar cliente"}
             disabled={togglingStatus}
             onClick={toggleStatus}
@@ -109,6 +110,9 @@ export function ClientProfile({
             }
           >
             {status === "active" ? <UserX /> : <UserCheck />}
+            <span className="hidden md:inline">
+              {status === "active" ? "Desactivar cliente" : "Reactivar cliente"}
+            </span>
           </Button>
         </div>
       </div>

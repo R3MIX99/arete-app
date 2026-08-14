@@ -184,20 +184,22 @@ export function ProgramBuilder({
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             aria-label="Editar información"
             onClick={() => setEditOpen(true)}
           >
             <Pencil />
+            <span className="hidden md:inline">Editar información</span>
           </Button>
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             aria-label="Eliminar programa"
             className="text-destructive hover:text-destructive"
             onClick={() => setDeleteOpen(true)}
           >
             <Trash2 />
+            <span className="hidden md:inline">Eliminar programa</span>
           </Button>
         </div>
       </div>
@@ -237,38 +239,38 @@ export function ProgramBuilder({
                   <button
                     type="button"
                     onClick={() => toggleWeek(week)}
-                    className="flex w-full items-center justify-between gap-2 px-5 text-left md:cursor-default"
+                    className="flex w-full items-center justify-between gap-2 px-5 text-left"
                   >
                     <div className="flex flex-col gap-1">
                       <CardTitle className="text-sm">Semana {week}</CardTitle>
-                      <p className="text-xs text-muted-foreground md:hidden">
+                      <p className="text-xs text-muted-foreground">
                         {filledDays === 0
                           ? "Sin rutinas"
                           : `${filledDays} ${filledDays === 1 ? "día" : "días"} con rutina`}
                       </p>
                     </div>
                     <ChevronDown
-                      className={`size-4 shrink-0 text-muted-foreground transition-transform md:hidden ${isOpen ? "rotate-180" : ""}`}
+                      className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
                     />
                   </button>
                   <CardContent
-                    className={`${isOpen ? "flex" : "hidden"} flex-col gap-1.5 md:flex`}
+                    className={`${isOpen ? "flex" : "hidden"} flex-col gap-1.5`}
                   >
                     {[1, 2, 3, 4, 5, 6, 7].map((day) => {
                       const daySlots = weekSlots.filter((s) => s.day_of_week === day);
                       return (
                         <div
                           key={day}
-                          className="flex flex-col gap-2 rounded-lg px-2 py-2.5 md:flex-row md:items-start md:justify-between md:gap-2 md:py-1.5 md:odd:bg-foreground/[0.02]"
+                          className="flex flex-col gap-2 rounded-lg px-2 py-3 md:flex-row md:items-start md:justify-between md:gap-3 md:py-2.5 md:odd:bg-foreground/[0.02]"
                         >
-                          <span className="text-sm font-semibold md:w-20 md:shrink-0 md:pt-0.5 md:text-xs md:font-medium md:text-muted-foreground">
+                          <span className="text-sm font-semibold md:w-24 md:shrink-0 md:pt-1.5 md:text-xs md:font-medium md:text-muted-foreground">
                             {weekdayLabel(day)}
                           </span>
 
-                          {/* Rutinas del día — apiladas y con toque más grande en teléfono. */}
+                          {/* Rutinas del día — apiladas y con toque grande en cualquier tamaño de pantalla. */}
                           <div className="flex flex-col gap-1.5 md:flex-1 md:flex-row md:flex-wrap md:items-center">
                             {daySlots.length === 0 ? (
-                              <span className="text-xs text-muted-foreground md:pt-0.5">
+                              <span className="text-xs text-muted-foreground md:pt-1.5">
                                 Descanso
                               </span>
                             ) : (
@@ -276,7 +278,7 @@ export function ProgramBuilder({
                                 <Badge
                                   key={slot.id}
                                   variant="outline"
-                                  className="w-fit gap-2 py-1.5 pr-1.5 pl-3 text-sm md:gap-1.5 md:py-0.5 md:pr-1 md:pl-2.5 md:text-xs"
+                                  className="w-fit gap-2 py-1.5 pr-1.5 pl-3 text-sm"
                                 >
                                   {slot.routine_name}
                                   <button
@@ -284,36 +286,26 @@ export function ProgramBuilder({
                                     aria-label="Quitar rutina"
                                     disabled={removingSlotId === slot.id}
                                     onClick={() => handleRemoveSlot(slot.id)}
-                                    className="rounded-full p-1 hover:bg-destructive/15 hover:text-destructive md:p-0.5"
+                                    className="rounded-full p-1.5 hover:bg-destructive/15 hover:text-destructive"
                                   >
                                     {removingSlotId === slot.id ? (
-                                      <Loader2 className="size-4 animate-spin md:size-3" />
+                                      <Loader2 className="size-4 animate-spin" />
                                     ) : (
-                                      <Trash2 className="size-4 md:size-3" />
+                                      <Trash2 className="size-4" />
                                     )}
                                   </button>
                                 </Badge>
                               ))
                             )}
 
-                            {/* Escritorio: pastilla pequeña en línea. */}
                             <button
                               type="button"
                               onClick={() => openRoutinePickerFor(week, day)}
-                              className="hidden items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary md:inline-flex"
+                              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-[0.98] active:bg-accent md:w-fit md:justify-start md:px-3 md:py-1.5"
                             >
-                              <Plus className="size-3" /> Agregar rutina
+                              <Plus className="size-4" /> Agregar rutina
                             </button>
                           </div>
-
-                          {/* Teléfono: botón grande de ancho completo, más fácil de tocar. */}
-                          <button
-                            type="button"
-                            onClick={() => openRoutinePickerFor(week, day)}
-                            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-2.5 text-sm font-medium text-muted-foreground transition-colors active:scale-[0.98] active:bg-accent md:hidden"
-                          >
-                            <Plus className="size-4" /> Agregar rutina
-                          </button>
                         </div>
                       );
                     })}

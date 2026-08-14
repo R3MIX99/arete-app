@@ -9,6 +9,7 @@ import {
   groupSessionsByDate,
   mondayOfWeek,
   sessionsInRange,
+  toKey,
   todayKey,
   type CalendarAssignment,
 } from "@/lib/calendar-logic";
@@ -53,6 +54,16 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
     () => sessionsInRange(assignments, selectedDate, selectedDate),
     [assignments, selectedDate],
   );
+
+  const monthSummary = React.useMemo(() => {
+    const daysInMonth = new Date(Date.UTC(cursor.year, cursor.month, 0)).getUTCDate();
+    const monthStart = toKey(cursor.year, cursor.month, 1);
+    const monthEnd = toKey(cursor.year, cursor.month, daysInMonth);
+    const sessions = sessionsInRange(assignments, monthStart, monthEnd);
+    const distinctClients = new Set(sessions.map((s) => s.clientId)).size;
+    const distinctDays = new Set(sessions.map((s) => s.date)).size;
+    return { total: sessions.length, distinctClients, distinctDays };
+  }, [assignments, cursor]);
 
   function selectDate(key: string) {
     setSelectedDate(key);
@@ -141,15 +152,41 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
 
       {/* Escritorio: mes fijo a la izquierda, día seleccionado a la derecha. */}
       <div className="hidden gap-6 md:flex">
-        <div className="w-72 shrink-0 rounded-xl border bg-card p-4">
-          <MonthCalendarGrid
-            year={cursor.year}
-            month={cursor.month}
-            selectedDateKey={selectedDate}
-            sessionDateKeys={sessionDateKeys}
-            onSelectDate={selectDate}
-            onChangeMonth={changeMonth}
-          />
+        <div className="flex w-72 shrink-0 flex-col gap-4 md:sticky md:top-4 md:self-start">
+          <div className="rounded-xl border bg-card p-4">
+            <MonthCalendarGrid
+              year={cursor.year}
+              month={cursor.month}
+              selectedDateKey={selectedDate}
+              sessionDateKeys={sessionDateKeys}
+              onSelectDate={selectDate}
+              onChangeMonth={changeMonth}
+            />
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Resumen de {formatMonthYear(cursor.year, cursor.month)}
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Sesiones programadas</p>
+                <p className="text-sm font-semibold tabular-nums">{monthSummary.total}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Clientes con sesión</p>
+                <p className="text-sm font-semibold tabular-nums">
+                  {monthSummary.distinctClients}
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Días con actividad</p>
+                <p className="text-sm font-semibold tabular-nums">
+                  {monthSummary.distinctDays}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-1 flex-col gap-4">
