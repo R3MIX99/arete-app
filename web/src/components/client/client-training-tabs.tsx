@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { CalendarClock, Dumbbell } from "lucide-react";
 
 import { formatDate } from "@/lib/format";
-import type { CalendarAssignment } from "@/lib/calendar-logic";
 import {
   MEASUREMENT_FIELDS,
   type MeasurementKey,
@@ -23,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { ProgressPhotoThumbnail } from "@/components/trainer/progress-photo-thumbnail";
-import { ClientAgenda } from "@/components/client/client-agenda";
+import { ClientExerciseEvolution } from "@/components/client/client-exercise-evolution";
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return "";
@@ -35,22 +34,17 @@ function formatDuration(seconds: number | null): string {
 }
 
 export function ClientTrainingTabs({
-  assignments,
-  inProgressByKey,
   completedSessions,
   measurements,
   photos,
   exerciseProgress,
 }: {
-  assignments: CalendarAssignment[];
-  inProgressByKey: Record<string, string>;
   completedSessions: CompletedSessionRow[];
   measurements: ProgressMeasurement[];
   photos: ProgressPhotoEntry[];
   exerciseProgress: ClientExerciseProgress[];
 }) {
   const [metric, setMetric] = useState<MeasurementKey>("weight_kg");
-  const [selectedExerciseId, setSelectedExerciseId] = useState(exerciseProgress[0]?.exerciseId ?? "");
 
   const activeField = MEASUREMENT_FIELDS.find((f) => f.key === metric)!;
   const measurementPoints = useMemo(
@@ -71,28 +65,18 @@ export function ClientTrainingTabs({
     [measurements],
   );
 
-  const selectedExercise = exerciseProgress.find((e) => e.exerciseId === selectedExerciseId);
-  const exercisePoints = useMemo(
-    () => (selectedExercise?.logs ?? []).map((l) => ({ label: formatDate(l.date), value: l.weight })),
-    [selectedExercise],
-  );
-
   const orderedPhotos = useMemo(() => photos.slice().reverse(), [photos]);
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4 p-4 pb-24">
       <h1 className="text-xl font-semibold">Entrenamiento</h1>
 
-      <Tabs defaultValue="agenda">
+      <Tabs defaultValue="historial">
         <TabsList className="w-full">
-          <TabsTrigger value="agenda">Agenda</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
           <TabsTrigger value="progreso">Progreso</TabsTrigger>
+          <TabsTrigger value="evolucion">Evolución</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="agenda" className="mt-4">
-          <ClientAgenda assignments={assignments} inProgressByKey={inProgressByKey} />
-        </TabsContent>
 
         <TabsContent value="historial" className="mt-4">
           {completedSessions.length === 0 ? (
@@ -158,33 +142,6 @@ export function ClientTrainingTabs({
             </CardContent>
           </Card>
 
-          {exerciseProgress.length > 0 ? (
-            <Card>
-              <CardHeader className="flex-row items-center justify-between">
-                <CardTitle className="text-sm">Progreso por ejercicio</CardTitle>
-                <Select value={selectedExerciseId} onValueChange={setSelectedExerciseId}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {exerciseProgress.map((e) => (
-                      <SelectItem key={e.exerciseId} value={e.exerciseId}>
-                        {e.exerciseName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardHeader>
-              <CardContent>
-                <ProgressLineChart
-                  unit="kg"
-                  points={exercisePoints}
-                  emptyMessage="Todavía no hay registros de peso para este ejercicio."
-                />
-              </CardContent>
-            </Card>
-          ) : null}
-
           {orderedPhotos.length > 0 ? (
             <div>
               <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -201,6 +158,10 @@ export function ClientTrainingTabs({
               </div>
             </div>
           ) : null}
+        </TabsContent>
+
+        <TabsContent value="evolucion" className="mt-4">
+          <ClientExerciseEvolution exerciseProgress={exerciseProgress} />
         </TabsContent>
       </Tabs>
     </div>

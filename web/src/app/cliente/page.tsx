@@ -152,10 +152,10 @@ export default async function ClientHomePage() {
       )}
 
       <Link
-        href="/cliente/entrenamiento"
+        href="/cliente/agenda"
         className="text-center text-sm font-medium text-primary hover:underline"
       >
-        Ver calendario de entrenamiento
+        Ver agenda de entrenamiento
       </Link>
     </div>
   );

@@ -40,5 +40,6 @@ export interface CompletedSessionRow {
 export interface ClientExerciseProgress {
   exerciseId: string;
   exerciseName: string;
+  muscleGroup: string;
   logs: { date: string; weight: number }[];
 }
