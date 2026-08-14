@@ -14,9 +14,13 @@ import { MobileNav } from "@/components/trainer/mobile-nav";
 export function TopBar({
   userName,
   userEmail,
+  brandName,
+  brandLogoUrl,
 }: {
   userName: string;
   userEmail: string;
+  brandName: string;
+  brandLogoUrl: string | null;
 }) {
   const pathname = usePathname();
 
@@ -27,7 +31,12 @@ export function TopBar({
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 md:px-6">
-      <MobileNav userName={userName} userEmail={userEmail} />
+      <MobileNav
+        userName={userName}
+        userEmail={userEmail}
+        brandName={brandName}
+        brandLogoUrl={brandLogoUrl}
+      />
       <h1 className="text-base font-semibold">{title}</h1>
     </header>
   );

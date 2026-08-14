@@ -19,9 +19,13 @@ import { SidebarProfileFooter } from "@/components/trainer/sidebar-profile-foote
 export function SidebarNav({
   userName,
   userEmail,
+  brandName,
+  brandLogoUrl,
 }: {
   userName: string;
   userEmail: string;
+  brandName: string;
+  brandLogoUrl: string | null;
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = React.useState(false);
@@ -44,17 +48,26 @@ export function SidebarNav({
       >
         {!collapsed && (
           <div className="flex min-w-0 flex-1 items-center gap-2.5 px-1">
-            <div
-              className="flex size-8 shrink-0 items-center justify-center rounded-lg"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--sb-accent-start), var(--sb-accent-end))",
-              }}
-            >
-              <Dumbbell className="size-4 text-white" />
-            </div>
+            {brandLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brandLogoUrl}
+                alt=""
+                className="size-8 shrink-0 rounded-lg object-cover"
+              />
+            ) : (
+              <div
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg"
+                style={{
+                  background:
+                    "linear-gradient(135deg, var(--sb-accent-start), var(--sb-accent-end))",
+                }}
+              >
+                <Dumbbell className="size-4 text-white" />
+              </div>
+            )}
             <span className="truncate text-sm font-semibold tracking-tight">
-              Areté
+              {brandName}
             </span>
           </div>
         )}

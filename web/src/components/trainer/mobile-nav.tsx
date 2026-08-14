@@ -19,9 +19,13 @@ import { SidebarProfileFooter } from "@/components/trainer/sidebar-profile-foote
 export function MobileNav({
   userName,
   userEmail,
+  brandName,
+  brandLogoUrl,
 }: {
   userName: string;
   userEmail: string;
+  brandName: string;
+  brandLogoUrl: string | null;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
@@ -38,16 +42,21 @@ export function MobileNav({
         <SheetHeader className="border-b" style={{ borderColor: "var(--sb-border-dim)" }}>
           <SheetTitle asChild>
             <div className="flex items-center gap-2.5" style={{ color: "var(--sb-text)" }}>
-              <div
-                className="flex size-8 items-center justify-center rounded-lg"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--sb-accent-start), var(--sb-accent-end))",
-                }}
-              >
-                <Dumbbell className="size-4 text-white" />
-              </div>
-              <span className="text-sm font-semibold">Areté</span>
+              {brandLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={brandLogoUrl} alt="" className="size-8 rounded-lg object-cover" />
+              ) : (
+                <div
+                  className="flex size-8 items-center justify-center rounded-lg"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, var(--sb-accent-start), var(--sb-accent-end))",
+                  }}
+                >
+                  <Dumbbell className="size-4 text-white" />
+                </div>
+              )}
+              <span className="text-sm font-semibold">{brandName}</span>
             </div>
           </SheetTitle>
         </SheetHeader>
