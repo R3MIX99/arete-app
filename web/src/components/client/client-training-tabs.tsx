@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CalendarClock, Dumbbell } from "lucide-react";
 
 import { formatDate } from "@/lib/format";
+import type { CalendarAssignment } from "@/lib/calendar-logic";
 import {
   MEASUREMENT_FIELDS,
   type MeasurementKey,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { ProgressPhotoThumbnail } from "@/components/trainer/progress-photo-thumbnail";
+import { ClientAgenda } from "@/components/client/client-agenda";
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return "";
@@ -33,11 +35,15 @@ function formatDuration(seconds: number | null): string {
 }
 
 export function ClientTrainingTabs({
+  assignments,
+  inProgressByKey,
   completedSessions,
   measurements,
   photos,
   exerciseProgress,
 }: {
+  assignments: CalendarAssignment[];
+  inProgressByKey: Record<string, string>;
   completedSessions: CompletedSessionRow[];
   measurements: ProgressMeasurement[];
   photos: ProgressPhotoEntry[];
@@ -77,11 +83,16 @@ export function ClientTrainingTabs({
     <div className="mx-auto flex max-w-md flex-col gap-4 p-4 pb-24">
       <h1 className="text-xl font-semibold">Entrenamiento</h1>
 
-      <Tabs defaultValue="historial">
+      <Tabs defaultValue="agenda">
         <TabsList className="w-full">
+          <TabsTrigger value="agenda">Agenda</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
           <TabsTrigger value="progreso">Progreso</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="agenda" className="mt-4">
+          <ClientAgenda assignments={assignments} inProgressByKey={inProgressByKey} />
+        </TabsContent>
 
         <TabsContent value="historial" className="mt-4">
           {completedSessions.length === 0 ? (
