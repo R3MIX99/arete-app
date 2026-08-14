@@ -36,7 +36,7 @@ export const trainerNavItems: NavItem[] = [
 export const clientNavItems: NavItem[] = [
   { href: "/cliente", label: "Inicio", icon: Home },
   { href: "/cliente/agenda", label: "Agenda", icon: Calendar },
-  { href: "/cliente/entrenamiento", label: "Entrenamiento", icon: Dumbbell },
+  { href: "/cliente/entrenamiento", label: "Historial", icon: Dumbbell },
   { href: "/cliente/nutricion", label: "Nutrición", icon: Apple },
   { href: "/cliente/perfil", label: "Perfil", icon: User },
 ];

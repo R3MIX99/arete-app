@@ -69,7 +69,7 @@ export function ClientTrainingTabs({
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4 p-4 pb-24">
-      <h1 className="text-xl font-semibold">Entrenamiento</h1>
+      <h1 className="text-xl font-semibold">Historial</h1>
 
       <Tabs defaultValue="historial">
         <TabsList className="w-full">
