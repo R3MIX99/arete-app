@@ -2,11 +2,14 @@
  * Comprime una imagen en el navegador antes de subirla — la
  * redimensiona a un ancho/alto máximo y la reencoda como JPEG, para
  * que las fotos de alimentos/platillos no ocupen espacio de más en el
- * bucket ni tarden en cargar en el catálogo.
+ * bucket ni tarden en cargar en el catálogo. Las tarjetas y el detalle
+ * las muestran en miniatura (nunca más de ~300px reales en pantalla),
+ * así que se puede comprimir agresivo sin que se note la pérdida de
+ * calidad.
  */
 export async function compressImage(
   file: File,
-  { maxDimension = 1000, quality = 0.8 }: { maxDimension?: number; quality?: number } = {},
+  { maxDimension = 480, quality = 0.6 }: { maxDimension?: number; quality?: number } = {},
 ): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
 
