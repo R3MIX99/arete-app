@@ -42,7 +42,7 @@ export function ClientsBrowser({
   invitations: PendingInvitation[];
 }) {
   const [query, setQuery] = React.useState("");
-  const [status, setStatus] = React.useState<StatusFilter>("active");
+  const [status, setStatus] = React.useState<StatusFilter>(null);
   const [goal, setGoal] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(invitations);
   const [items, setItems] = React.useState(clients);
