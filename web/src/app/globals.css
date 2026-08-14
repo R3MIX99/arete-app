@@ -236,6 +236,7 @@
       transparent 70%
     );
     background-repeat: no-repeat;
+    background-position: 100% 100%;
     background-size: 0 0;
     transition: background-size 0.2s ease;
   }
