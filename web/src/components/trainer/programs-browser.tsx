@@ -66,7 +66,7 @@ export function ProgramsBrowser({ programs }: { programs: ProgramSummary[] }) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((program) => (
             <Link key={program.id} href={`/entrenador/programas/${program.id}`}>
-              <Card className="h-full transition-colors hover:border-primary/40">
+              <Card className="h-full card-hover-glow transition-colors hover:border-primary/40">
                 <CardContent className="flex h-full flex-col gap-3">
                   <div className="flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary">
                     <CalendarRange className="size-[18px]" />

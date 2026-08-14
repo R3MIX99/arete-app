@@ -229,7 +229,7 @@ export function ClientsBrowser({
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((client) => (
-            <Card key={client.id} className="h-full transition-colors hover:border-primary/40">
+            <Card key={client.id} className="h-full card-hover-glow transition-colors hover:border-primary/40">
               <CardContent className="flex h-full flex-col gap-3">
                 <Link href={`/entrenador/clientes/${client.id}`} className="flex flex-1 flex-col gap-3">
                   <div className="flex items-start justify-between">

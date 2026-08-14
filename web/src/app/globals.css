@@ -223,6 +223,26 @@
     border: 1px solid var(--card-glass-border);
     box-shadow: var(--card-shadow);
   }
+
+  /* Degradado sutil desde la esquina inferior derecha, solo al hacer
+   * hover en tarjetas clicables (clientes, ejercicios, rutinas,
+   * programas, planes, catálogo). Va sobre el color de .glass-card, muy
+   * corto y de baja opacidad para que apenas se note. */
+  .card-hover-glow {
+    overflow: hidden;
+    background-image: radial-gradient(
+      140px 140px at 100% 100%,
+      color-mix(in oklch, var(--primary) 14%, transparent),
+      transparent 70%
+    );
+    background-repeat: no-repeat;
+    background-size: 0 0;
+    transition: background-size 0.2s ease;
+  }
+
+  .card-hover-glow:hover {
+    background-size: 100% 100%;
+  }
 }
 
 /* ---------------------------------------------------------------------

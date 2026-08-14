@@ -93,7 +93,7 @@ export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((routine) => (
             <Link key={routine.id} href={`/entrenador/rutinas/${routine.id}`}>
-              <Card className="h-full transition-colors hover:border-primary/40">
+              <Card className="h-full card-hover-glow transition-colors hover:border-primary/40">
                 <CardContent className="flex h-full flex-col gap-3">
                   <div className="flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary">
                     <Dumbbell className="size-[18px]" />

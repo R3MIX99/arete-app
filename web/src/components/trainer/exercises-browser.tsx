@@ -177,7 +177,7 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
             const hasVideo = Boolean(exercise.video_url);
             return (
               <Link key={exercise.id} href={`/entrenador/ejercicios/${exercise.id}`}>
-                <Card className="h-full transition-colors hover:border-primary/40">
+                <Card className="h-full card-hover-glow transition-colors hover:border-primary/40">
                   <CardContent className="flex h-full flex-col gap-3">
                     <div
                       className={
