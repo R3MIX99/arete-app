@@ -20,28 +20,32 @@ export function CalendarSessionList({ sessions }: { sessions: CalendarSession[] 
     <div className="flex flex-col gap-2">
       {sessions.map((session, index) => (
         <Card key={`${session.assignmentId}-${index}`}>
-          <CardContent className="flex items-center gap-3">
-            <Avatar className="size-9 shrink-0">
-              <AvatarFallback className="text-xs">
-                {initialsOf(session.clientName) || "?"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{session.clientName}</p>
-              <p className="truncate text-xs text-muted-foreground">{session.routineName}</p>
+          <CardContent className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar className="size-9 shrink-0">
+                <AvatarFallback className="text-xs">
+                  {initialsOf(session.clientName) || "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{session.clientName}</p>
+                <p className="truncate text-xs text-muted-foreground">{session.routineName}</p>
+              </div>
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              {session.isProgram && session.programName && (
-                <Badge variant="secondary" className="text-[10px]">
-                  {session.programName}
-                </Badge>
-              )}
-              {session.isCustomizedForClient && (
-                <Badge variant="outline" className="text-[10px]">
-                  Personalizado
-                </Badge>
-              )}
-            </div>
+            {(session.isProgram && session.programName) || session.isCustomizedForClient ? (
+              <div className="flex flex-wrap gap-1 pl-12 md:shrink-0 md:flex-col md:items-end md:gap-1 md:pl-0">
+                {session.isProgram && session.programName && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {session.programName}
+                  </Badge>
+                )}
+                {session.isCustomizedForClient && (
+                  <Badge variant="outline" className="text-[10px]">
+                    Personalizado
+                  </Badge>
+                )}
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       ))}
