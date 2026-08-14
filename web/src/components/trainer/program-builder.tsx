@@ -164,23 +164,29 @@ export function ProgramBuilder({
 
   return (
     <div className="flex w-full flex-col gap-4 p-4 pb-24 md:p-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2">
         <Button variant="ghost" size="sm" className="w-fit" asChild>
           <Link href="/entrenador/programas">
             <ArrowLeft /> Volver a programas
           </Link>
         </Button>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil /> Editar información
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Editar información"
+            onClick={() => setEditOpen(true)}
+          >
+            <Pencil />
           </Button>
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
+            aria-label="Eliminar programa"
             className="text-destructive hover:text-destructive"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash /> Eliminar
+            <Trash2 />
           </Button>
         </div>
       </div>
@@ -224,44 +230,61 @@ export function ProgramBuilder({
                       return (
                         <div
                           key={day}
-                          className="flex items-start justify-between gap-2 rounded-lg px-2 py-1.5 odd:bg-foreground/[0.02]"
+                          className="flex flex-col gap-2 rounded-lg px-2 py-2.5 odd:bg-foreground/[0.02] md:flex-row md:items-start md:justify-between md:gap-2 md:py-1.5"
                         >
-                          <span className="w-20 shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
+                          <span className="text-sm font-semibold md:w-20 md:shrink-0 md:pt-0.5 md:text-xs md:font-medium md:text-muted-foreground">
                             {weekdayLabel(day)}
                           </span>
-                          <div className="flex flex-1 flex-wrap items-center gap-1.5">
+
+                          {/* Rutinas del día — apiladas y con toque más grande en teléfono. */}
+                          <div className="flex flex-col gap-1.5 md:flex-1 md:flex-row md:flex-wrap md:items-center">
                             {daySlots.length === 0 ? (
-                              <span className="pt-0.5 text-xs text-muted-foreground">
+                              <span className="text-xs text-muted-foreground md:pt-0.5">
                                 Descanso
                               </span>
                             ) : (
                               daySlots.map((slot) => (
-                                <Badge key={slot.id} variant="outline" className="gap-1.5 pr-1">
+                                <Badge
+                                  key={slot.id}
+                                  variant="outline"
+                                  className="w-fit gap-2 py-1.5 pr-1.5 pl-3 text-sm md:gap-1.5 md:py-0.5 md:pr-1 md:pl-2.5 md:text-xs"
+                                >
                                   {slot.routine_name}
                                   <button
                                     type="button"
                                     aria-label="Quitar rutina"
                                     disabled={removingSlotId === slot.id}
                                     onClick={() => handleRemoveSlot(slot.id)}
-                                    className="rounded-full p-0.5 hover:bg-destructive/15 hover:text-destructive"
+                                    className="rounded-full p-1 hover:bg-destructive/15 hover:text-destructive md:p-0.5"
                                   >
                                     {removingSlotId === slot.id ? (
-                                      <Loader2 className="size-3 animate-spin" />
+                                      <Loader2 className="size-4 animate-spin md:size-3" />
                                     ) : (
-                                      <Trash2 className="size-3" />
+                                      <Trash2 className="size-4 md:size-3" />
                                     )}
                                   </button>
                                 </Badge>
                               ))
                             )}
+
+                            {/* Escritorio: pastilla pequeña en línea. */}
                             <button
                               type="button"
                               onClick={() => openRoutinePickerFor(week, day)}
-                              className="flex items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                              className="hidden items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary md:inline-flex"
                             >
                               <Plus className="size-3" /> Agregar rutina
                             </button>
                           </div>
+
+                          {/* Teléfono: botón grande de ancho completo, más fácil de tocar. */}
+                          <button
+                            type="button"
+                            onClick={() => openRoutinePickerFor(week, day)}
+                            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-2.5 text-sm font-medium text-muted-foreground transition-colors active:scale-[0.98] active:bg-accent md:hidden"
+                          >
+                            <Plus className="size-4" /> Agregar rutina
+                          </button>
                         </div>
                       );
                     })}

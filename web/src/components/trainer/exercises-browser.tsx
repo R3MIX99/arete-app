@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, Dumbbell, PlayCircle, FilterX } from "lucide-react";
+import { Search, Plus, Dumbbell, PlayCircle, SlidersHorizontal, FilterX } from "lucide-react";
 
 import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
 import type { ExerciseSummary, MuscleGroup, Equipment } from "@/lib/types/exercise";
@@ -17,6 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { MobileFab } from "@/components/trainer/mobile-fab";
 
 const MUSCLE_GROUPS: MuscleGroup[] = [
@@ -46,6 +52,7 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
   const [query, setQuery] = React.useState("");
   const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup | null>(null);
   const [equipment, setEquipment] = React.useState<Equipment | null>(null);
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -57,7 +64,12 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
     });
   }, [exercises, query, muscleGroup, equipment]);
 
-  const hasActiveFilters = query.trim() !== "" || muscleGroup !== null || equipment !== null;
+  const hasActiveFilters = muscleGroup !== null || equipment !== null;
+
+  function clearFilters() {
+    setMuscleGroup(null);
+    setEquipment(null);
+  }
 
   return (
     <div className="flex w-full flex-col gap-6 p-4 pb-24 md:p-8">
@@ -71,6 +83,18 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
             className="pl-9"
           />
         </div>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Filtros"
+          className="relative shrink-0"
+          onClick={() => setFiltersOpen(true)}
+        >
+          <SlidersHorizontal className="size-4" />
+          {hasActiveFilters && (
+            <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
+          )}
+        </Button>
         <Button asChild className="ml-auto hidden md:inline-flex">
           <Link href="/entrenador/ejercicios/nuevo">
             <Plus />
@@ -85,55 +109,58 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
         label="Nuevo ejercicio"
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={muscleGroup ?? "all"}
-          onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Grupo muscular" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los grupos</SelectItem>
-            {MUSCLE_GROUPS.map((group) => (
-              <SelectItem key={group} value={group}>
-                {muscleGroupLabel(group)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Filtros</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <Select
+              value={muscleGroup ?? "all"}
+              onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Grupo muscular" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los grupos</SelectItem>
+                {MUSCLE_GROUPS.map((group) => (
+                  <SelectItem key={group} value={group}>
+                    {muscleGroupLabel(group)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <Select
-          value={equipment ?? "all"}
-          onValueChange={(v) => setEquipment(v === "all" ? null : (v as Equipment))}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Equipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todo el equipo</SelectItem>
-            {EQUIPMENT.map((item) => (
-              <SelectItem key={item} value={item}>
-                {equipmentLabel(item)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <Select
+              value={equipment ?? "all"}
+              onValueChange={(v) => setEquipment(v === "all" ? null : (v as Equipment))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Equipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo el equipo</SelectItem>
+                {EQUIPMENT.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {equipmentLabel(item)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          disabled={!hasActiveFilters}
-          onClick={() => {
-            setQuery("");
-            setMuscleGroup(null);
-            setEquipment(null);
-          }}
-        >
-          <FilterX /> Limpiar filtros
-        </Button>
-      </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit text-muted-foreground"
+              disabled={!hasActiveFilters}
+              onClick={clearFilters}
+            >
+              <FilterX /> Limpiar filtros
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
