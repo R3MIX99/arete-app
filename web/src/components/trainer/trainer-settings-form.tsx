@@ -6,6 +6,7 @@ import { Building2, Loader2, Sparkles, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/image-compress";
 import {
   subscriptionPlanLabels,
   subscriptionStatusLabels,
@@ -87,12 +88,12 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
 
     setUploadingLogo(true);
     const supabase = createClient();
-    const extension = file.name.includes(".") ? file.name.split(".").pop() : "png";
-    const path = `${settings.id}/logo-${Date.now()}.${extension}`;
+    const compressed = await compressImage(file, { maxDimension: 512 });
+    const path = `${settings.id}/logo-${Date.now()}.jpg`;
 
     const { error: uploadError } = await supabase.storage
       .from("business-logos")
-      .upload(path, file, { upsert: true });
+      .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
     if (uploadError) {
       setUploadingLogo(false);
       toast.error("No se pudo subir el logo");

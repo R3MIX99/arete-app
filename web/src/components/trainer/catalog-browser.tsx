@@ -207,7 +207,7 @@ export function CatalogBrowser({
                   className="cursor-pointer text-left"
                 >
                   <Card className="card-hover-glow gap-0 overflow-hidden py-0 transition-colors hover:border-primary/40">
-                    <div className="relative h-28 w-full bg-foreground/[0.04]">
+                    <div className="relative h-20 w-full bg-primary/12">
                       {imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -216,15 +216,15 @@ export function CatalogBrowser({
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                          <Icon className="size-9" />
+                        <div className="flex h-full w-full items-center justify-center text-primary">
+                          <Icon className="size-7" />
                         </div>
                       )}
                       <button
                         type="button"
                         aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
                         onClick={(e) => toggleFavorite(e, food)}
-                        className="absolute top-2 left-2 flex size-7 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+                        className="absolute top-1.5 left-1.5 flex size-6 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
                       >
                         <Star
                           className="size-3.5"
@@ -232,13 +232,12 @@ export function CatalogBrowser({
                           color={isFavorite ? "#facc15" : "currentColor"}
                         />
                       </button>
-                      <span className="absolute top-2 right-2 rounded-full bg-black/45 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
-                        {food.category_name}
-                      </span>
                     </div>
-                    <CardContent className="flex flex-col gap-2 px-3 py-3">
-                      <div className="flex items-start justify-between gap-1">
-                        <p className="truncate text-sm font-semibold">{food.name}</p>
+                    <CardContent className="flex flex-col gap-0.5 px-3 py-2.5">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-[10px] font-medium tracking-wide text-primary uppercase">
+                          {food.category_name}
+                        </p>
                         <Link
                           href={`/entrenador/nutricion/alimentos/${food.id}`}
                           aria-label="Editar alimento"
@@ -248,12 +247,7 @@ export function CatalogBrowser({
                           <Pencil className="size-3.5" />
                         </Link>
                       </div>
-                      <div className="grid grid-cols-4 gap-1 text-center">
-                        <MiniStat label="Kcal" value={Math.round(food.calories_per_100g)} />
-                        <MiniStat label="Prot" value={`${Math.round(food.protein_per_100g)}g`} />
-                        <MiniStat label="Carb" value={`${Math.round(food.carbs_per_100g)}g`} />
-                        <MiniStat label="Grasa" value={`${Math.round(food.fat_per_100g)}g`} />
-                      </div>
+                      <p className="truncate text-sm font-semibold">{food.name}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -274,24 +268,21 @@ export function CatalogBrowser({
             return (
               <Link key={dish.id} href={`/entrenador/nutricion/platillos/${dish.id}`}>
                 <Card className="card-hover-glow gap-0 overflow-hidden py-0 transition-colors hover:border-primary/40">
-                  <div className="relative h-28 w-full bg-foreground/[0.04]">
+                  <div className="relative h-20 w-full bg-primary/12">
                     {imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={imageUrl} alt={dish.name} className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                        <Icon className="size-9" />
+                      <div className="flex h-full w-full items-center justify-center text-primary">
+                        <Icon className="size-7" />
                       </div>
                     )}
-                    <span className="absolute top-2 right-2 rounded-full bg-black/45 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
-                      {mealTypeLabel(dish.meal_type)}
-                    </span>
                   </div>
-                  <CardContent className="flex flex-col gap-1 px-3 py-3">
+                  <CardContent className="flex flex-col gap-0.5 px-3 py-2.5">
+                    <p className="text-[10px] font-medium tracking-wide text-primary uppercase">
+                      {mealTypeLabel(dish.meal_type)}
+                    </p>
                     <p className="truncate text-sm font-semibold">{dish.name}</p>
-                    {dish.description && (
-                      <p className="truncate text-xs text-muted-foreground">{dish.description}</p>
-                    )}
                   </CardContent>
                 </Card>
               </Link>
@@ -308,15 +299,6 @@ export function CatalogBrowser({
           {selectedFood && <FoodDetailSheet food={selectedFood} />}
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-md bg-foreground/[0.04] px-1 py-1.5">
-      <p className="text-xs font-semibold tabular-nums">{value}</p>
-      <p className="text-[9px] text-muted-foreground uppercase">{label}</p>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/image-compress";
 import { mealTypeLabel, householdMeasureFor } from "@/lib/format";
 import { mealTypeIcon } from "@/lib/food-icons";
 import type { DishIngredientInput, FoodOption, MealType } from "@/lib/types/nutrition";
@@ -325,12 +326,12 @@ function DishImage({ dish }: { dish: DishInfo }) {
     ? createClient().storage.from("food-images").getPublicUrl(dish.image_path).data.publicUrl
     : null;
   return (
-    <div className="relative h-40 w-full bg-foreground/[0.04]">
+    <div className="relative h-40 w-full bg-primary/12">
       {imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={imageUrl} alt={dish.name} className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+        <div className="flex h-full w-full items-center justify-center text-primary">
           <Icon className="size-10" />
         </div>
       )}
@@ -378,11 +379,11 @@ function EditDishInfoDialog({
     if (!file) return;
     setUploadingImage(true);
     const supabase = createClient();
-    const extension = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
-    const path = `${trainerId}/dish-${Date.now()}.${extension}`;
+    const compressed = await compressImage(file);
+    const path = `${trainerId}/dish-${Date.now()}.jpg`;
     const { error: uploadError } = await supabase.storage
       .from("food-images")
-      .upload(path, file, { upsert: true });
+      .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
     setUploadingImage(false);
     if (uploadError) {
       toast.error("No se pudo subir la imagen");
@@ -424,7 +425,7 @@ function EditDishInfoDialog({
           <div className="flex flex-col gap-1.5">
             <Label>Imagen (opcional)</Label>
             <div className="flex items-center gap-3">
-              <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-foreground/[0.04] text-muted-foreground">
+              <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary/12 text-primary">
                 {imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={imageUrl} alt="" className="h-full w-full object-cover" />

@@ -24,7 +24,7 @@ export function FoodDetailSheet({ food }: { food: FoodOption }) {
           className="h-40 w-full rounded-lg object-cover"
         />
       ) : (
-        <div className="flex h-40 w-full items-center justify-center rounded-lg bg-foreground/[0.04] text-muted-foreground">
+        <div className="flex h-40 w-full items-center justify-center rounded-lg bg-primary/12 text-primary">
           <Icon className="size-10" />
         </div>
       )}

@@ -7,6 +7,7 @@ import { ArrowLeft, ImagePlus, Loader2, Trash, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/image-compress";
 import { foodCategoryIcon } from "@/lib/food-icons";
 import type { FoodCategory, FoodOption } from "@/lib/types/nutrition";
 import { Button } from "@/components/ui/button";
@@ -65,12 +66,12 @@ export function NewFoodForm({
 
     setUploadingImage(true);
     const supabase = createClient();
-    const extension = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
-    const path = `${trainerId}/food-${Date.now()}.${extension}`;
+    const compressed = await compressImage(file);
+    const path = `${trainerId}/food-${Date.now()}.jpg`;
 
     const { error: uploadError } = await supabase.storage
       .from("food-images")
-      .upload(path, file, { upsert: true });
+      .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
     setUploadingImage(false);
     if (uploadError) {
       toast.error("No se pudo subir la imagen");
@@ -179,7 +180,7 @@ export function NewFoodForm({
             <div className="flex flex-col gap-1.5">
               <Label>Imagen (opcional)</Label>
               <div className="flex items-center gap-3">
-                <div className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-foreground/[0.04] text-muted-foreground">
+                <div className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary/12 text-primary">
                   {imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={imageUrl} alt="" className="h-full w-full object-cover" />
