@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, Utensils, Apple as AppleIcon, FilterX, Pencil, Star } from "lucide-react";
+import { Search, Plus, Utensils, Apple as AppleIcon, FilterX, Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { mealTypeLabel } from "@/lib/format";
@@ -234,19 +234,9 @@ export function CatalogBrowser({
                       </button>
                     </div>
                     <CardContent className="flex flex-col gap-0.5 px-3 py-2.5">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className="text-[10px] font-medium tracking-wide text-primary uppercase">
-                          {food.category_name}
-                        </p>
-                        <Link
-                          href={`/entrenador/nutricion/alimentos/${food.id}`}
-                          aria-label="Editar alimento"
-                          onClick={(e) => e.stopPropagation()}
-                          className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                        >
-                          <Pencil className="size-3.5" />
-                        </Link>
-                      </div>
+                      <p className="text-[10px] font-medium tracking-wide text-primary uppercase">
+                        {food.category_name}
+                      </p>
                       <p className="truncate text-sm font-semibold">{food.name}</p>
                     </CardContent>
                   </Card>
