@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RoutinePickerDialog } from "@/components/trainer/routine-picker-dialog";
-import { ProgramSlotDialog } from "@/components/trainer/program-slot-dialog";
 import { AssignToClientsDialog } from "@/components/trainer/assign-to-clients-dialog";
 import { AssignmentOverridesDialog } from "@/components/trainer/assignment-overrides-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -58,6 +57,11 @@ interface ProgramDetail {
   description: string | null;
   duration_weeks: number;
   goal: ClientGoal | null;
+}
+
+interface SlotTarget {
+  weekNumber: number;
+  dayOfWeek: number;
 }
 
 export function ProgramBuilder({
@@ -82,8 +86,7 @@ export function ProgramBuilder({
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
-  const [routinePickerOpen, setRoutinePickerOpen] = React.useState(false);
-  const [pendingRoutine, setPendingRoutine] = React.useState<RoutineOption | null>(null);
+  const [pendingSlotTarget, setPendingSlotTarget] = React.useState<SlotTarget | null>(null);
   const [addingSlot, setAddingSlot] = React.useState(false);
   const [removingSlotId, setRemovingSlotId] = React.useState<string | null>(null);
   const [assignOpen, setAssignOpen] = React.useState(false);
@@ -95,23 +98,27 @@ export function ProgramBuilder({
     [program.duration_weeks],
   );
 
-  async function handleAddSlot(weekNumber: number, dayOfWeek: number) {
-    if (!pendingRoutine) return;
+  function openRoutinePickerFor(weekNumber: number, dayOfWeek: number) {
+    setPendingSlotTarget({ weekNumber, dayOfWeek });
+  }
+
+  async function handlePickRoutine(routine: RoutineOption) {
+    if (!pendingSlotTarget) return;
     setAddingSlot(true);
     const supabase = createClient();
     const { error } = await supabase.from("program_routines").insert({
       program_id: program.id,
-      routine_id: pendingRoutine.id,
-      week_number: weekNumber,
-      day_of_week: dayOfWeek,
+      routine_id: routine.id,
+      week_number: pendingSlotTarget.weekNumber,
+      day_of_week: pendingSlotTarget.dayOfWeek,
     });
     setAddingSlot(false);
+    setPendingSlotTarget(null);
     if (error) {
       toast.error("No se pudo agregar la rutina");
       return;
     }
     toast.success("Rutina agregada al programa");
-    setPendingRoutine(null);
     router.refresh();
   }
 
@@ -156,7 +163,7 @@ export function ProgramBuilder({
   const assignedClientIds = assignments.map((a) => a.client_id);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 md:p-8">
+    <div className="flex w-full flex-col gap-4 p-4 pb-24 md:p-8">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" className="w-fit" asChild>
           <Link href="/entrenador/programas">
@@ -178,136 +185,137 @@ export function ProgramBuilder({
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{program.name}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-1.5">
-            <Badge variant="secondary">
-              {program.duration_weeks}{" "}
-              {program.duration_weeks === 1 ? "semana" : "semanas"}
-            </Badge>
-            {program.goal && <Badge variant="secondary">{goalLabel(program.goal)}</Badge>}
-          </div>
-          {program.description && (
-            <p className="text-sm text-muted-foreground">{program.description}</p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_20rem] md:items-start">
+        {/* Columna izquierda: info del programa + semanas. */}
+        <div className="flex flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{program.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="secondary">
+                  {program.duration_weeks}{" "}
+                  {program.duration_weeks === 1 ? "semana" : "semanas"}
+                </Badge>
+                {program.goal && <Badge variant="secondary">{goalLabel(program.goal)}</Badge>}
+              </div>
+              {program.description && (
+                <p className="text-sm text-muted-foreground">{program.description}</p>
+              )}
+            </CardContent>
+          </Card>
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Semanas
-        </h2>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setRoutinePickerOpen(true)}
-        >
-          <Plus /> Agregar rutina
-        </Button>
-      </div>
+          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Semanas
+          </h2>
 
-      <div className="flex flex-col gap-3">
-        {weeks.map((week) => {
-          const weekSlots = slotsByWeek.get(week) ?? [];
-          return (
-            <Card key={week}>
-              <CardHeader>
-                <CardTitle className="text-sm">Semana {week}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-1.5">
-                {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-                  const daySlots = weekSlots.filter((s) => s.day_of_week === day);
-                  return (
-                    <div
-                      key={day}
-                      className="flex items-start justify-between gap-2 rounded-lg px-2 py-1.5 odd:bg-foreground/[0.02]"
-                    >
-                      <span className="w-20 shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
-                        {weekdayLabel(day)}
-                      </span>
-                      {daySlots.length === 0 ? (
-                        <span className="flex-1 pt-0.5 text-xs text-muted-foreground">
-                          Descanso
-                        </span>
-                      ) : (
-                        <div className="flex flex-1 flex-wrap gap-1.5">
-                          {daySlots.map((slot) => (
-                            <Badge
-                              key={slot.id}
-                              variant="outline"
-                              className="gap-1.5 pr-1"
+          <div className="flex flex-col gap-3">
+            {weeks.map((week) => {
+              const weekSlots = slotsByWeek.get(week) ?? [];
+              return (
+                <Card key={week}>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Semana {week}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-1.5">
+                    {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+                      const daySlots = weekSlots.filter((s) => s.day_of_week === day);
+                      return (
+                        <div
+                          key={day}
+                          className="flex items-start justify-between gap-2 rounded-lg px-2 py-1.5 odd:bg-foreground/[0.02]"
+                        >
+                          <span className="w-20 shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
+                            {weekdayLabel(day)}
+                          </span>
+                          <div className="flex flex-1 flex-wrap items-center gap-1.5">
+                            {daySlots.length === 0 ? (
+                              <span className="pt-0.5 text-xs text-muted-foreground">
+                                Descanso
+                              </span>
+                            ) : (
+                              daySlots.map((slot) => (
+                                <Badge key={slot.id} variant="outline" className="gap-1.5 pr-1">
+                                  {slot.routine_name}
+                                  <button
+                                    type="button"
+                                    aria-label="Quitar rutina"
+                                    disabled={removingSlotId === slot.id}
+                                    onClick={() => handleRemoveSlot(slot.id)}
+                                    className="rounded-full p-0.5 hover:bg-destructive/15 hover:text-destructive"
+                                  >
+                                    {removingSlotId === slot.id ? (
+                                      <Loader2 className="size-3 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="size-3" />
+                                    )}
+                                  </button>
+                                </Badge>
+                              ))
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => openRoutinePickerFor(week, day)}
+                              className="flex items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
                             >
-                              {slot.routine_name}
-                              <button
-                                type="button"
-                                aria-label="Quitar rutina"
-                                disabled={removingSlotId === slot.id}
-                                onClick={() => handleRemoveSlot(slot.id)}
-                                className="rounded-full p-0.5 hover:bg-destructive/15 hover:text-destructive"
-                              >
-                                {removingSlotId === slot.id ? (
-                                  <Loader2 className="size-3 animate-spin" />
-                                ) : (
-                                  <Trash2 className="size-3" />
-                                )}
-                              </button>
-                            </Badge>
-                          ))}
+                              <Plus className="size-3" /> Agregar rutina
+                            </button>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Columna derecha: clientes asignados, fija al hacer scroll en escritorio. */}
+        <div className="flex flex-col gap-3 md:sticky md:top-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Clientes asignados
+            </h2>
+            <Button type="button" variant="outline" size="sm" onClick={() => setAssignOpen(true)}>
+              <UserPlus /> Asignar
+            </Button>
+          </div>
+
+          {assignments.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
+                <Users className="size-6" />
+                <p className="text-sm">Todavía no asignas este programa a ningún cliente.</p>
               </CardContent>
             </Card>
-          );
-        })}
-      </div>
-
-      <div className="mt-2 flex items-center justify-between">
-        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Clientes asignados
-        </h2>
-        <Button type="button" variant="outline" size="sm" onClick={() => setAssignOpen(true)}>
-          <UserPlus /> Asignar a clientes
-        </Button>
-      </div>
-
-      {assignments.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
-            <Users className="size-6" />
-            <p className="text-sm">Todavía no asignas este programa a ningún cliente.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {assignments.map((assignment) => (
-            <button
-              key={assignment.id}
-              type="button"
-              onClick={() => setOverridesForAssignment(assignment)}
-              className="flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-accent"
-            >
-              <Avatar className="size-9">
-                <AvatarFallback className="text-xs">
-                  {initialsOf(assignment.client_name) || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{assignment.client_name}</p>
-                <p className="text-xs text-muted-foreground">
-                  Desde el {formatDate(assignment.start_date)}
-                </p>
-              </div>
-            </button>
-          ))}
+          ) : (
+            <div className="flex flex-col gap-2">
+              {assignments.map((assignment) => (
+                <button
+                  key={assignment.id}
+                  type="button"
+                  onClick={() => setOverridesForAssignment(assignment)}
+                  className="flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-accent"
+                >
+                  <Avatar className="size-9">
+                    <AvatarFallback className="text-xs">
+                      {initialsOf(assignment.client_name) || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{assignment.client_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Desde el {formatDate(assignment.start_date)}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <EditProgramInfoDialog
         open={editOpen}
@@ -325,20 +333,17 @@ export function ProgramBuilder({
       />
 
       <RoutinePickerDialog
-        open={routinePickerOpen}
-        onOpenChange={setRoutinePickerOpen}
+        open={pendingSlotTarget !== null}
+        onOpenChange={(open) => !open && setPendingSlotTarget(null)}
         routines={routineCatalog}
-        onPick={(routine) => setPendingRoutine(routine)}
+        onPick={handlePickRoutine}
       />
 
-      <ProgramSlotDialog
-        open={pendingRoutine !== null}
-        onOpenChange={(open) => !open && setPendingRoutine(null)}
-        routineName={pendingRoutine?.name ?? ""}
-        durationWeeks={program.duration_weeks}
-        loading={addingSlot}
-        onConfirm={handleAddSlot}
-      />
+      {addingSlot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+          <Loader2 className="size-6 animate-spin text-white" />
+        </div>
+      )}
 
       <AssignToClientsDialog
         open={assignOpen}
