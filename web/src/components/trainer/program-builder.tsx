@@ -420,11 +420,11 @@ export function ProgramBuilder({
               const filledDays = new Set(weekSlots.map((s) => s.day_of_week)).size;
               return (
                 <Card key={week}>
-                  <div className="flex w-full items-center justify-between gap-2 px-5">
+                  <div className="flex flex-col gap-2 px-5 py-3 md:flex-row md:items-center md:justify-between md:gap-2 md:py-0">
                     <button
                       type="button"
                       onClick={() => toggleWeek(week)}
-                      className="flex flex-1 items-center justify-between gap-2 py-0 text-left"
+                      className="flex items-center justify-between gap-2 py-0 text-left md:flex-1"
                     >
                       <div className="flex flex-col gap-1">
                         <CardTitle className="text-sm">Semana {week}</CardTitle>
@@ -438,7 +438,7 @@ export function ProgramBuilder({
                         className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
                       />
                     </button>
-                    <div className="flex shrink-0 items-center gap-0.5">
+                    <div className="flex shrink-0 items-center justify-end gap-0.5">
                       <Button
                         type="button"
                         variant="ghost"
@@ -472,7 +472,9 @@ export function ProgramBuilder({
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        aria-label="Clonar semana"
+                        className="md:w-auto md:px-3"
                         disabled={filledDays === 0}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -480,7 +482,8 @@ export function ProgramBuilder({
                           setCloneTargetWeek("");
                         }}
                       >
-                        <Copy /> Clonar semana
+                        <Copy className="size-4" />
+                        <span className="hidden md:inline">Clonar semana</span>
                       </Button>
                       <Button
                         type="button"
