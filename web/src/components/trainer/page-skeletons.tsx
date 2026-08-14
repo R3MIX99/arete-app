@@ -7,7 +7,31 @@ import { Skeleton } from "@/components/ui/skeleton";
  * pestaña/página se sienta instantáneo en vez de quedarse "trabado".
  */
 
+/** Clientes, Rutinas, Ejercicios, Programas — grid-cols-1 en teléfono. */
 export function GridPageSkeleton({ cards = 8 }: { cards?: number }) {
+  return (
+    <div className="flex w-full flex-col gap-6 p-4 pb-24 md:p-8">
+      <div className="flex flex-wrap items-center gap-3">
+        <Skeleton className="h-9 w-full max-w-xs" />
+        <Skeleton className="ml-auto hidden h-9 w-36 md:block" />
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: cards }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-3 rounded-xl border p-5">
+            <Skeleton className="size-10 rounded-full" />
+            <div className="mt-auto flex flex-col gap-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Catálogo/Comunidad de nutrición — grid-cols-2 en teléfono, tarjetas con imagen. */
+export function CatalogPageSkeleton({ cards = 8 }: { cards?: number }) {
   return (
     <div className="flex w-full flex-col gap-6 p-4 pb-24 md:p-8">
       <div className="flex flex-wrap items-center gap-3">
