@@ -278,7 +278,7 @@ export function RoutineForm({
     }
 
     toast.success(mode === "create" ? "Rutina creada" : "Cambios guardados");
-    router.push(`/entrenador/rutinas/${routineId}`);
+    router.push("/entrenador/rutinas");
     router.refresh();
   }
 
