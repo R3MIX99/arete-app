@@ -73,14 +73,28 @@ export function compareKeys(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/** Número de días entre dos llaves 'YYYY-MM-DD' (b - a). */
+export function daysBetween(a: string, b: string): number {
+  const [ay, am, ad] = a.split("-").map(Number);
+  const [by, bm, bd] = b.split("-").map(Number);
+  const da = Date.UTC(ay, am - 1, ad);
+  const db = Date.UTC(by, bm - 1, bd);
+  return Math.round((db - da) / 86400000);
+}
+
 /**
  * Sesiones concretas que caen dentro de [rangeStart, rangeEndInclusive]
  * (ambos incluidos).
  *
  * - Programa: la semana 1 arranca el lunes de la semana en la que cae
- *   `start_date`, y se repite por cada semana hasta `duration_weeks`. Si
- *   el cliente tiene un ajuste puntual (`assignment_overrides`) para esa
- *   casilla, se muestra la rutina de reemplazo.
+ *   `start_date`. El patrón de `duration_weeks` semanas se repite en
+ *   ciclo indefinidamente — un programa de 1 semana se repite cada
+ *   semana, uno de 2 semanas alterna semana A/B para siempre, etc. — y
+ *   solo deja de aplicarse cuando el entrenador cambia la asignación del
+ *   cliente. Si el cliente tiene un ajuste puntual
+ *   (`assignment_overrides`) para esa casilla, se muestra la rutina de
+ *   reemplazo (el ajuste aplica solo la primera vez que se repite esa
+ *   semana del ciclo).
  * - Rutina suelta: se repite semana a semana en el mismo día de la
  *   semana que `start_date`, sin fecha de fin.
  */
@@ -94,30 +108,32 @@ export function sessionsInRange(
   for (const assignment of assignments) {
     if (assignment.isProgram) {
       const durationWeeks = assignment.programDurationWeeks ?? 0;
+      if (durationWeeks <= 0 || assignment.slots.length === 0) continue;
       const week1Start = mondayOfWeek(assignment.startDate);
-      const programEndExclusive = addDays(week1Start, durationWeeks * 7);
 
-      for (const slot of assignment.slots) {
-        const date = addDays(
-          week1Start,
-          (slot.weekNumber - 1) * 7 + (slot.dayOfWeek - 1),
-        );
-        if (compareKeys(date, rangeStart) < 0 || compareKeys(date, rangeEndInclusive) > 0) {
-          continue;
+      let date = rangeStart;
+      while (compareKeys(date, rangeEndInclusive) <= 0) {
+        if (compareKeys(date, week1Start) >= 0) {
+          const weekIndex0 = Math.floor(daysBetween(week1Start, date) / 7);
+          const cycleWeek = (weekIndex0 % durationWeeks) + 1;
+          const dow = weekdayIso(date);
+
+          for (const slot of assignment.slots) {
+            if (slot.weekNumber !== cycleWeek || slot.dayOfWeek !== dow) continue;
+            const override = assignment.overridesByProgramRoutineId[slot.programRoutineId];
+            sessions.push({
+              date,
+              assignmentId: assignment.assignmentId,
+              clientId: assignment.clientId,
+              clientName: assignment.clientName,
+              routineName: override ?? slot.routineName,
+              isProgram: true,
+              programName: assignment.programName,
+              isCustomizedForClient: Boolean(override),
+            });
+          }
         }
-        if (compareKeys(date, programEndExclusive) >= 0) continue;
-
-        const override = assignment.overridesByProgramRoutineId[slot.programRoutineId];
-        sessions.push({
-          date,
-          assignmentId: assignment.assignmentId,
-          clientId: assignment.clientId,
-          clientName: assignment.clientName,
-          routineName: override ?? slot.routineName,
-          isProgram: true,
-          programName: assignment.programName,
-          isCustomizedForClient: Boolean(override),
-        });
+        date = addDays(date, 1);
       }
     } else {
       const routineName = assignment.standaloneRoutineName;

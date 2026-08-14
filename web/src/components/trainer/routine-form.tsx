@@ -50,12 +50,32 @@ const GOAL_OPTIONS = [
   { value: "performance", label: "Rendimiento" },
 ];
 
-function defaultSet(setNumber: number, previous?: RoutineExerciseInput["sets"][number]) {
+function isCardioGroup(muscleGroup: string) {
+  return muscleGroup === "cardio";
+}
+
+function defaultSet(
+  setNumber: number,
+  isCardio: boolean,
+  previous?: RoutineExerciseInput["sets"][number],
+): RoutineExerciseInput["sets"][number] {
+  if (isCardio) {
+    return {
+      set_number: setNumber,
+      target_reps_min: null,
+      target_reps_max: null,
+      rest_seconds: null,
+      target_minutes: previous?.target_minutes ?? 20,
+      target_level: previous?.target_level ?? 5,
+    };
+  }
   return {
     set_number: setNumber,
     target_reps_min: previous?.target_reps_min ?? 8,
     target_reps_max: previous?.target_reps_max ?? 12,
     rest_seconds: previous?.rest_seconds ?? 60,
+    target_minutes: null,
+    target_level: null,
   };
 }
 
@@ -92,9 +112,10 @@ export function RoutineForm({
       {
         exercise_id: exercise.id,
         exercise_name: exercise.name,
+        exercise_muscle_group: exercise.muscle_group,
         order_index: prev.length,
         notes: "",
-        sets: [defaultSet(1)],
+        sets: [defaultSet(1, isCardioGroup(exercise.muscle_group))],
       },
     ]);
   }
@@ -126,7 +147,10 @@ export function RoutineForm({
         const last = ex.sets[ex.sets.length - 1];
         return {
           ...ex,
-          sets: [...ex.sets, defaultSet(ex.sets.length + 1, last)],
+          sets: [
+            ...ex.sets,
+            defaultSet(ex.sets.length + 1, isCardioGroup(ex.exercise_muscle_group), last),
+          ],
         };
       }),
     );
@@ -239,6 +263,8 @@ export function RoutineForm({
         target_reps_min: s.target_reps_min,
         target_reps_max: s.target_reps_max,
         rest_seconds: s.rest_seconds,
+        target_minutes: s.target_minutes,
+        target_level: s.target_level,
       }));
       const { error: setsError } = await supabase
         .from("routine_exercise_sets")
@@ -432,75 +458,136 @@ export function RoutineForm({
 
                   <Separator />
 
-                  <div className="flex flex-col gap-2">
-                    <div className="grid grid-cols-[2rem_1fr_1fr_1fr_2rem] gap-2 text-[11px] font-medium text-muted-foreground uppercase">
-                      <span>Serie</span>
-                      <span>Reps min</span>
-                      <span>Reps max</span>
-                      <span>Descanso (s)</span>
-                      <span />
-                    </div>
-                    {exercise.sets.map((set, setIndex) => (
-                      <div
-                        key={setIndex}
-                        className="grid grid-cols-[2rem_1fr_1fr_1fr_2rem] items-center gap-2"
-                      >
-                        <span className="text-sm font-medium tabular-nums">
-                          {set.set_number}
-                        </span>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={set.target_reps_min}
-                          onChange={(e) =>
-                            updateSet(exerciseIndex, setIndex, {
-                              target_reps_min: Number(e.target.value),
-                            })
-                          }
-                        />
-                        <Input
-                          type="number"
-                          min={1}
-                          value={set.target_reps_max}
-                          onChange={(e) =>
-                            updateSet(exerciseIndex, setIndex, {
-                              target_reps_max: Number(e.target.value),
-                            })
-                          }
-                        />
-                        <Input
-                          type="number"
-                          min={0}
-                          step={5}
-                          value={set.rest_seconds}
-                          onChange={(e) =>
-                            updateSet(exerciseIndex, setIndex, {
-                              rest_seconds: Number(e.target.value),
-                            })
-                          }
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Quitar serie"
-                          disabled={exercise.sets.length <= 1}
-                          onClick={() => removeSet(exerciseIndex, setIndex)}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
+                  {isCardioGroup(exercise.exercise_muscle_group) ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 text-[11px] font-medium text-muted-foreground uppercase">
+                        <span>Serie</span>
+                        <span>Minutos</span>
+                        <span>Nivel (1-10)</span>
+                        <span />
                       </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="w-fit"
-                      onClick={() => addSet(exerciseIndex)}
-                    >
-                      <Plus /> Agregar serie
-                    </Button>
-                  </div>
+                      {exercise.sets.map((set, setIndex) => (
+                        <div
+                          key={setIndex}
+                          className="grid grid-cols-[2rem_1fr_1fr_2rem] items-center gap-2"
+                        >
+                          <span className="text-sm font-medium tabular-nums">
+                            {set.set_number}
+                          </span>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={set.target_minutes ?? ""}
+                            onChange={(e) =>
+                              updateSet(exerciseIndex, setIndex, {
+                                target_minutes: Number(e.target.value),
+                              })
+                            }
+                          />
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={set.target_level ?? ""}
+                            onChange={(e) =>
+                              updateSet(exerciseIndex, setIndex, {
+                                target_level: Number(e.target.value),
+                              })
+                            }
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Quitar serie"
+                            disabled={exercise.sets.length <= 1}
+                            onClick={() => removeSet(exerciseIndex, setIndex)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="w-fit"
+                        onClick={() => addSet(exerciseIndex)}
+                      >
+                        <Plus /> Agregar serie
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <div className="grid grid-cols-[2rem_1fr_1fr_1fr_2rem] gap-2 text-[11px] font-medium text-muted-foreground uppercase">
+                        <span>Serie</span>
+                        <span>Reps min</span>
+                        <span>Reps max</span>
+                        <span>Descanso (s)</span>
+                        <span />
+                      </div>
+                      {exercise.sets.map((set, setIndex) => (
+                        <div
+                          key={setIndex}
+                          className="grid grid-cols-[2rem_1fr_1fr_1fr_2rem] items-center gap-2"
+                        >
+                          <span className="text-sm font-medium tabular-nums">
+                            {set.set_number}
+                          </span>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={set.target_reps_min ?? ""}
+                            onChange={(e) =>
+                              updateSet(exerciseIndex, setIndex, {
+                                target_reps_min: Number(e.target.value),
+                              })
+                            }
+                          />
+                          <Input
+                            type="number"
+                            min={1}
+                            value={set.target_reps_max ?? ""}
+                            onChange={(e) =>
+                              updateSet(exerciseIndex, setIndex, {
+                                target_reps_max: Number(e.target.value),
+                              })
+                            }
+                          />
+                          <Input
+                            type="number"
+                            min={0}
+                            step={5}
+                            value={set.rest_seconds ?? ""}
+                            onChange={(e) =>
+                              updateSet(exerciseIndex, setIndex, {
+                                rest_seconds: Number(e.target.value),
+                              })
+                            }
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Quitar serie"
+                            disabled={exercise.sets.length <= 1}
+                            onClick={() => removeSet(exerciseIndex, setIndex)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="w-fit"
+                        onClick={() => addSet(exerciseIndex)}
+                      >
+                        <Plus /> Agregar serie
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

@@ -13,13 +13,18 @@ interface RoutineExerciseRow {
   exercise_id: string;
   order_index: number;
   notes: string | null;
-  exercises: { name: string } | { name: string }[] | null;
+  exercises:
+    | { name: string; muscle_group: string }
+    | { name: string; muscle_group: string }[]
+    | null;
   routine_exercise_sets: {
     id: string;
     set_number: number;
-    target_reps_min: number;
-    target_reps_max: number;
-    rest_seconds: number;
+    target_reps_min: number | null;
+    target_reps_max: number | null;
+    rest_seconds: number | null;
+    target_minutes: number | null;
+    target_level: number | null;
   }[];
 }
 
@@ -45,7 +50,7 @@ export default async function RoutineDetailPage({
       supabase
         .from("routine_exercises")
         .select(
-          "id, exercise_id, order_index, notes, exercises(name), routine_exercise_sets(id, set_number, target_reps_min, target_reps_max, rest_seconds)",
+          "id, exercise_id, order_index, notes, exercises(name, muscle_group), routine_exercise_sets(id, set_number, target_reps_min, target_reps_max, rest_seconds, target_minutes, target_level)",
         )
         .eq("routine_id", id)
         .order("order_index")
@@ -63,6 +68,7 @@ export default async function RoutineDetailPage({
       id: re.id,
       exercise_id: re.exercise_id,
       exercise_name: exerciseInfo?.name ?? "Ejercicio",
+      exercise_muscle_group: exerciseInfo?.muscle_group ?? "full_body",
       order_index: re.order_index,
       notes: re.notes ?? "",
       sets: re.routine_exercise_sets.map((s) => ({
@@ -71,6 +77,8 @@ export default async function RoutineDetailPage({
         target_reps_min: s.target_reps_min,
         target_reps_max: s.target_reps_max,
         rest_seconds: s.rest_seconds,
+        target_minutes: s.target_minutes,
+        target_level: s.target_level,
       })),
     };
   });

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ChevronDown,
+  Copy,
   Loader2,
   Pencil,
   Plus,
@@ -94,6 +95,9 @@ export function ProgramBuilder({
   const [overridesForAssignment, setOverridesForAssignment] =
     React.useState<ProgramAssignment | null>(null);
   const [openWeeks, setOpenWeeks] = React.useState<Set<number>>(() => new Set([1]));
+  const [cloningFromWeek, setCloningFromWeek] = React.useState<number | null>(null);
+  const [cloneTargetWeek, setCloneTargetWeek] = React.useState<string>("");
+  const [cloning, setCloning] = React.useState(false);
 
   function toggleWeek(week: number) {
     setOpenWeeks((prev) => {
@@ -143,6 +147,49 @@ export function ProgramBuilder({
       return;
     }
     toast.success("Rutina quitada del programa");
+    router.refresh();
+  }
+
+  async function handleCloneWeek() {
+    if (cloningFromWeek === null || !cloneTargetWeek) return;
+    const targetWeek = Number(cloneTargetWeek);
+    const sourceSlots = slotsByWeek.get(cloningFromWeek) ?? [];
+    setCloning(true);
+    const supabase = createClient();
+
+    // Se reemplaza por completo lo que hubiera en la semana destino.
+    const { error: deleteError } = await supabase
+      .from("program_routines")
+      .delete()
+      .eq("program_id", program.id)
+      .eq("week_number", targetWeek);
+    if (deleteError) {
+      setCloning(false);
+      toast.error("No se pudo clonar la semana");
+      return;
+    }
+
+    if (sourceSlots.length > 0) {
+      const { error: insertError } = await supabase.from("program_routines").insert(
+        sourceSlots.map((slot) => ({
+          program_id: program.id,
+          routine_id: slot.routine_id,
+          week_number: targetWeek,
+          day_of_week: slot.day_of_week,
+          notes: slot.notes,
+        })),
+      );
+      if (insertError) {
+        setCloning(false);
+        toast.error("No se pudo clonar la semana");
+        return;
+      }
+    }
+
+    setCloning(false);
+    setCloningFromWeek(null);
+    setCloneTargetWeek("");
+    toast.success(`Semana ${cloningFromWeek} clonada a la semana ${targetWeek}`);
     router.refresh();
   }
 
@@ -236,23 +283,41 @@ export function ProgramBuilder({
               const filledDays = new Set(weekSlots.map((s) => s.day_of_week)).size;
               return (
                 <Card key={week}>
-                  <button
-                    type="button"
-                    onClick={() => toggleWeek(week)}
-                    className="flex w-full items-center justify-between gap-2 px-5 text-left"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <CardTitle className="text-sm">Semana {week}</CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        {filledDays === 0
-                          ? "Sin rutinas"
-                          : `${filledDays} ${filledDays === 1 ? "día" : "días"} con rutina`}
-                      </p>
-                    </div>
-                    <ChevronDown
-                      className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
-                    />
-                  </button>
+                  <div className="flex w-full items-center justify-between gap-2 px-5">
+                    <button
+                      type="button"
+                      onClick={() => toggleWeek(week)}
+                      className="flex flex-1 items-center justify-between gap-2 py-0 text-left"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <CardTitle className="text-sm">Semana {week}</CardTitle>
+                        <p className="text-xs text-muted-foreground">
+                          {filledDays === 0
+                            ? "Sin rutinas"
+                            : `${filledDays} ${filledDays === 1 ? "día" : "días"} con rutina`}
+                        </p>
+                      </div>
+                      <ChevronDown
+                        className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {weeks.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="shrink-0"
+                        disabled={filledDays === 0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCloningFromWeek(week);
+                          setCloneTargetWeek("");
+                        }}
+                      >
+                        <Copy /> Clonar semana
+                      </Button>
+                    )}
+                  </div>
                   <CardContent
                     className={`${isOpen ? "flex" : "hidden"} flex-col gap-1.5`}
                   >
@@ -382,6 +447,49 @@ export function ProgramBuilder({
         routines={routineCatalog}
         onPick={handlePickRoutine}
       />
+
+      <Dialog
+        open={cloningFromWeek !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCloningFromWeek(null);
+            setCloneTargetWeek("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Clonar semana {cloningFromWeek}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Elige a qué semana copiar las rutinas de la semana {cloningFromWeek}. Lo que
+            ya tenga esa semana se reemplaza.
+          </p>
+          <Select value={cloneTargetWeek} onValueChange={setCloneTargetWeek}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Elegir semana destino" />
+            </SelectTrigger>
+            <SelectContent>
+              {weeks
+                .filter((w) => w !== cloningFromWeek)
+                .map((w) => (
+                  <SelectItem key={w} value={String(w)}>
+                    Semana {w}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            className="w-fit"
+            disabled={!cloneTargetWeek || cloning}
+            onClick={handleCloneWeek}
+          >
+            {cloning ? <Loader2 className="animate-spin" /> : <Copy />}
+            Clonar semana
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {addingSlot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
