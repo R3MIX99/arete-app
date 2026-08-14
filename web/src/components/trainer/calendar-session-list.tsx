@@ -17,35 +17,32 @@ export function CalendarSessionList({ sessions }: { sessions: CalendarSession[] 
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {sessions.map((session, index) => (
-        <Card key={`${session.assignmentId}-${index}`}>
-          <CardContent className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <Avatar className="size-9 shrink-0">
-                <AvatarFallback className="text-xs">
-                  {initialsOf(session.clientName) || "?"}
-                </AvatarFallback>
+        <Card
+          key={`${session.assignmentId}-${index}`}
+          className="h-full card-hover-glow transition-colors hover:border-primary/40"
+        >
+          <CardContent className="flex h-full flex-col gap-3">
+            <div className="flex items-start justify-between">
+              <Avatar className="size-10">
+                <AvatarFallback>{initialsOf(session.clientName) || "?"}</AvatarFallback>
               </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{session.clientName}</p>
-                <p className="truncate text-xs text-muted-foreground">{session.routineName}</p>
-              </div>
+              {session.isCustomizedForClient && (
+                <Badge variant="outline" className="text-[10px]">
+                  Personalizado
+                </Badge>
+              )}
             </div>
-            {(session.isProgram && session.programName) || session.isCustomizedForClient ? (
-              <div className="flex flex-wrap gap-1 pl-12 md:shrink-0 md:flex-col md:items-end md:gap-1 md:pl-0">
-                {session.isProgram && session.programName && (
-                  <Badge variant="secondary" className="text-[10px]">
-                    {session.programName}
-                  </Badge>
-                )}
-                {session.isCustomizedForClient && (
-                  <Badge variant="outline" className="text-[10px]">
-                    Personalizado
-                  </Badge>
-                )}
-              </div>
-            ) : null}
+            <div className="mt-auto">
+              <p className="truncate text-sm font-semibold">{session.clientName}</p>
+              <p className="truncate text-xs text-muted-foreground">{session.routineName}</p>
+              {session.isProgram && session.programName && (
+                <Badge variant="secondary" className="mt-2">
+                  {session.programName}
+                </Badge>
+              )}
+            </div>
           </CardContent>
         </Card>
       ))}
