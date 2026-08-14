@@ -34,7 +34,8 @@ interface FoodRow {
   household_unit_name: string | null;
   household_unit_grams: number | null;
   trainer_id: string | null;
-  food_categories: { name: string } | { name: string }[] | null;
+  image_path: string | null;
+  food_categories: { name: string; slug: string } | { name: string; slug: string }[] | null;
 }
 
 function one<T>(value: T | T[] | null): T | null {
@@ -54,7 +55,11 @@ export default async function DishDetailPage({
   if (!user) redirect("/login");
 
   const [{ data: dish }, { data: ingredients }, { data: foods }] = await Promise.all([
-    supabase.from("dishes").select("id, name, description, meal_type").eq("id", id).single(),
+    supabase
+      .from("dishes")
+      .select("id, name, description, meal_type, image_path")
+      .eq("id", id)
+      .single(),
     supabase
       .from("dish_ingredients")
       .select(
@@ -65,7 +70,7 @@ export default async function DishDetailPage({
     supabase
       .from("foods")
       .select(
-        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, food_categories(name)",
+        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, food_categories(name, slug)",
       )
       .order("name"),
   ]);
@@ -91,27 +96,35 @@ export default async function DishDetailPage({
     };
   });
 
-  const foodOptions: FoodOption[] = ((foods ?? []) as FoodRow[]).map((f) => ({
-    id: f.id,
-    name: f.name,
-    food_category_id: f.food_category_id,
-    category_name: one(f.food_categories)?.name ?? "",
-    calories_per_100g: f.calories_per_100g,
-    protein_per_100g: f.protein_per_100g,
-    carbs_per_100g: f.carbs_per_100g,
-    fat_per_100g: f.fat_per_100g,
-    household_unit_name: f.household_unit_name,
-    household_unit_grams: f.household_unit_grams,
-    trainer_id: f.trainer_id,
-  }));
+  const foodOptions: FoodOption[] = ((foods ?? []) as FoodRow[]).map((f) => {
+    const category = one(f.food_categories);
+    return {
+      id: f.id,
+      name: f.name,
+      food_category_id: f.food_category_id,
+      category_name: category?.name ?? "",
+      category_slug: category?.slug ?? "",
+      calories_per_100g: f.calories_per_100g,
+      protein_per_100g: f.protein_per_100g,
+      carbs_per_100g: f.carbs_per_100g,
+      fat_per_100g: f.fat_per_100g,
+      household_unit_name: f.household_unit_name,
+      household_unit_grams: f.household_unit_grams,
+      trainer_id: f.trainer_id,
+      image_path: f.image_path,
+      is_favorite: false,
+    };
+  });
 
   return (
     <DishBuilder
+      trainerId={user.id}
       dish={{
         id: dish.id,
         name: dish.name,
         description: dish.description,
         meal_type: dish.meal_type as MealType,
+        image_path: dish.image_path,
       }}
       initialIngredients={initialIngredients}
       foodCatalog={foodOptions}

@@ -3,11 +3,22 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Pencil, Plus, Trash, Trash2, Utensils } from "lucide-react";
+import {
+  ArrowLeft,
+  ImagePlus,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash,
+  Trash2,
+  Utensils,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { mealTypeLabel, householdMeasureFor } from "@/lib/format";
+import { mealTypeIcon } from "@/lib/food-icons";
 import type { DishIngredientInput, FoodOption, MealType } from "@/lib/types/nutrition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,13 +55,16 @@ interface DishInfo {
   name: string;
   description: string | null;
   meal_type: MealType;
+  image_path: string | null;
 }
 
 export function DishBuilder({
+  trainerId,
   dish,
   initialIngredients,
   foodCatalog,
 }: {
+  trainerId: string;
   dish: DishInfo;
   initialIngredients: DishIngredientInput[];
   foodCatalog: FoodOption[];
@@ -174,8 +188,9 @@ export function DishBuilder({
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="gap-0 overflow-hidden py-0">
+        <DishImage dish={dish} />
+        <CardHeader className="pt-5">
           <CardTitle>{dish.name}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
@@ -276,7 +291,12 @@ export function DishBuilder({
         </div>
       )}
 
-      <EditDishInfoDialog open={editOpen} onOpenChange={setEditOpen} dish={dish} />
+      <EditDishInfoDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        dish={dish}
+        trainerId={trainerId}
+      />
 
       <ConfirmDialog
         open={deleteOpen}
@@ -299,28 +319,77 @@ function MacroStat({ label, value }: { label: string; value: string | number }) 
   );
 }
 
+function DishImage({ dish }: { dish: DishInfo }) {
+  const Icon = mealTypeIcon(dish.meal_type);
+  const imageUrl = dish.image_path
+    ? createClient().storage.from("food-images").getPublicUrl(dish.image_path).data.publicUrl
+    : null;
+  return (
+    <div className="relative h-40 w-full bg-foreground/[0.04]">
+      {imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={imageUrl} alt={dish.name} className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+          <Icon className="size-10" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EditDishInfoDialog({
   open,
   onOpenChange,
   dish,
+  trainerId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dish: DishInfo;
+  trainerId: string;
 }) {
   const router = useRouter();
   const [name, setName] = React.useState(dish.name);
   const [description, setDescription] = React.useState(dish.description ?? "");
   const [mealType, setMealType] = React.useState<MealType>(dish.meal_type);
+  const [imagePath, setImagePath] = React.useState<string | null>(dish.image_path);
+  const [uploadingImage, setUploadingImage] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const imageInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     if (open) {
       setName(dish.name);
       setDescription(dish.description ?? "");
       setMealType(dish.meal_type);
+      setImagePath(dish.image_path);
     }
   }, [open, dish]);
+
+  const MealIcon = mealTypeIcon(mealType);
+  const imageUrl = imagePath
+    ? createClient().storage.from("food-images").getPublicUrl(imagePath).data.publicUrl
+    : null;
+
+  async function handleImageSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setUploadingImage(true);
+    const supabase = createClient();
+    const extension = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
+    const path = `${trainerId}/dish-${Date.now()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("food-images")
+      .upload(path, file, { upsert: true });
+    setUploadingImage(false);
+    if (uploadError) {
+      toast.error("No se pudo subir la imagen");
+      return;
+    }
+    setImagePath(path);
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -328,7 +397,12 @@ function EditDishInfoDialog({
     const supabase = createClient();
     const { error } = await supabase
       .from("dishes")
-      .update({ name, description: description || null, meal_type: mealType })
+      .update({
+        name,
+        description: description || null,
+        meal_type: mealType,
+        image_path: imagePath,
+      })
       .eq("id", dish.id);
     setSaving(false);
     if (error) {
@@ -347,6 +421,46 @@ function EditDishInfoDialog({
           <DialogTitle>Editar información</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label>Imagen (opcional)</Label>
+            <div className="flex items-center gap-3">
+              <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-foreground/[0.04] text-muted-foreground">
+                {imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <MealIcon className="size-6" />
+                )}
+                {imagePath && (
+                  <button
+                    type="button"
+                    aria-label="Quitar imagen"
+                    onClick={() => setImagePath(null)}
+                    className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-black/60 text-white"
+                  >
+                    <X className="size-2.5" />
+                  </button>
+                )}
+              </div>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelected}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploadingImage}
+                onClick={() => imageInputRef.current?.click()}
+              >
+                {uploadingImage ? <Loader2 className="animate-spin" /> : <ImagePlus />}
+                {imageUrl ? "Cambiar imagen" : "Subir imagen"}
+              </Button>
+            </div>
+          </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit_name">Nombre</Label>
             <Input id="edit_name" required value={name} onChange={(e) => setName(e.target.value)} />

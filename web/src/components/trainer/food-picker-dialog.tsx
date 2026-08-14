@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Search, Apple } from "lucide-react";
+import { Search } from "lucide-react";
 
+import { foodCategoryIcon } from "@/lib/food-icons";
 import type { FoodOption } from "@/lib/types/nutrition";
 import {
   Dialog,
@@ -52,7 +53,9 @@ export function FoodPickerDialog({
               Ningún alimento coincide con la búsqueda.
             </p>
           ) : (
-            filtered.map((food) => (
+            filtered.map((food) => {
+              const Icon = foodCategoryIcon(food.category_slug);
+              return (
               <button
                 key={food.id}
                 type="button"
@@ -64,7 +67,7 @@ export function FoodPickerDialog({
                 className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors hover:border-border hover:bg-accent"
               >
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-                  <Apple className="size-4" />
+                  <Icon className="size-4" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{food.name}</p>
@@ -78,7 +81,8 @@ export function FoodPickerDialog({
                   </div>
                 </div>
               </button>
-            ))
+              );
+            })
           )}
         </div>
       </DialogContent>

@@ -47,7 +47,8 @@ interface FoodRow {
   household_unit_name: string | null;
   household_unit_grams: number | null;
   trainer_id: string | null;
-  food_categories: { name: string } | { name: string }[] | null;
+  image_path: string | null;
+  food_categories: { name: string; slug: string } | { name: string; slug: string }[] | null;
 }
 
 interface AssignmentRow {
@@ -99,10 +100,13 @@ export default async function DietPlanDetailPage({
     supabase
       .from("foods")
       .select(
-        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, food_categories(name)",
+        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, food_categories(name, slug)",
       )
       .order("name"),
-    supabase.from("dishes").select("id, name, description, meal_type, trainer_id").order("name"),
+    supabase
+      .from("dishes")
+      .select("id, name, description, meal_type, trainer_id, image_path")
+      .order("name"),
     supabase
       .from("profiles")
       .select("id, full_name, email, phone, goal, health_notes, status, created_at")
@@ -179,19 +183,25 @@ export default async function DietPlanDetailPage({
     };
   });
 
-  const foodOptions: FoodOption[] = ((foods ?? []) as FoodRow[]).map((f) => ({
-    id: f.id,
-    name: f.name,
-    food_category_id: f.food_category_id,
-    category_name: one(f.food_categories)?.name ?? "",
-    calories_per_100g: f.calories_per_100g,
-    protein_per_100g: f.protein_per_100g,
-    carbs_per_100g: f.carbs_per_100g,
-    fat_per_100g: f.fat_per_100g,
-    household_unit_name: f.household_unit_name,
-    household_unit_grams: f.household_unit_grams,
-    trainer_id: f.trainer_id,
-  }));
+  const foodOptions: FoodOption[] = ((foods ?? []) as FoodRow[]).map((f) => {
+    const category = one(f.food_categories);
+    return {
+      id: f.id,
+      name: f.name,
+      food_category_id: f.food_category_id,
+      category_name: category?.name ?? "",
+      category_slug: category?.slug ?? "",
+      calories_per_100g: f.calories_per_100g,
+      protein_per_100g: f.protein_per_100g,
+      carbs_per_100g: f.carbs_per_100g,
+      fat_per_100g: f.fat_per_100g,
+      household_unit_name: f.household_unit_name,
+      household_unit_grams: f.household_unit_grams,
+      trainer_id: f.trainer_id,
+      image_path: f.image_path,
+      is_favorite: false,
+    };
+  });
 
   const assignmentSummaries: DietPlanAssignmentSummary[] = ((assignments ?? []) as AssignmentRow[]).map(
     (a) => ({

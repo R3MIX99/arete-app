@@ -1,11 +1,34 @@
+import Link from "next/link";
+import { Pencil } from "lucide-react";
+
 import { householdMeasureFor } from "@/lib/format";
+import { foodCategoryIcon } from "@/lib/food-icons";
+import { createClient } from "@/lib/supabase/client";
 import type { FoodOption } from "@/lib/types/nutrition";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export function FoodDetailSheet({ food }: { food: FoodOption }) {
   const measure = householdMeasureFor(100, food.household_unit_name, food.household_unit_grams);
+  const Icon = foodCategoryIcon(food.category_slug);
+  const imageUrl = food.image_path
+    ? createClient().storage.from("food-images").getPublicUrl(food.image_path).data.publicUrl
+    : null;
+
   return (
     <div className="flex flex-col gap-3">
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={food.name}
+          className="h-40 w-full rounded-lg object-cover"
+        />
+      ) : (
+        <div className="flex h-40 w-full items-center justify-center rounded-lg bg-foreground/[0.04] text-muted-foreground">
+          <Icon className="size-10" />
+        </div>
+      )}
+
       <Badge variant="secondary" className="w-fit">
         {food.category_name}
       </Badge>
@@ -22,6 +45,12 @@ export function FoodDetailSheet({ food }: { food: FoodOption }) {
           {measure ? ` (100 g ≈ ${measure})` : ""}
         </p>
       )}
+
+      <Button variant="outline" size="sm" className="w-fit" asChild>
+        <Link href={`/entrenador/nutricion/alimentos/${food.id}`}>
+          <Pencil /> Editar alimento
+        </Link>
+      </Button>
     </div>
   );
 }

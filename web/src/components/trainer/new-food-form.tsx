@@ -3,11 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, Loader2, Trash, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
-import type { FoodCategory } from "@/lib/types/nutrition";
+import { foodCategoryIcon } from "@/lib/food-icons";
+import type { FoodCategory, FoodOption } from "@/lib/types/nutrition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,25 +20,64 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function NewFoodForm({
+  mode = "create",
+  food,
   trainerId,
   categories,
 }: {
+  mode?: "create" | "edit";
+  food?: FoodOption;
   trainerId: string;
   categories: FoodCategory[];
 }) {
   const router = useRouter();
-  const [name, setName] = React.useState("");
-  const [categoryId, setCategoryId] = React.useState("");
-  const [calories, setCalories] = React.useState(0);
-  const [protein, setProtein] = React.useState(0);
-  const [carbs, setCarbs] = React.useState(0);
-  const [fat, setFat] = React.useState(0);
-  const [unitName, setUnitName] = React.useState("");
-  const [unitGrams, setUnitGrams] = React.useState<number | "">("");
+  const [name, setName] = React.useState(food?.name ?? "");
+  const [categoryId, setCategoryId] = React.useState(food?.food_category_id ?? "");
+  const [calories, setCalories] = React.useState(food?.calories_per_100g ?? 0);
+  const [protein, setProtein] = React.useState(food?.protein_per_100g ?? 0);
+  const [carbs, setCarbs] = React.useState(food?.carbs_per_100g ?? 0);
+  const [fat, setFat] = React.useState(food?.fat_per_100g ?? 0);
+  const [unitName, setUnitName] = React.useState(food?.household_unit_name ?? "");
+  const [unitGrams, setUnitGrams] = React.useState<number | "">(
+    food?.household_unit_grams ?? "",
+  );
+  const [imagePath, setImagePath] = React.useState<string | null>(food?.image_path ?? null);
+  const [uploadingImage, setUploadingImage] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const imageInputRef = React.useRef<HTMLInputElement>(null);
+
+  const categorySlug = categories.find((c) => c.id === categoryId)?.slug ?? null;
+  const CategoryIcon = foodCategoryIcon(categorySlug);
+  const imageUrl = imagePath
+    ? createClient().storage.from("food-images").getPublicUrl(imagePath).data.publicUrl
+    : null;
+
+  async function handleImageSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setUploadingImage(true);
+    const supabase = createClient();
+    const extension = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
+    const path = `${trainerId}/food-${Date.now()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("food-images")
+      .upload(path, file, { upsert: true });
+    setUploadingImage(false);
+    if (uploadError) {
+      toast.error("No se pudo subir la imagen");
+      return;
+    }
+    setImagePath(path);
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -50,8 +90,7 @@ export function NewFoodForm({
     setError(null);
 
     const supabase = createClient();
-    const { error: insertError } = await supabase.from("foods").insert({
-      trainer_id: trainerId,
+    const payload = {
       food_category_id: categoryId,
       name,
       calories_per_100g: calories,
@@ -60,12 +99,33 @@ export function NewFoodForm({
       fat_per_100g: fat,
       household_unit_name: hasUnit ? unitName : null,
       household_unit_grams: hasUnit ? Number(unitGrams) : null,
-    });
+      image_path: imagePath,
+    };
 
+    if (mode === "edit" && food) {
+      const { error: updateError } = await supabase
+        .from("foods")
+        .update(payload)
+        .eq("id", food.id);
+      setLoading(false);
+      if (updateError) {
+        setError("No se pudieron guardar los cambios. Intenta de nuevo.");
+        toast.error("No se pudieron guardar los cambios");
+        return;
+      }
+      toast.success("Cambios guardados");
+      router.push("/entrenador/nutricion");
+      router.refresh();
+      return;
+    }
+
+    const { error: insertError } = await supabase
+      .from("foods")
+      .insert({ ...payload, trainer_id: trainerId });
+    setLoading(false);
     if (insertError) {
       setError("No se pudo crear el alimento. Intenta de nuevo.");
       toast.error("No se pudo crear el alimento");
-      setLoading(false);
       return;
     }
 
@@ -74,20 +134,96 @@ export function NewFoodForm({
     router.refresh();
   }
 
+  async function handleDelete() {
+    if (!food) return;
+    setDeleting(true);
+    const supabase = createClient();
+    const { error: deleteError } = await supabase.from("foods").delete().eq("id", food.id);
+    if (deleteError) {
+      toast.error("No se pudo eliminar. Puede estar usado en un platillo o plan.");
+      setDeleting(false);
+      setDeleteOpen(false);
+      return;
+    }
+    toast.success("Alimento eliminado");
+    router.push("/entrenador/nutricion");
+    router.refresh();
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4 md:p-8">
-      <Button variant="ghost" size="sm" className="w-fit" asChild>
-        <Link href="/entrenador/nutricion">
-          <ArrowLeft /> Volver a nutrición
-        </Link>
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" className="w-fit" asChild>
+          <Link href="/entrenador/nutricion">
+            <ArrowLeft /> Volver a nutrición
+          </Link>
+        </Button>
+        {mode === "edit" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash /> Eliminar
+          </Button>
+        )}
+      </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Nuevo alimento</CardTitle>
+          <CardTitle>{mode === "create" ? "Nuevo alimento" : "Editar alimento"}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label>Imagen (opcional)</Label>
+              <div className="flex items-center gap-3">
+                <div className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-foreground/[0.04] text-muted-foreground">
+                  {imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <CategoryIcon className="size-8" />
+                  )}
+                  {imagePath && (
+                    <button
+                      type="button"
+                      aria-label="Quitar imagen"
+                      onClick={() => setImagePath(null)}
+                      className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageSelected}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploadingImage}
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  {uploadingImage ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <ImagePlus />
+                  )}
+                  {imageUrl ? "Cambiar imagen" : "Subir imagen"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Si no subes una imagen, se muestra el ícono de la categoría.
+              </p>
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="name">Nombre</Label>
               <Input
@@ -204,11 +340,22 @@ export function NewFoodForm({
 
             <Button type="submit" disabled={loading} className="mt-1 w-fit">
               {loading ? <Loader2 className="animate-spin" /> : null}
-              Crear alimento
+              {mode === "create" ? "Crear alimento" : "Guardar cambios"}
             </Button>
           </form>
         </CardContent>
       </Card>
+
+      {food && (
+        <ConfirmDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          title={`¿Eliminar "${food.name}"?`}
+          description="Esta acción no se puede deshacer. Si el alimento está usado en un platillo o plan, no se podrá eliminar."
+          loading={deleting}
+          onConfirm={handleDelete}
+        />
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ export interface FoodOption {
   name: string;
   food_category_id: string;
   category_name: string;
+  category_slug: string;
   calories_per_100g: number;
   protein_per_100g: number;
   carbs_per_100g: number;
@@ -19,6 +20,8 @@ export interface FoodOption {
   household_unit_name: string | null;
   household_unit_grams: number | null;
   trainer_id: string | null;
+  image_path: string | null;
+  is_favorite: boolean;
 }
 
 export interface DishOption {
@@ -27,6 +30,7 @@ export interface DishOption {
   description: string | null;
   meal_type: MealType;
   trainer_id: string | null;
+  image_path: string | null;
 }
 
 export interface DishIngredientInput {

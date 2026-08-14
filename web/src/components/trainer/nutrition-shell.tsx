@@ -13,11 +13,13 @@ import { CatalogBrowser } from "@/components/trainer/catalog-browser";
  * tocar los 9 módulos fijos del panel.
  */
 export function NutritionShell({
+  trainerId,
   dietPlans,
   foods,
   dishes,
   categories,
 }: {
+  trainerId: string;
   dietPlans: DietPlanSummary[];
   foods: FoodOption[];
   dishes: DishOption[];
@@ -34,7 +36,12 @@ export function NutritionShell({
           <DietPlansBrowser dietPlans={dietPlans} />
         </TabsContent>
         <TabsContent value="catalogo">
-          <CatalogBrowser foods={foods} dishes={dishes} categories={categories} />
+          <CatalogBrowser
+            trainerId={trainerId}
+            foods={foods}
+            dishes={dishes}
+            categories={categories}
+          />
         </TabsContent>
       </Tabs>
     </div>

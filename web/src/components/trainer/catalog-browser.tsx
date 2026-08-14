@@ -2,9 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, Utensils, Apple as AppleIcon, FilterX } from "lucide-react";
+import { Search, Plus, Utensils, Apple as AppleIcon, FilterX, Pencil, Star } from "lucide-react";
+import { toast } from "sonner";
 
 import { mealTypeLabel } from "@/lib/format";
+import { foodCategoryIcon, mealTypeIcon } from "@/lib/food-icons";
+import { createClient } from "@/lib/supabase/client";
 import type { DishOption, FoodCategory, FoodOption } from "@/lib/types/nutrition";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,10 +23,12 @@ import { MobileFab } from "@/components/trainer/mobile-fab";
 import { FoodDetailSheet } from "@/components/trainer/food-detail-sheet";
 
 export function CatalogBrowser({
+  trainerId,
   foods,
   dishes,
   categories,
 }: {
+  trainerId: string;
   foods: FoodOption[];
   dishes: DishOption[];
   categories: FoodCategory[];
@@ -31,22 +36,57 @@ export function CatalogBrowser({
   const [tab, setTab] = React.useState<"foods" | "dishes">("foods");
   const [query, setQuery] = React.useState("");
   const [categoryId, setCategoryId] = React.useState<string | null>(null);
+  const [favoritesOnly, setFavoritesOnly] = React.useState(false);
   const [selectedFood, setSelectedFood] = React.useState<FoodOption | null>(null);
+  const [favoriteIds, setFavoriteIds] = React.useState(
+    () => new Set(foods.filter((f) => f.is_favorite).map((f) => f.id)),
+  );
 
   const filteredFoods = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     return foods.filter((f) => {
+      if (favoritesOnly && !favoriteIds.has(f.id)) return false;
       if (categoryId && f.food_category_id !== categoryId) return false;
       if (q && !f.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [foods, query, categoryId]);
+  }, [foods, query, categoryId, favoritesOnly, favoriteIds]);
 
   const filteredDishes = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return dishes;
     return dishes.filter((d) => d.name.toLowerCase().includes(q));
   }, [dishes, query]);
+
+  async function toggleFavorite(event: React.MouseEvent, food: FoodOption) {
+    event.preventDefault();
+    event.stopPropagation();
+    const supabase = createClient();
+    const isFavorite = favoriteIds.has(food.id);
+    // Optimista: se refleja de inmediato y se revierte si falla.
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (isFavorite) next.delete(food.id);
+      else next.add(food.id);
+      return next;
+    });
+    const { error } = isFavorite
+      ? await supabase
+          .from("food_favorites")
+          .delete()
+          .eq("trainer_id", trainerId)
+          .eq("food_id", food.id)
+      : await supabase.from("food_favorites").insert({ trainer_id: trainerId, food_id: food.id });
+    if (error) {
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (isFavorite) next.add(food.id);
+        else next.delete(food.id);
+        return next;
+      });
+      toast.error("No se pudo actualizar favoritos");
+    }
+  }
 
   const newHref =
     tab === "foods" ? "/entrenador/nutricion/alimentos/nuevo" : "/entrenador/nutricion/platillos/nuevo";
@@ -106,6 +146,15 @@ export function CatalogBrowser({
 
       {tab === "foods" && (
         <div className="flex flex-wrap items-center gap-2">
+          <Badge
+            variant={favoritesOnly ? "default" : "outline"}
+            className="h-7 cursor-pointer gap-1 px-3"
+            onClick={() => setFavoritesOnly((v) => !v)}
+          >
+            <Star className="size-3" fill={favoritesOnly ? "currentColor" : "none"} />
+            Favoritos
+          </Badge>
+          <div className="mx-1 h-4 w-px bg-border" />
           {categories.map((category) => (
             <Badge
               key={category.id}
@@ -118,12 +167,15 @@ export function CatalogBrowser({
               {category.name}
             </Badge>
           ))}
-          {categoryId && (
+          {(categoryId || favoritesOnly) && (
             <Button
               variant="ghost"
               size="sm"
               className="text-muted-foreground"
-              onClick={() => setCategoryId(null)}
+              onClick={() => {
+                setCategoryId(null);
+                setFavoritesOnly(false);
+              }}
             >
               <FilterX /> Limpiar
             </Button>
@@ -136,49 +188,115 @@ export function CatalogBrowser({
           <EmptyState icon={AppleIcon} empty={foods.length === 0} what="alimentos" />
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredFoods.map((food) => (
-              <button key={food.id} type="button" onClick={() => setSelectedFood(food)}>
-                <Card className="h-full card-hover-glow text-left transition-colors hover:border-primary/40">
-                  <CardContent className="flex h-full flex-col gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary">
-                      <AppleIcon className="size-[18px]" />
-                    </div>
-                    <div className="mt-auto">
-                      <p className="truncate text-sm font-semibold">{food.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {Math.round(food.calories_per_100g)} kcal / 100 g
-                      </p>
-                      <Badge variant="secondary" className="mt-2">
+            {filteredFoods.map((food) => {
+              const Icon = foodCategoryIcon(food.category_slug);
+              const imageUrl = food.image_path
+                ? createClient().storage.from("food-images").getPublicUrl(food.image_path).data
+                    .publicUrl
+                : null;
+              const isFavorite = favoriteIds.has(food.id);
+              return (
+                <div
+                  key={food.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedFood(food)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") setSelectedFood(food);
+                  }}
+                  className="cursor-pointer text-left"
+                >
+                  <Card className="card-hover-glow gap-0 overflow-hidden py-0 transition-colors hover:border-primary/40">
+                    <div className="relative h-28 w-full bg-foreground/[0.04]">
+                      {imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={imageUrl}
+                          alt={food.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                          <Icon className="size-9" />
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+                        onClick={(e) => toggleFavorite(e, food)}
+                        className="absolute top-2 left-2 flex size-7 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+                      >
+                        <Star
+                          className="size-3.5"
+                          fill={isFavorite ? "currentColor" : "none"}
+                          color={isFavorite ? "#facc15" : "currentColor"}
+                        />
+                      </button>
+                      <span className="absolute top-2 right-2 rounded-full bg-black/45 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
                         {food.category_name}
-                      </Badge>
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
-              </button>
-            ))}
+                    <CardContent className="flex flex-col gap-2 px-3 py-3">
+                      <div className="flex items-start justify-between gap-1">
+                        <p className="truncate text-sm font-semibold">{food.name}</p>
+                        <Link
+                          href={`/entrenador/nutricion/alimentos/${food.id}`}
+                          aria-label="Editar alimento"
+                          onClick={(e) => e.stopPropagation()}
+                          className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        >
+                          <Pencil className="size-3.5" />
+                        </Link>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1 text-center">
+                        <MiniStat label="Kcal" value={Math.round(food.calories_per_100g)} />
+                        <MiniStat label="Prot" value={`${Math.round(food.protein_per_100g)}g`} />
+                        <MiniStat label="Carb" value={`${Math.round(food.carbs_per_100g)}g`} />
+                        <MiniStat label="Grasa" value={`${Math.round(food.fat_per_100g)}g`} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
           </div>
         )
       ) : filteredDishes.length === 0 ? (
         <EmptyState icon={Utensils} empty={dishes.length === 0} what="platillos" />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredDishes.map((dish) => (
-            <Link key={dish.id} href={`/entrenador/nutricion/platillos/${dish.id}`}>
-              <Card className="h-full card-hover-glow transition-colors hover:border-primary/40">
-                <CardContent className="flex h-full flex-col gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary">
-                    <Utensils className="size-[18px]" />
-                  </div>
-                  <div className="mt-auto">
-                    <p className="truncate text-sm font-semibold">{dish.name}</p>
-                    <Badge variant="secondary" className="mt-2">
+          {filteredDishes.map((dish) => {
+            const Icon = mealTypeIcon(dish.meal_type);
+            const imageUrl = dish.image_path
+              ? createClient().storage.from("food-images").getPublicUrl(dish.image_path).data
+                  .publicUrl
+              : null;
+            return (
+              <Link key={dish.id} href={`/entrenador/nutricion/platillos/${dish.id}`}>
+                <Card className="card-hover-glow gap-0 overflow-hidden py-0 transition-colors hover:border-primary/40">
+                  <div className="relative h-28 w-full bg-foreground/[0.04]">
+                    {imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={imageUrl} alt={dish.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                        <Icon className="size-9" />
+                      </div>
+                    )}
+                    <span className="absolute top-2 right-2 rounded-full bg-black/45 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
                       {mealTypeLabel(dish.meal_type)}
-                    </Badge>
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  <CardContent className="flex flex-col gap-1 px-3 py-3">
+                    <p className="truncate text-sm font-semibold">{dish.name}</p>
+                    {dish.description && (
+                      <p className="truncate text-xs text-muted-foreground">{dish.description}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
 
@@ -190,6 +308,15 @@ export function CatalogBrowser({
           {selectedFood && <FoodDetailSheet food={selectedFood} />}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-md bg-foreground/[0.04] px-1 py-1.5">
+      <p className="text-xs font-semibold tabular-nums">{value}</p>
+      <p className="text-[9px] text-muted-foreground uppercase">{label}</p>
     </div>
   );
 }
