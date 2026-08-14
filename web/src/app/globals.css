@@ -227,9 +227,23 @@
   /* Degradado sutil desde la esquina inferior derecha, solo al hacer
    * hover en tarjetas clicables (clientes, ejercicios, rutinas,
    * programas, planes, catálogo). Va sobre el color de .glass-card, muy
-   * corto y de baja opacidad para que apenas se note. */
+   * corto y de baja opacidad para que apenas se note.
+   *
+   * Se anima con transform: scale() en un pseudo-elemento (no con
+   * background-size) para que el crecimiento sea uniforme en diagonal
+   * desde la esquina, en vez de estirarse distinto en ancho y alto
+   * según la proporción de la tarjeta. Solo en dispositivos con hover
+   * real (mouse) — en teléfono no hay hover persistente, así que ahí no
+   * se muestra. */
   .card-hover-glow {
+    position: relative;
     overflow: hidden;
+  }
+
+  .card-hover-glow::after {
+    content: "";
+    position: absolute;
+    inset: 0;
     background-image: radial-gradient(
       140px 140px at 100% 100%,
       color-mix(in oklch, var(--primary) 14%, transparent),
@@ -237,12 +251,16 @@
     );
     background-repeat: no-repeat;
     background-position: 100% 100%;
-    background-size: 0 0;
-    transition: background-size 0.2s ease;
+    transform: scale(0);
+    transform-origin: 100% 100%;
+    transition: transform 0.3s ease;
+    pointer-events: none;
   }
 
-  .card-hover-glow:hover {
-    background-size: 100% 100%;
+  @media (hover: hover) and (pointer: fine) {
+    .card-hover-glow:hover::after {
+      transform: scale(1);
+    }
   }
 }
 
