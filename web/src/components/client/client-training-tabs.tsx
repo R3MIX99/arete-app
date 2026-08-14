@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarClock, Dumbbell } from "lucide-react";
+import Link from "next/link";
+import { CalendarClock, ChevronRight, Dumbbell } from "lucide-react";
 
 import { formatDate } from "@/lib/format";
 import {
@@ -92,20 +93,23 @@ export function ClientTrainingTabs({
           ) : (
             <div className="flex flex-col gap-2.5">
               {completedSessions.map((session) => (
-                <Card key={session.id}>
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <Dumbbell className="size-4.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{session.routineName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(session.sessionDate)}
-                        {session.durationSeconds ? ` · ${formatDuration(session.durationSeconds)}` : ""}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <Link key={session.id} href={`/cliente/entrenamiento/sesion/${session.id}`}>
+                  <Card className="transition-colors hover:bg-accent/40">
+                    <CardContent className="flex items-center gap-3 p-4">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <Dumbbell className="size-4.5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{session.routineName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(session.sessionDate)}
+                          {session.durationSeconds ? ` · ${formatDuration(session.durationSeconds)}` : ""}
+                        </p>
+                      </div>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}

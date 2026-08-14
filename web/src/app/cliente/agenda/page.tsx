@@ -39,19 +39,25 @@ export default async function ClientAgendaPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: assignmentRows }, { data: inProgressSessions }] = await Promise.all([
-    supabase
-      .from("client_assignments")
-      .select(
-        "id, client_id, start_date, programs(name, duration_weeks, program_routines(id, week_number, day_of_week, routines(id, name))), routines(id, name), assignment_overrides(program_routine_id, routines(id, name))",
-      )
-      .eq("client_id", user.id),
-    supabase
-      .from("client_sessions")
-      .select("id, assignment_id, routine_id, session_date")
-      .eq("client_id", user.id)
-      .eq("status", "in_progress"),
-  ]);
+  const [{ data: assignmentRows }, { data: inProgressSessions }, { data: completedSessions }] =
+    await Promise.all([
+      supabase
+        .from("client_assignments")
+        .select(
+          "id, client_id, start_date, programs(name, duration_weeks, program_routines(id, week_number, day_of_week, routines(id, name))), routines(id, name), assignment_overrides(program_routine_id, routines(id, name))",
+        )
+        .eq("client_id", user.id),
+      supabase
+        .from("client_sessions")
+        .select("id, assignment_id, routine_id, session_date")
+        .eq("client_id", user.id)
+        .eq("status", "in_progress"),
+      supabase
+        .from("client_sessions")
+        .select("id, assignment_id, routine_id, session_date")
+        .eq("client_id", user.id)
+        .eq("status", "completed"),
+    ]);
 
   const assignments: CalendarAssignment[] = ((assignmentRows ?? []) as AssignmentRow[]).map((row) => {
     const program = one(row.programs);
@@ -94,10 +100,19 @@ export default async function ClientAgendaPage() {
     inProgressByKey[`${s.assignment_id}:${s.routine_id}:${s.session_date}`] = s.id;
   }
 
+  const completedByKey: Record<string, string> = {};
+  for (const s of completedSessions ?? []) {
+    completedByKey[`${s.assignment_id}:${s.routine_id}:${s.session_date}`] = s.id;
+  }
+
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4 p-4 pb-24">
       <h1 className="text-xl font-semibold">Agenda</h1>
-      <ClientAgenda assignments={assignments} inProgressByKey={inProgressByKey} />
+      <ClientAgenda
+        assignments={assignments}
+        inProgressByKey={inProgressByKey}
+        completedByKey={completedByKey}
+      />
     </div>
   );
 }

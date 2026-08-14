@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { CalendarDays, CalendarX, ChevronLeft, ChevronRight, Dumbbell, PlayCircle } from "lucide-react";
+import { CalendarDays, CalendarX, Check, ChevronLeft, ChevronRight, Dumbbell, PlayCircle } from "lucide-react";
 
 import { formatDayHeading, formatMonthYear } from "@/lib/format";
 import {
@@ -13,6 +13,7 @@ import {
   todayKey,
   type CalendarAssignment,
 } from "@/lib/calendar-logic";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -28,9 +29,11 @@ function monthGridRange(year: number, month: number) {
 export function ClientAgenda({
   assignments,
   inProgressByKey,
+  completedByKey,
 }: {
   assignments: CalendarAssignment[];
   inProgressByKey: Record<string, string>;
+  completedByKey: Record<string, string>;
 }) {
   const today = React.useMemo(() => todayKey(), []);
   const [selectedDate, setSelectedDate] = React.useState(today);
@@ -128,25 +131,39 @@ export function ClientAgenda({
           {daySessions.map((session) => {
             const key = `${session.assignmentId}:${session.routineId}:${session.date}`;
             const inProgressId = inProgressByKey[key];
+            const completedSessionId = completedByKey[key];
             const href = `/cliente/entrenamiento/sesion?assignment=${session.assignmentId}&routine=${session.routineId}&date=${session.date}`;
             return (
               <Card key={key} className="overflow-hidden">
                 <CardContent className="flex items-center gap-3 p-4">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Dumbbell className="size-4.5" />
+                  <div
+                    className={cn(
+                      "flex size-10 shrink-0 items-center justify-center rounded-xl",
+                      completedSessionId ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary",
+                    )}
+                  >
+                    {completedSessionId ? <Check className="size-4.5" /> : <Dumbbell className="size-4.5" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{session.routineName}</p>
-                    {session.isProgram && session.programName ? (
+                    {completedSessionId ? (
+                      <p className="truncate text-xs text-primary">Completada</p>
+                    ) : session.isProgram && session.programName ? (
                       <p className="truncate text-xs text-muted-foreground">{session.programName}</p>
                     ) : null}
                   </div>
-                  <Button asChild size="sm">
-                    <Link href={href}>
-                      <PlayCircle className="size-4" />
-                      {inProgressId ? "Continuar" : "Empezar"}
-                    </Link>
-                  </Button>
+                  {completedSessionId ? (
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/cliente/entrenamiento/sesion/${completedSessionId}`}>Ver</Link>
+                    </Button>
+                  ) : (
+                    <Button asChild size="sm">
+                      <Link href={href}>
+                        <PlayCircle className="size-4" />
+                        {inProgressId ? "Continuar" : "Empezar"}
+                      </Link>
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );

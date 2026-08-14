@@ -123,9 +123,9 @@ export function WorkoutSessionView({
     saveTimers.current[setId] = setTimeout(() => persistLog(setId), 600);
   }
 
-  async function persistLog(setId: string) {
+  async function persistLog(setId: string, overrideLog?: LogState[string]) {
     if (!sessionId) return;
-    const log = logs[setId] ?? emptyLog();
+    const log = overrideLog ?? logs[setId] ?? emptyLog();
     await supabase.from("client_set_logs").upsert(
       {
         routine_exercise_set_id: setId,
@@ -162,7 +162,39 @@ export function WorkoutSessionView({
   async function handleFinish() {
     if (!sessionId) return;
     setFinishing(true);
-    const durationSeconds = Math.round((Date.now() - startedAtRef.current) / 1000);
+    // Date.now() aquí es parte de un manejador de clic (async), no del
+    // render; se usa solo para calcular la duración de la sesión.
+    // eslint-disable-next-line react-hooks/purity
+    const finishedAt = Date.now();
+
+    // Cualquier serie con datos capturados que no se marcó a mano con el
+    // check se da por completada al terminar la sesión — si no, sus
+    // valores quedan guardados pero nunca cuentan para el historial de
+    // Evolución (que solo mira series con is_completed = true).
+    const toAutoComplete: { setId: string; log: LogState[string] }[] = [];
+    for (const exercise of exercises) {
+      for (const set of exercise.sets) {
+        const log = logs[set.id];
+        if (!log || log.is_completed) continue;
+        const hasValue = log.actual_reps || log.actual_weight || log.actual_minutes || log.actual_level;
+        if (hasValue) toAutoComplete.push({ setId: set.id, log: { ...log, is_completed: true } });
+      }
+    }
+    if (toAutoComplete.length > 0) {
+      setLogs((prev) => {
+        const next = { ...prev };
+        for (const u of toAutoComplete) next[u.setId] = u.log;
+        return next;
+      });
+      await Promise.all(
+        toAutoComplete.map((u) => {
+          if (saveTimers.current[u.setId]) clearTimeout(saveTimers.current[u.setId]);
+          return persistLog(u.setId, u.log);
+        }),
+      );
+    }
+
+    const durationSeconds = Math.round((finishedAt - startedAtRef.current) / 1000);
     const { error } = await supabase
       .from("client_sessions")
       .update({ status: "completed", finished_at: new Date().toISOString(), duration_seconds: durationSeconds })
