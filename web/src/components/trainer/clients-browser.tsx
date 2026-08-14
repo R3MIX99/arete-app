@@ -267,12 +267,19 @@ export function ClientsBrowser({
               key={client.id}
               className={
                 client.status === "inactive"
-                  ? "h-full opacity-50 transition-colors hover:border-primary/40"
+                  ? "h-full transition-colors hover:border-primary/40"
                   : "h-full card-hover-glow transition-colors hover:border-primary/40"
               }
             >
               <CardContent className="flex h-full flex-col gap-3">
-                <Link href={`/entrenador/clientes/${client.id}`} className="flex flex-1 flex-col gap-3">
+                <Link
+                  href={`/entrenador/clientes/${client.id}`}
+                  className={
+                    client.status === "inactive"
+                      ? "flex flex-1 flex-col gap-3 opacity-50"
+                      : "flex flex-1 flex-col gap-3"
+                  }
+                >
                   <div className="flex items-start justify-between">
                     <Avatar className="size-10">
                       <AvatarFallback>{initialsOf(client.full_name) || "?"}</AvatarFallback>
