@@ -4,7 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   ChevronDown,
   Copy,
   Loader2,
@@ -98,6 +100,9 @@ export function ProgramBuilder({
   const [cloningFromWeek, setCloningFromWeek] = React.useState<number | null>(null);
   const [cloneTargetWeek, setCloneTargetWeek] = React.useState<string>("");
   const [cloning, setCloning] = React.useState(false);
+  const [movingWeek, setMovingWeek] = React.useState<number | null>(null);
+  const [weekToDelete, setWeekToDelete] = React.useState<number | null>(null);
+  const [deletingWeek, setDeletingWeek] = React.useState(false);
 
   function toggleWeek(week: number) {
     setOpenWeeks((prev) => {
@@ -156,6 +161,20 @@ export function ProgramBuilder({
     const newWeek = program.duration_weeks + 1;
     setAddingWeek(true);
     const supabase = createClient();
+
+    // Limpieza defensiva: si esa semana tuviera rutinas huérfanas de una
+    // semana eliminada antes, la semana nueva siempre nace vacía.
+    const { error: cleanupError } = await supabase
+      .from("program_routines")
+      .delete()
+      .eq("program_id", program.id)
+      .eq("week_number", newWeek);
+    if (cleanupError) {
+      setAddingWeek(false);
+      toast.error("No se pudo agregar la semana");
+      return;
+    }
+
     const { error } = await supabase
       .from("programs")
       .update({ duration_weeks: newWeek })
@@ -167,6 +186,78 @@ export function ProgramBuilder({
     }
     setOpenWeeks((prev) => new Set(prev).add(newWeek));
     toast.success(`Semana ${newWeek} agregada`);
+    router.refresh();
+  }
+
+  async function handleMoveWeek(week: number, direction: -1 | 1) {
+    const target = week + direction;
+    if (target < 1 || target > program.duration_weeks) return;
+    setMovingWeek(week);
+    const supabase = createClient();
+
+    const slotsInWeek = slots.filter((s) => s.week_number === week);
+    const slotsInTarget = slots.filter((s) => s.week_number === target);
+    const results = await Promise.all([
+      ...slotsInWeek.map((s) =>
+        supabase.from("program_routines").update({ week_number: target }).eq("id", s.id),
+      ),
+      ...slotsInTarget.map((s) =>
+        supabase.from("program_routines").update({ week_number: week }).eq("id", s.id),
+      ),
+    ]);
+    setMovingWeek(null);
+    if (results.some((r) => r.error)) {
+      toast.error("No se pudo reordenar la semana");
+      return;
+    }
+    toast.success(`Semana ${week} movida a la posición ${target}`);
+    router.refresh();
+  }
+
+  async function handleDeleteWeek() {
+    if (weekToDelete === null || program.duration_weeks <= 1) return;
+    const week = weekToDelete;
+    setDeletingWeek(true);
+    const supabase = createClient();
+
+    const { error: deleteError } = await supabase
+      .from("program_routines")
+      .delete()
+      .eq("program_id", program.id)
+      .eq("week_number", week);
+    if (deleteError) {
+      setDeletingWeek(false);
+      toast.error("No se pudo eliminar la semana");
+      return;
+    }
+
+    // Recorre una posición hacia arriba las semanas que quedaron después.
+    const laterSlots = slots.filter((s) => s.week_number > week);
+    const shiftResults = await Promise.all(
+      laterSlots.map((s) =>
+        supabase
+          .from("program_routines")
+          .update({ week_number: s.week_number - 1 })
+          .eq("id", s.id),
+      ),
+    );
+    if (shiftResults.some((r) => r.error)) {
+      setDeletingWeek(false);
+      toast.error("No se pudo eliminar la semana");
+      return;
+    }
+
+    const { error: durationError } = await supabase
+      .from("programs")
+      .update({ duration_weeks: program.duration_weeks - 1 })
+      .eq("id", program.id);
+    setDeletingWeek(false);
+    if (durationError) {
+      toast.error("No se pudo eliminar la semana");
+      return;
+    }
+    setWeekToDelete(null);
+    toast.success(`Semana ${week} eliminada`);
     router.refresh();
   }
 
@@ -347,20 +438,65 @@ export function ProgramBuilder({
                         className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
                       />
                     </button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0"
-                      disabled={filledDays === 0}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCloningFromWeek(week);
-                        setCloneTargetWeek("");
-                      }}
-                    >
-                      <Copy /> Clonar semana
-                    </Button>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Subir semana"
+                        disabled={week === 1 || movingWeek !== null}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMoveWeek(week, -1);
+                        }}
+                      >
+                        {movingWeek === week ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <ArrowUp className="size-4" />
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Bajar semana"
+                        disabled={week === program.duration_weeks || movingWeek !== null}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMoveWeek(week, 1);
+                        }}
+                      >
+                        <ArrowDown className="size-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={filledDays === 0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCloningFromWeek(week);
+                          setCloneTargetWeek("");
+                        }}
+                      >
+                        <Copy /> Clonar semana
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Eliminar semana"
+                        className="text-destructive hover:text-destructive"
+                        disabled={program.duration_weeks <= 1}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setWeekToDelete(week);
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                   <CardContent
                     className={`${isOpen ? "flex" : "hidden"} flex-col gap-1.5`}
@@ -490,6 +626,15 @@ export function ProgramBuilder({
         onOpenChange={(open) => !open && setPendingSlotTarget(null)}
         routines={routineCatalog}
         onPick={handlePickRoutine}
+      />
+
+      <ConfirmDialog
+        open={weekToDelete !== null}
+        onOpenChange={(open) => !open && setWeekToDelete(null)}
+        title={`¿Eliminar la semana ${weekToDelete}?`}
+        description="Se eliminan las rutinas de esa semana y las semanas siguientes se recorren una posición hacia arriba. Esta acción no se puede deshacer."
+        loading={deletingWeek}
+        onConfirm={handleDeleteWeek}
       />
 
       <Dialog
