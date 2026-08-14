@@ -9,12 +9,12 @@ interface ProgramRoutineRow {
   id: string;
   week_number: number;
   day_of_week: number;
-  routines: { name: string } | { name: string }[] | null;
+  routines: { id: string; name: string } | { id: string; name: string }[] | null;
 }
 
 interface OverrideRow {
   program_routine_id: string;
-  routines: { name: string } | { name: string }[] | null;
+  routines: { id: string; name: string } | { id: string; name: string }[] | null;
 }
 
 interface AssignmentRow {
@@ -33,7 +33,7 @@ interface AssignmentRow {
         program_routines: ProgramRoutineRow[] | null;
       }[]
     | null;
-  routines: { name: string } | { name: string }[] | null;
+  routines: { id: string; name: string } | { id: string; name: string }[] | null;
   assignment_overrides: OverrideRow[] | null;
 }
 
@@ -69,7 +69,7 @@ export default async function ProgressPage() {
     supabase
       .from("client_assignments")
       .select(
-        "id, client_id, start_date, programs(name, duration_weeks, program_routines(id, week_number, day_of_week, routines(name))), routines(name), assignment_overrides(program_routine_id, routines(name))",
+        "id, client_id, start_date, programs(name, duration_weeks, program_routines(id, week_number, day_of_week, routines(id, name))), routines(id, name), assignment_overrides(program_routine_id, routines(id, name))",
       ),
     supabase
       .from("progress_measurements")
@@ -94,6 +94,7 @@ export default async function ProgressPage() {
       programRoutineId: r.id,
       weekNumber: r.week_number,
       dayOfWeek: r.day_of_week,
+      routineId: one(r.routines)?.id ?? "",
       routineName: one(r.routines)?.name ?? "",
     }));
 
@@ -105,6 +106,7 @@ export default async function ProgressPage() {
       isProgram: program !== null,
       programName: program?.name ?? null,
       programDurationWeeks: program?.duration_weeks ?? null,
+      standaloneRoutineId: routine?.id ?? null,
       standaloneRoutineName: routine?.name ?? null,
       slots,
       overridesByProgramRoutineId: overrides,

@@ -11,6 +11,7 @@ export interface CalendarProgramSlot {
   programRoutineId: string;
   weekNumber: number;
   dayOfWeek: number; // ISO: 1 = lunes ... 7 = domingo
+  routineId: string;
   routineName: string;
 }
 
@@ -22,9 +23,13 @@ export interface CalendarAssignment {
   isProgram: boolean;
   programName?: string | null;
   programDurationWeeks?: number | null;
+  standaloneRoutineId?: string | null;
   standaloneRoutineName?: string | null;
   slots: CalendarProgramSlot[];
   overridesByProgramRoutineId: Record<string, string>;
+  // routineId de reemplazo por programRoutineId (para que el cliente
+  // pueda abrir la rutina de verdad, no solo ver su nombre).
+  overrideRoutineIdByProgramRoutineId?: Record<string, string>;
 }
 
 export interface CalendarSession {
@@ -32,6 +37,7 @@ export interface CalendarSession {
   assignmentId: string;
   clientId: string;
   clientName: string;
+  routineId: string;
   routineName: string;
   isProgram: boolean;
   programName?: string | null;
@@ -121,11 +127,14 @@ export function sessionsInRange(
           for (const slot of assignment.slots) {
             if (slot.weekNumber !== cycleWeek || slot.dayOfWeek !== dow) continue;
             const override = assignment.overridesByProgramRoutineId[slot.programRoutineId];
+            const overrideId =
+              assignment.overrideRoutineIdByProgramRoutineId?.[slot.programRoutineId];
             sessions.push({
               date,
               assignmentId: assignment.assignmentId,
               clientId: assignment.clientId,
               clientName: assignment.clientName,
+              routineId: overrideId ?? slot.routineId,
               routineName: override ?? slot.routineName,
               isProgram: true,
               programName: assignment.programName,
@@ -137,7 +146,8 @@ export function sessionsInRange(
       }
     } else {
       const routineName = assignment.standaloneRoutineName;
-      if (!routineName) continue;
+      const routineId = assignment.standaloneRoutineId;
+      if (!routineName || !routineId) continue;
 
       const assignmentStart = assignment.startDate;
       const weekday = weekdayIso(assignmentStart);
@@ -149,6 +159,7 @@ export function sessionsInRange(
             assignmentId: assignment.assignmentId,
             clientId: assignment.clientId,
             clientName: assignment.clientName,
+            routineId,
             routineName,
             isProgram: false,
           });

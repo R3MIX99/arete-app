@@ -1,0 +1,51 @@
+import { redirect } from "next/navigation";
+
+import { createClient } from "@/lib/supabase/server";
+import { BottomNav } from "@/components/client/bottom-nav";
+import { ClientTopBar } from "@/components/client/client-top-bar";
+
+export default async function ClientLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, role, trainer_id")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role === "trainer" || profile?.role === "superadmin") {
+    redirect("/entrenador");
+  }
+
+  let brandName = "Areté";
+  let brandLogoUrl: string | null = null;
+  if (profile?.trainer_id) {
+    const { data: trainer } = await supabase
+      .from("profiles")
+      .select("business_name, business_logo_path")
+      .eq("id", profile.trainer_id)
+      .single();
+    brandName = trainer?.business_name || "Areté";
+    brandLogoUrl = trainer?.business_logo_path
+      ? supabase.storage.from("business-logos").getPublicUrl(trainer.business_logo_path).data
+          .publicUrl
+      : null;
+  }
+
+  return (
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      <ClientTopBar brandName={brandName} brandLogoUrl={brandLogoUrl} />
+      <main className="flex-1 pb-20">{children}</main>
+      <BottomNav />
+    </div>
+  );
+}

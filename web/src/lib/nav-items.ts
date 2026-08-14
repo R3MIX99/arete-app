@@ -8,6 +8,8 @@ import {
   Calendar,
   LineChart,
   Settings,
+  Home,
+  User,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,4 +30,12 @@ export const trainerNavItems: NavItem[] = [
   { href: "/entrenador/calendario", label: "Calendario", icon: Calendar },
   { href: "/entrenador/progreso", label: "Seguimiento de Progreso", icon: LineChart },
   { href: "/entrenador/configuracion", label: "Configuración", icon: Settings },
+];
+
+/** Las 4 pestañas del panel de cliente (Fase 9/10/11). */
+export const clientNavItems: NavItem[] = [
+  { href: "/cliente", label: "Inicio", icon: Home },
+  { href: "/cliente/entrenamiento", label: "Entrenamiento", icon: Dumbbell },
+  { href: "/cliente/nutricion", label: "Nutrición", icon: Apple },
+  { href: "/cliente/perfil", label: "Perfil", icon: User },
 ];
