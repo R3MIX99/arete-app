@@ -207,7 +207,7 @@ export function CatalogBrowser({
                   className="cursor-pointer text-left"
                 >
                   <Card className="card-hover-glow gap-0 overflow-hidden py-0 transition-colors hover:border-primary/40">
-                    <div className="relative h-20 w-full bg-primary/12">
+                    <div className="relative aspect-square w-full bg-primary/12">
                       {imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -217,7 +217,7 @@ export function CatalogBrowser({
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-primary">
-                          <Icon className="size-7" />
+                          <Icon className="size-9" />
                         </div>
                       )}
                       <button
@@ -258,13 +258,13 @@ export function CatalogBrowser({
             return (
               <Link key={dish.id} href={`/entrenador/nutricion/platillos/${dish.id}`}>
                 <Card className="card-hover-glow gap-0 overflow-hidden py-0 transition-colors hover:border-primary/40">
-                  <div className="relative h-20 w-full bg-primary/12">
+                  <div className="relative aspect-square w-full bg-primary/12">
                     {imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={imageUrl} alt={dish.name} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-primary">
-                        <Icon className="size-7" />
+                        <Icon className="size-9" />
                       </div>
                     )}
                   </div>
