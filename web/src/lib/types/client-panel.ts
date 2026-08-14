@@ -29,3 +29,16 @@ export interface SessionSetLog {
   actual_level: number | null;
   is_completed: boolean;
 }
+
+export interface CompletedSessionRow {
+  id: string;
+  sessionDate: string;
+  routineName: string;
+  durationSeconds: number | null;
+}
+
+export interface ClientExerciseProgress {
+  exerciseId: string;
+  exerciseName: string;
+  logs: { date: string; weight: number }[];
+}
