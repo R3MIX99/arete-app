@@ -150,12 +150,45 @@ export function ProgramBuilder({
     router.refresh();
   }
 
+  const [addingWeek, setAddingWeek] = React.useState(false);
+
+  async function handleAddWeek() {
+    const newWeek = program.duration_weeks + 1;
+    setAddingWeek(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("programs")
+      .update({ duration_weeks: newWeek })
+      .eq("id", program.id);
+    setAddingWeek(false);
+    if (error) {
+      toast.error("No se pudo agregar la semana");
+      return;
+    }
+    setOpenWeeks((prev) => new Set(prev).add(newWeek));
+    toast.success(`Semana ${newWeek} agregada`);
+    router.refresh();
+  }
+
   async function handleCloneWeek() {
     if (cloningFromWeek === null || !cloneTargetWeek) return;
-    const targetWeek = Number(cloneTargetWeek);
+    const isNewWeek = cloneTargetWeek === "new";
+    const targetWeek = isNewWeek ? program.duration_weeks + 1 : Number(cloneTargetWeek);
     const sourceSlots = slotsByWeek.get(cloningFromWeek) ?? [];
     setCloning(true);
     const supabase = createClient();
+
+    if (isNewWeek) {
+      const { error: durationError } = await supabase
+        .from("programs")
+        .update({ duration_weeks: targetWeek })
+        .eq("id", program.id);
+      if (durationError) {
+        setCloning(false);
+        toast.error("No se pudo clonar la semana");
+        return;
+      }
+    }
 
     // Se reemplaza por completo lo que hubiera en la semana destino.
     const { error: deleteError } = await supabase
@@ -189,6 +222,7 @@ export function ProgramBuilder({
     setCloning(false);
     setCloningFromWeek(null);
     setCloneTargetWeek("");
+    setOpenWeeks((prev) => new Set(prev).add(targetWeek));
     toast.success(`Semana ${cloningFromWeek} clonada a la semana ${targetWeek}`);
     router.refresh();
   }
@@ -272,9 +306,21 @@ export function ProgramBuilder({
             </CardContent>
           </Card>
 
-          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Semanas
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Semanas
+            </h2>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={addingWeek}
+              onClick={handleAddWeek}
+            >
+              {addingWeek ? <Loader2 className="animate-spin" /> : <Plus />}
+              Agregar semana
+            </Button>
+          </div>
 
           <div className="flex flex-col gap-3">
             {weeks.map((week) => {
@@ -301,22 +347,20 @@ export function ProgramBuilder({
                         className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
                       />
                     </button>
-                    {weeks.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="shrink-0"
-                        disabled={filledDays === 0}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCloningFromWeek(week);
-                          setCloneTargetWeek("");
-                        }}
-                      >
-                        <Copy /> Clonar semana
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0"
+                      disabled={filledDays === 0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCloningFromWeek(week);
+                        setCloneTargetWeek("");
+                      }}
+                    >
+                      <Copy /> Clonar semana
+                    </Button>
                   </div>
                   <CardContent
                     className={`${isOpen ? "flex" : "hidden"} flex-col gap-1.5`}
@@ -470,6 +514,9 @@ export function ProgramBuilder({
               <SelectValue placeholder="Elegir semana destino" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="new">
+                Semana nueva ({program.duration_weeks + 1})
+              </SelectItem>
               {weeks
                 .filter((w) => w !== cloningFromWeek)
                 .map((w) => (
@@ -534,7 +581,6 @@ function EditProgramInfoDialog({
 }) {
   const router = useRouter();
   const [name, setName] = React.useState(program.name);
-  const [durationWeeks, setDurationWeeks] = React.useState(program.duration_weeks);
   const [description, setDescription] = React.useState(program.description ?? "");
   const [goal, setGoal] = React.useState(program.goal ?? "");
   const [saving, setSaving] = React.useState(false);
@@ -542,7 +588,6 @@ function EditProgramInfoDialog({
   React.useEffect(() => {
     if (open) {
       setName(program.name);
-      setDurationWeeks(program.duration_weeks);
       setDescription(program.description ?? "");
       setGoal(program.goal ?? "");
     }
@@ -556,7 +601,6 @@ function EditProgramInfoDialog({
       .from("programs")
       .update({
         name,
-        duration_weeks: durationWeeks,
         description: description || null,
         goal: goal || null,
       })
@@ -581,17 +625,6 @@ function EditProgramInfoDialog({
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit_name">Nombre</Label>
             <Input id="edit_name" required value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_duration">Duración (semanas)</Label>
-            <Input
-              id="edit_duration"
-              type="number"
-              min={1}
-              required
-              value={durationWeeks}
-              onChange={(e) => setDurationWeeks(Number(e.target.value))}
-            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit_goal">Objetivo (opcional)</Label>

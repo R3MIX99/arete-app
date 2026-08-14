@@ -30,7 +30,6 @@ const GOAL_OPTIONS = [
 export function NewProgramForm({ trainerId }: { trainerId: string }) {
   const router = useRouter();
   const [name, setName] = React.useState("");
-  const [durationWeeks, setDurationWeeks] = React.useState(4);
   const [description, setDescription] = React.useState("");
   const [goal, setGoal] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -38,20 +37,19 @@ export function NewProgramForm({ trainerId }: { trainerId: string }) {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (durationWeeks < 1) {
-      setError("La duración debe ser de al menos 1 semana.");
-      return;
-    }
     setLoading(true);
     setError(null);
 
+    // El programa arranca con 1 semana — las siguientes se agregan
+    // desde el constructor con "Agregar semana" o clonando una semana
+    // existente, ya no se define una duración fija de antemano.
     const supabase = createClient();
     const { data, error: insertError } = await supabase
       .from("programs")
       .insert({
         trainer_id: trainerId,
         name,
-        duration_weeks: durationWeeks,
+        duration_weeks: 1,
         description: description || null,
         goal: goal || null,
       })
@@ -92,17 +90,6 @@ export function NewProgramForm({ trainerId }: { trainerId: string }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ej. Hipertrofia 8 semanas"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="duration_weeks">Duración (semanas)</Label>
-              <Input
-                id="duration_weeks"
-                type="number"
-                min={1}
-                required
-                value={durationWeeks}
-                onChange={(e) => setDurationWeeks(Number(e.target.value))}
               />
             </div>
             <div className="flex flex-col gap-1.5">
