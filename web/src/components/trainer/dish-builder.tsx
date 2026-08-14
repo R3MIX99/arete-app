@@ -191,10 +191,10 @@ export function DishBuilder({
 
       <Card className="gap-0 overflow-hidden py-0">
         <DishImage dish={dish} />
-        <CardHeader className="pt-5">
+        <CardHeader className="pt-5 pb-2">
           <CardTitle>{dish.name}</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
+        <CardContent className="flex flex-col gap-3 pb-5">
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="secondary">{mealTypeLabel(dish.meal_type)}</Badge>
           </div>
@@ -326,7 +326,7 @@ function DishImage({ dish }: { dish: DishInfo }) {
     ? createClient().storage.from("food-images").getPublicUrl(dish.image_path).data.publicUrl
     : null;
   return (
-    <div className="relative h-40 w-full bg-primary/12">
+    <div className="relative h-48 w-full bg-primary/12">
       {imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={imageUrl} alt={dish.name} className="h-full w-full object-cover" />
