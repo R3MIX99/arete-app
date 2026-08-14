@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, ChevronDown, ChevronLeft, Loader2, PlayCircle, Timer, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, History, Loader2, Timer, X } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { youtubeVideoId } from "@/lib/youtube";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
 
 type LogState = Record<
@@ -53,6 +55,7 @@ export function WorkoutSessionView({
   const [finishing, setFinishing] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set(exercises[0] ? [exercises[0].id] : []));
   const [restSecondsLeft, setRestSecondsLeft] = useState<number | null>(null);
+  const [historyExercise, setHistoryExercise] = useState<SessionExerciseInfo | null>(null);
   const [startedAt] = useState<number>(() => Date.now());
   const startedAtRef = useRef<number>(startedAt);
 
@@ -220,6 +223,7 @@ export function WorkoutSessionView({
           const cardio = isCardio(exercise.muscle_group);
           const exerciseComplete =
             exercise.sets.length > 0 && exercise.sets.every((s) => logs[s.id]?.is_completed);
+          const videoId = exercise.video_url ? youtubeVideoId(exercise.video_url) : null;
 
           return (
             <div key={exercise.id} className="glass-card overflow-hidden rounded-xl">
@@ -249,23 +253,32 @@ export function WorkoutSessionView({
                     <p className="truncate text-xs text-muted-foreground">{exercise.notes}</p>
                   ) : null}
                 </div>
-                {exercise.video_url ? (
-                  <a
-                    href={exercise.video_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="shrink-0 text-muted-foreground hover:text-foreground"
-                    aria-label="Ver video"
-                  >
-                    <PlayCircle className="size-4.5" />
-                  </a>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHistoryExercise(exercise);
+                  }}
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                  aria-label="Ver historial del ejercicio"
+                >
+                  <History className="size-4.5" />
+                </button>
                 <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
               </button>
 
               {isOpen ? (
                 <div className="border-t px-4 py-3">
+                  {videoId ? (
+                    <div className="mx-auto mb-3 aspect-video w-full max-w-56 overflow-hidden rounded-lg border border-border">
+                      <iframe
+                        className="size-full"
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        title={exercise.exercise_name}
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : null}
                   <div
                     className={cn(
                       "grid items-center gap-2 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground",
@@ -374,6 +387,125 @@ export function WorkoutSessionView({
           </div>
         </div>
       ) : null}
+
+      <ResponsiveDialog
+        open={historyExercise !== null}
+        onOpenChange={(open) => !open && setHistoryExercise(null)}
+        title={historyExercise ? `Historial — ${historyExercise.exercise_name}` : ""}
+      >
+        {historyExercise ? (
+          <ExerciseHistoryList exercise={historyExercise} cardio={isCardio(historyExercise.muscle_group)} />
+        ) : null}
+      </ResponsiveDialog>
+    </div>
+  );
+}
+
+interface HistoryRow {
+  session_date: string;
+  set_number: number;
+  actual_reps: number | null;
+  actual_weight: number | null;
+  actual_minutes: number | null;
+  actual_level: number | null;
+}
+
+function ExerciseHistoryList({ exercise, cardio }: { exercise: SessionExerciseInfo; cardio: boolean }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<HistoryRow[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const setIds = exercise.sets.map((s) => s.id);
+      const { data } = await supabase
+        .from("client_set_logs")
+        .select("session_date, actual_reps, actual_weight, actual_minutes, actual_level, routine_exercise_set_id")
+        .in("routine_exercise_set_id", setIds)
+        .eq("is_completed", true)
+        .order("session_date", { ascending: false })
+        .limit(60);
+      if (cancelled) return;
+      const setNumberById = new Map(exercise.sets.map((s) => [s.id, s.set_number]));
+      const mapped: HistoryRow[] = (data ?? []).map(
+        (row: {
+          session_date: string;
+          actual_reps: number | null;
+          actual_weight: number | null;
+          actual_minutes: number | null;
+          actual_level: number | null;
+          routine_exercise_set_id: string;
+        }) => ({
+          session_date: row.session_date,
+          set_number: setNumberById.get(row.routine_exercise_set_id) ?? 0,
+          actual_reps: row.actual_reps,
+          actual_weight: row.actual_weight,
+          actual_minutes: row.actual_minutes,
+          actual_level: row.actual_level,
+        }),
+      );
+      setRows(mapped);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [exercise, supabase]);
+
+  const byDate = useMemo(() => {
+    const map = new Map<string, HistoryRow[]>();
+    for (const row of rows) {
+      const list = map.get(row.session_date) ?? [];
+      list.push(row);
+      map.set(row.session_date, list);
+    }
+    return Array.from(map.entries());
+  }, [rows]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (byDate.length === 0) {
+    return (
+      <p className="py-6 text-center text-sm text-muted-foreground">
+        Todavía no tienes series completadas de este ejercicio.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
+      {byDate.map(([date, dayRows]) => (
+        <div key={date} className="rounded-lg border px-3 py-2">
+          <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+            {new Date(date + "T00:00:00").toLocaleDateString("es-MX", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {dayRows
+              .sort((a, b) => a.set_number - b.set_number)
+              .map((row, i) => (
+                <span
+                  key={i}
+                  className="rounded-md bg-muted px-2 py-1 text-xs tabular-nums text-foreground"
+                >
+                  {cardio
+                    ? `${row.actual_minutes ?? "-"} min · nivel ${row.actual_level ?? "-"}`
+                    : `${row.actual_weight ?? "-"} kg × ${row.actual_reps ?? "-"}`}
+                </span>
+              ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
