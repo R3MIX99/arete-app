@@ -53,7 +53,8 @@ export function WorkoutSessionView({
   const [finishing, setFinishing] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set(exercises[0] ? [exercises[0].id] : []));
   const [restSecondsLeft, setRestSecondsLeft] = useState<number | null>(null);
-  const startedAtRef = useRef<number>(Date.now());
+  const [startedAt] = useState<number>(() => Date.now());
+  const startedAtRef = useRef<number>(startedAt);
 
   const [logs, setLogs] = useState<LogState>(() => {
     const state: LogState = {};
@@ -103,12 +104,11 @@ export function WorkoutSessionView({
 
   // Timer de descanso no intrusivo.
   useEffect(() => {
-    if (restSecondsLeft === null) return;
-    if (restSecondsLeft <= 0) {
-      setRestSecondsLeft(null);
-      return;
-    }
-    const t = setTimeout(() => setRestSecondsLeft((s) => (s !== null ? s - 1 : null)), 1000);
+    if (restSecondsLeft === null || restSecondsLeft <= 0) return;
+    const t = setTimeout(
+      () => setRestSecondsLeft((s) => (s !== null && s > 1 ? s - 1 : null)),
+      1000,
+    );
     return () => clearTimeout(t);
   }, [restSecondsLeft]);
 

@@ -91,8 +91,8 @@ export default async function WorkoutSessionPage({
   });
 
   let initialLogs: SessionSetLog[] = [];
-  let sessionId: string | null = existingSession?.id ?? null;
-  let sessionStatus: string | null = existingSession?.status ?? null;
+  const sessionId: string | null = existingSession?.id ?? null;
+  const sessionStatus: string | null = existingSession?.status ?? null;
 
   if (sessionId) {
     const { data: logRows } = await supabase
