@@ -147,11 +147,12 @@ export function ExerciseForm({
           <Button
             variant="ghost"
             size="sm"
+            aria-label="Eliminar"
             className="text-destructive hover:text-destructive"
             onClick={() => setConfirmOpen(true)}
           >
             <Trash />
-            Eliminar
+            <span className="hidden md:inline">Eliminar</span>
           </Button>
         )}
       </div>

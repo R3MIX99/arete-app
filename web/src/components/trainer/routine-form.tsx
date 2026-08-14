@@ -314,11 +314,12 @@ export function RoutineForm({
           <Button
             variant="ghost"
             size="sm"
+            aria-label="Eliminar rutina"
             className="text-destructive hover:text-destructive"
             onClick={() => setConfirmOpen(true)}
           >
             <Trash />
-            Eliminar rutina
+            <span className="hidden md:inline">Eliminar rutina</span>
           </Button>
         )}
       </div>

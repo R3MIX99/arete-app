@@ -209,16 +209,22 @@ export function DietPlanBuilder({
           </Link>
         </Button>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil /> Editar información
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Editar información"
+            onClick={() => setEditOpen(true)}
+          >
+            <Pencil /> <span className="hidden md:inline">Editar información</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
+            aria-label="Eliminar"
             className="text-destructive hover:text-destructive"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash /> Eliminar
+            <Trash /> <span className="hidden md:inline">Eliminar</span>
           </Button>
         </div>
       </div>
