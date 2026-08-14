@@ -14,11 +14,11 @@ import {
 } from "@/lib/calendar-logic";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { MonthCalendarGrid } from "@/components/trainer/month-calendar-grid";
 import { CalendarSessionList } from "@/components/trainer/calendar-session-list";
 
@@ -72,7 +72,7 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
     <div className="flex w-full flex-col gap-4 p-4 pb-24 md:p-8">
       {/* Teléfono: botón de mes + navegador de día arriba, lista abajo. */}
       <div className="flex flex-col gap-3 md:hidden">
-        <Sheet open={monthSheetOpen} onOpenChange={setMonthSheetOpen}>
+        <Drawer open={monthSheetOpen} onOpenChange={setMonthSheetOpen} direction="top">
           <Button
             type="button"
             variant="outline"
@@ -82,10 +82,10 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
             <CalendarDays className="size-4" />
             {formatMonthYear(cursor.year, cursor.month)}
           </Button>
-          <SheetContent side="bottom" className="rounded-t-2xl">
-            <SheetHeader>
-              <SheetTitle>Elegir día</SheetTitle>
-            </SheetHeader>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Elegir día</DrawerTitle>
+            </DrawerHeader>
             <div className="px-4 pb-6">
               <MonthCalendarGrid
                 year={cursor.year}
@@ -99,8 +99,8 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
                 onChangeMonth={changeMonth}
               />
             </div>
-          </SheetContent>
-        </Sheet>
+          </DrawerContent>
+        </Drawer>
 
         <div className="flex items-center justify-between">
           <Button
