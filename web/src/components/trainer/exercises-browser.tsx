@@ -17,12 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { MobileFab } from "@/components/trainer/mobile-fab";
 
 const MUSCLE_GROUPS: MuscleGroup[] = [
@@ -74,7 +69,32 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
   return (
     <div className="flex w-full flex-col gap-6 p-4 pb-24 md:p-8">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full max-w-xs">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs md:hidden">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar ejercicio por nombre"
+              className="pl-9"
+            />
+          </div>
+          {/* Teléfono: ícono que abre un drawer con los filtros. */}
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Filtros"
+            className="relative shrink-0"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <SlidersHorizontal className="size-4" />
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
+            )}
+          </Button>
+        </div>
+
+        <div className="relative hidden w-full max-w-xs md:block">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
@@ -83,19 +103,6 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
             className="pl-9"
           />
         </div>
-        {/* Teléfono: ícono que abre un diálogo con los filtros. */}
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Filtros"
-          className="relative shrink-0 md:hidden"
-          onClick={() => setFiltersOpen(true)}
-        >
-          <SlidersHorizontal className="size-4" />
-          {hasActiveFilters && (
-            <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
-          )}
-        </Button>
 
         {/* Computadora: selectores de filtro visibles en la misma barra. */}
         <div className="hidden items-center gap-2 md:flex">
@@ -158,58 +165,51 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
         label="Nuevo ejercicio"
       />
 
-      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Filtros</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-3">
-            <Select
-              value={muscleGroup ?? "all"}
-              onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Grupo muscular" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los grupos</SelectItem>
-                {MUSCLE_GROUPS.map((group) => (
-                  <SelectItem key={group} value={group}>
-                    {muscleGroupLabel(group)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
+        <Select
+          value={muscleGroup ?? "all"}
+          onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Grupo muscular" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los grupos</SelectItem>
+            {MUSCLE_GROUPS.map((group) => (
+              <SelectItem key={group} value={group}>
+                {muscleGroupLabel(group)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            <Select
-              value={equipment ?? "all"}
-              onValueChange={(v) => setEquipment(v === "all" ? null : (v as Equipment))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Equipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todo el equipo</SelectItem>
-                {EQUIPMENT.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {equipmentLabel(item)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <Select
+          value={equipment ?? "all"}
+          onValueChange={(v) => setEquipment(v === "all" ? null : (v as Equipment))}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Equipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todo el equipo</SelectItem>
+            {EQUIPMENT.map((item) => (
+              <SelectItem key={item} value={item}>
+                {equipmentLabel(item)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-fit text-muted-foreground"
-              disabled={!hasActiveFilters}
-              onClick={clearFilters}
-            >
-              <FilterX /> Limpiar filtros
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-fit text-muted-foreground"
+          disabled={!hasActiveFilters}
+          onClick={clearFilters}
+        >
+          <FilterX /> Limpiar filtros
+        </Button>
+      </ResponsiveDialog>
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">

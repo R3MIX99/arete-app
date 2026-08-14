@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, ClipboardX, FilterX, Dumbbell } from "lucide-react";
+import { Search, Plus, ClipboardX, FilterX, Dumbbell, SlidersHorizontal } from "lucide-react";
 
 import { levelLabel, goalLabel } from "@/lib/format";
 import type { RoutineSummary } from "@/lib/types/routine";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { MobileFab } from "@/components/trainer/mobile-fab";
 
 const LEVEL_OPTIONS = [
@@ -21,6 +22,7 @@ const LEVEL_OPTIONS = [
 export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
   const [query, setQuery] = React.useState("");
   const [level, setLevel] = React.useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -36,14 +38,26 @@ export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
   return (
     <div className="flex w-full flex-col gap-6 p-4 pb-24 md:p-8">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar rutina por nombre"
-            className="pl-9"
-          />
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar rutina por nombre"
+              className="pl-9"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Filtros"
+            className="relative shrink-0"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <SlidersHorizontal className="size-4" />
+            {level && <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />}
+          </Button>
         </div>
         <Button asChild className="ml-auto hidden md:inline-flex">
           <Link href="/entrenador/rutinas/nueva">
@@ -55,21 +69,23 @@ export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
 
       <MobileFab href="/entrenador/rutinas/nueva" icon={Plus} label="Nueva rutina" />
 
-      <div className="flex flex-wrap items-center gap-2">
-        {LEVEL_OPTIONS.map((option) => (
-          <Badge
-            key={option.value}
-            variant={level === option.value ? "default" : "outline"}
-            className="h-7 cursor-pointer px-3"
-            onClick={() => setLevel((l) => (l === option.value ? null : option.value))}
-          >
-            {option.label}
-          </Badge>
-        ))}
+      <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
+        <div className="flex flex-wrap gap-2">
+          {LEVEL_OPTIONS.map((option) => (
+            <Badge
+              key={option.value}
+              variant={level === option.value ? "default" : "outline"}
+              className="h-7 cursor-pointer px-3"
+              onClick={() => setLevel((l) => (l === option.value ? null : option.value))}
+            >
+              {option.label}
+            </Badge>
+          ))}
+        </div>
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground"
+          className="w-fit text-muted-foreground"
           disabled={!hasActiveFilters}
           onClick={() => {
             setQuery("");
@@ -78,7 +94,7 @@ export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
         >
           <FilterX /> Limpiar filtros
         </Button>
-      </div>
+      </ResponsiveDialog>
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">

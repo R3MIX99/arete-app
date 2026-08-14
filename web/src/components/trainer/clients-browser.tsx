@@ -2,7 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, UserPlus, Copy, X, UserX, UserCheck, FilterX } from "lucide-react";
+import {
+  Search,
+  UserPlus,
+  Copy,
+  X,
+  UserX,
+  UserCheck,
+  FilterX,
+  SlidersHorizontal,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { MobileFab } from "@/components/trainer/mobile-fab";
 
 const GOAL_OPTIONS: { value: string; label: string }[] = [
@@ -37,6 +47,7 @@ export function ClientsBrowser({
   const [pending, setPending] = React.useState(invitations);
   const [items, setItems] = React.useState(clients);
   const [togglingId, setTogglingId] = React.useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -106,14 +117,28 @@ export function ClientsBrowser({
   return (
     <div className="flex w-full flex-col gap-6 p-4 pb-24 md:p-8">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por nombre o correo"
-            className="pl-9"
-          />
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar por nombre o correo"
+              className="pl-9"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Filtros"
+            className="relative shrink-0"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <SlidersHorizontal className="size-4" />
+            {(status || goal) && (
+              <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
+            )}
+          </Button>
         </div>
         <Button asChild className="ml-auto hidden md:inline-flex">
           <Link href="/entrenador/clientes/nuevo">
@@ -129,42 +154,45 @@ export function ClientsBrowser({
         label="Agregar cliente"
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge
-          variant={status === "active" ? "default" : "outline"}
-          className="h-7 cursor-pointer px-3"
-          onClick={() => setStatus((s) => (s === "active" ? null : "active"))}
-        >
-          Activos
-        </Badge>
-        <Badge
-          variant={status === "inactive" ? "default" : "outline"}
-          className="h-7 cursor-pointer px-3"
-          onClick={() => setStatus((s) => (s === "inactive" ? null : "inactive"))}
-        >
-          Inactivos
-        </Badge>
-        <div className="mx-1 h-4 w-px bg-border" />
-        {GOAL_OPTIONS.map((option) => (
+      <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
+        <div className="flex flex-wrap gap-2">
           <Badge
-            key={option.value}
-            variant={goal === option.value ? "default" : "outline"}
+            variant={status === "active" ? "default" : "outline"}
             className="h-7 cursor-pointer px-3"
-            onClick={() => setGoal((g) => (g === option.value ? null : option.value))}
+            onClick={() => setStatus((s) => (s === "active" ? null : "active"))}
           >
-            {option.label}
+            Activos
           </Badge>
-        ))}
+          <Badge
+            variant={status === "inactive" ? "default" : "outline"}
+            className="h-7 cursor-pointer px-3"
+            onClick={() => setStatus((s) => (s === "inactive" ? null : "inactive"))}
+          >
+            Inactivos
+          </Badge>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {GOAL_OPTIONS.map((option) => (
+            <Badge
+              key={option.value}
+              variant={goal === option.value ? "default" : "outline"}
+              className="h-7 cursor-pointer px-3"
+              onClick={() => setGoal((g) => (g === option.value ? null : option.value))}
+            >
+              {option.label}
+            </Badge>
+          ))}
+        </div>
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground"
+          className="w-fit text-muted-foreground"
           disabled={!hasActiveFilters}
           onClick={clearFilters}
         >
           <FilterX /> Limpiar filtros
         </Button>
-      </div>
+      </ResponsiveDialog>
 
       {pending.length > 0 && (
         <div className="flex flex-col gap-2">
