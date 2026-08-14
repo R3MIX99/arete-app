@@ -72,17 +72,18 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
     <div className="flex w-full flex-col gap-4 p-4 pb-24 md:p-8">
       {/* Teléfono: botón de mes + navegador de día arriba, lista abajo. */}
       <div className="flex flex-col gap-3 md:hidden">
-        <Drawer open={monthSheetOpen} onOpenChange={setMonthSheetOpen} direction="top">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-fit gap-2"
-            onClick={() => setMonthSheetOpen(true)}
-          >
-            <CalendarDays className="size-4" />
-            {formatMonthYear(cursor.year, cursor.month)}
-          </Button>
-          <DrawerContent>
+        <div className="flex items-center gap-2">
+          <Drawer open={monthSheetOpen} onOpenChange={setMonthSheetOpen} direction="top">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-fit gap-2"
+              onClick={() => setMonthSheetOpen(true)}
+            >
+              <CalendarDays className="size-4" />
+              {formatMonthYear(cursor.year, cursor.month)}
+            </Button>
+            <DrawerContent>
             <DrawerHeader>
               <DrawerTitle>Elegir día</DrawerTitle>
             </DrawerHeader>
@@ -99,8 +100,19 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
                 onChangeMonth={changeMonth}
               />
             </div>
-          </DrawerContent>
-        </Drawer>
+            </DrawerContent>
+          </Drawer>
+          {selectedDate !== today && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-fit"
+              onClick={() => selectDate(today)}
+            >
+              Hoy
+            </Button>
+          )}
+        </div>
 
         <div className="flex items-center justify-between">
           <Button
