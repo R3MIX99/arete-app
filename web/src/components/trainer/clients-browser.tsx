@@ -51,18 +51,24 @@ export function ClientsBrowser({
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    return items.filter((client) => {
-      if (status && client.status !== status) return false;
-      if (goal && client.goal !== goal) return false;
-      if (
-        q &&
-        !client.full_name.toLowerCase().includes(q) &&
-        !client.email.toLowerCase().includes(q)
-      ) {
-        return false;
-      }
-      return true;
-    });
+    return items
+      .filter((client) => {
+        if (status && client.status !== status) return false;
+        if (goal && client.goal !== goal) return false;
+        if (
+          q &&
+          !client.full_name.toLowerCase().includes(q) &&
+          !client.email.toLowerCase().includes(q)
+        ) {
+          return false;
+        }
+        return true;
+      })
+      // Los inactivos se van hasta el final de la lista.
+      .sort((a, b) => {
+        if (a.status === b.status) return 0;
+        return a.status === "inactive" ? 1 : -1;
+      });
   }, [items, query, status, goal]);
 
   async function toggleClientStatus(event: React.MouseEvent, client: ClientProfile) {
@@ -257,18 +263,19 @@ export function ClientsBrowser({
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((client) => (
-            <Card key={client.id} className="h-full card-hover-glow transition-colors hover:border-primary/40">
+            <Card
+              key={client.id}
+              className={
+                client.status === "inactive"
+                  ? "h-full opacity-50 transition-colors hover:border-primary/40"
+                  : "h-full card-hover-glow transition-colors hover:border-primary/40"
+              }
+            >
               <CardContent className="flex h-full flex-col gap-3">
                 <Link href={`/entrenador/clientes/${client.id}`} className="flex flex-1 flex-col gap-3">
                   <div className="flex items-start justify-between">
                     <Avatar className="size-10">
-                      <AvatarFallback
-                        className={
-                          client.status === "inactive" ? "opacity-50" : undefined
-                        }
-                      >
-                        {initialsOf(client.full_name) || "?"}
-                      </AvatarFallback>
+                      <AvatarFallback>{initialsOf(client.full_name) || "?"}</AvatarFallback>
                     </Avatar>
                     {client.status === "inactive" && (
                       <Badge variant="warning">Inactivo</Badge>
