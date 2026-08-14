@@ -26,6 +26,15 @@ function emptyLog(): LogState[string] {
   return { actual_reps: "", actual_weight: "", actual_minutes: "", actual_level: "", is_completed: false };
 }
 
+/** Una serie se da por hecha en cuanto tiene los dos valores que le
+ * corresponden (peso+reps, o minutos+nivel si es cardio) — no hace
+ * falta tocar el check a mano, y si borras uno se desmarca sola. */
+function hasRequiredValues(log: LogState[string], cardio: boolean): boolean {
+  return cardio
+    ? Boolean(log.actual_minutes && log.actual_level)
+    : Boolean(log.actual_weight && log.actual_reps);
+}
+
 export function WorkoutSessionView({
   clientId,
   assignmentId,
@@ -142,9 +151,24 @@ export function WorkoutSessionView({
     );
   }
 
-  function updateField(setId: string, field: keyof Omit<LogState[string], "is_completed">, value: string) {
-    setLogs((prev) => ({ ...prev, [setId]: { ...(prev[setId] ?? emptyLog()), [field]: value } }));
+  function updateField(
+    setId: string,
+    field: keyof Omit<LogState[string], "is_completed">,
+    value: string,
+    cardio: boolean,
+    restSeconds: number | null,
+  ) {
+    let justCompleted = false;
+    setLogs((prev) => {
+      const current = prev[setId] ?? emptyLog();
+      const wasCompleted = current.is_completed;
+      const next = { ...current, [field]: value };
+      next.is_completed = hasRequiredValues(next, cardio);
+      justCompleted = next.is_completed && !wasCompleted;
+      return { ...prev, [setId]: next };
+    });
     scheduleSave(setId);
+    if (justCompleted && restSeconds) setRestSecondsLeft(restSeconds);
   }
 
   function toggleComplete(setId: string, restSeconds: number | null) {
@@ -337,14 +361,18 @@ export function WorkoutSessionView({
                                 inputMode="decimal"
                                 placeholder={set.target_minutes?.toString() ?? "-"}
                                 value={log.actual_minutes}
-                                onChange={(e) => updateField(set.id, "actual_minutes", e.target.value)}
+                                onChange={(e) =>
+                                  updateField(set.id, "actual_minutes", e.target.value, true, set.rest_seconds)
+                                }
                                 className="h-9"
                               />
                               <Input
                                 inputMode="numeric"
                                 placeholder={set.target_level?.toString() ?? "-"}
                                 value={log.actual_level}
-                                onChange={(e) => updateField(set.id, "actual_level", e.target.value)}
+                                onChange={(e) =>
+                                  updateField(set.id, "actual_level", e.target.value, true, set.rest_seconds)
+                                }
                                 className="h-9"
                               />
                             </>
@@ -354,7 +382,9 @@ export function WorkoutSessionView({
                                 inputMode="decimal"
                                 placeholder={set.suggested_weight?.toString() ?? "kg"}
                                 value={log.actual_weight}
-                                onChange={(e) => updateField(set.id, "actual_weight", e.target.value)}
+                                onChange={(e) =>
+                                  updateField(set.id, "actual_weight", e.target.value, false, set.rest_seconds)
+                                }
                                 className="h-9"
                               />
                               <Input
@@ -365,7 +395,9 @@ export function WorkoutSessionView({
                                     : "reps"
                                 }
                                 value={log.actual_reps}
-                                onChange={(e) => updateField(set.id, "actual_reps", e.target.value)}
+                                onChange={(e) =>
+                                  updateField(set.id, "actual_reps", e.target.value, false, set.rest_seconds)
+                                }
                                 className="h-9"
                               />
                             </>

@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Check, ChevronLeft, Minus, PlayCircle } from "lucide-react";
+import { Check, ChevronLeft, Minus } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/format";
-import { youtubeVideoId } from "@/lib/youtube";
 import { cn } from "@/lib/utils";
+import { ExerciseVideoButton } from "@/components/client/exercise-video-button";
 import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
 
 interface RoutineExerciseRow {
@@ -135,21 +135,12 @@ export default async function SessionReviewPage({
       <div className="flex flex-col gap-3 px-4">
         {exercises.map((exercise) => {
           const cardio = isCardio(exercise.muscle_group);
-          const videoId = exercise.video_url ? youtubeVideoId(exercise.video_url) : null;
           return (
             <div key={exercise.id} className="glass-card overflow-hidden rounded-xl">
               <div className="flex items-center gap-3 px-4 py-3">
                 <p className="min-w-0 flex-1 truncate text-sm font-medium">{exercise.exercise_name}</p>
-                {videoId ? (
-                  <a
-                    href={exercise.video_url ?? undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="shrink-0 text-muted-foreground hover:text-foreground"
-                    aria-label="Ver video"
-                  >
-                    <PlayCircle className="size-4.5" />
-                  </a>
+                {exercise.video_url ? (
+                  <ExerciseVideoButton videoUrl={exercise.video_url} exerciseName={exercise.exercise_name} />
                 ) : null}
               </div>
               <div className="border-t px-4 py-3">
@@ -169,7 +160,11 @@ export default async function SessionReviewPage({
                       >
                         <span className="text-muted-foreground">{set.set_number}</span>
                         <span className="tabular-nums">
-                          {cardio ? (log?.actual_minutes ?? "—") : (log?.actual_weight ?? "—")}
+                          {cardio
+                            ? (log?.actual_minutes ? `${log.actual_minutes} min` : "—")
+                            : log?.actual_weight
+                              ? `${log.actual_weight} kg`
+                              : "—"}
                         </span>
                         <span className="tabular-nums">
                           {cardio ? (log?.actual_level ?? "—") : (log?.actual_reps ?? "—")}
