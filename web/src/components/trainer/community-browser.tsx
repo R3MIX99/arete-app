@@ -17,12 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 
 /**
  * Todo lo que cualquier entrenador (o Areté, para los esenciales) ha
@@ -189,36 +184,31 @@ export function CommunityBrowser({
         </div>
       </div>
 
-      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Filtros</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Badge
-                key={category.id}
-                variant={categoryId === category.id ? "default" : "outline"}
-                className="h-7 cursor-pointer px-3"
-                onClick={() =>
-                  setCategoryId((c) => (c === category.id ? null : category.id))
-                }
-              >
-                {category.name}
-              </Badge>
-            ))}
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-fit text-muted-foreground"
-            disabled={!categoryId}
-            onClick={() => setCategoryId(null)}
-          >
-            <FilterX /> Limpiar filtros
-          </Button>
-        </DialogContent>
-      </Dialog>
+      <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <Badge
+              key={category.id}
+              variant={categoryId === category.id ? "default" : "outline"}
+              className="h-7 cursor-pointer px-3"
+              onClick={() =>
+                setCategoryId((c) => (c === category.id ? null : category.id))
+              }
+            >
+              {category.name}
+            </Badge>
+          ))}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-fit text-muted-foreground"
+          disabled={!categoryId}
+          onClick={() => setCategoryId(null)}
+        >
+          <FilterX /> Limpiar filtros
+        </Button>
+      </ResponsiveDialog>
 
       {tab === "foods" ? (
         filteredFoods.length === 0 ? (

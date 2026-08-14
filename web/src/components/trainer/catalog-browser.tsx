@@ -22,12 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { MobileFab } from "@/components/trainer/mobile-fab";
 import { FoodDetailSheet } from "@/components/trainer/food-detail-sheet";
 
@@ -172,58 +167,53 @@ export function CatalogBrowser({
 
       <MobileFab href={newHref} icon={Plus} label={newLabel} />
 
-      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Filtros</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-wrap gap-2">
-            <Badge
-              variant={favoritesOnly ? "default" : "outline"}
-              className="h-7 cursor-pointer gap-1 px-3"
-              onClick={() => setFavoritesOnly((v) => !v)}
-            >
-              <Star className="size-3" fill={favoritesOnly ? "currentColor" : "none"} />
-              Favoritos
-            </Badge>
-            <Badge
-              variant={customOnly ? "default" : "outline"}
-              className="h-7 cursor-pointer gap-1 px-3"
-              onClick={() => setCustomOnly((v) => !v)}
-            >
-              <UserRound className="size-3" />
-              Personalizados
-            </Badge>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Badge
-                key={category.id}
-                variant={categoryId === category.id ? "default" : "outline"}
-                className="h-7 cursor-pointer px-3"
-                onClick={() =>
-                  setCategoryId((c) => (c === category.id ? null : category.id))
-                }
-              >
-                {category.name}
-              </Badge>
-            ))}
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-fit text-muted-foreground"
-            disabled={!categoryId && !favoritesOnly && !customOnly}
-            onClick={() => {
-              setCategoryId(null);
-              setFavoritesOnly(false);
-              setCustomOnly(false);
-            }}
+      <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
+        <div className="flex flex-wrap gap-2">
+          <Badge
+            variant={favoritesOnly ? "default" : "outline"}
+            className="h-7 cursor-pointer gap-1 px-3"
+            onClick={() => setFavoritesOnly((v) => !v)}
           >
-            <FilterX /> Limpiar filtros
-          </Button>
-        </DialogContent>
-      </Dialog>
+            <Star className="size-3" fill={favoritesOnly ? "currentColor" : "none"} />
+            Favoritos
+          </Badge>
+          <Badge
+            variant={customOnly ? "default" : "outline"}
+            className="h-7 cursor-pointer gap-1 px-3"
+            onClick={() => setCustomOnly((v) => !v)}
+          >
+            <UserRound className="size-3" />
+            Personalizados
+          </Badge>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <Badge
+              key={category.id}
+              variant={categoryId === category.id ? "default" : "outline"}
+              className="h-7 cursor-pointer px-3"
+              onClick={() =>
+                setCategoryId((c) => (c === category.id ? null : category.id))
+              }
+            >
+              {category.name}
+            </Badge>
+          ))}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-fit text-muted-foreground"
+          disabled={!categoryId && !favoritesOnly && !customOnly}
+          onClick={() => {
+            setCategoryId(null);
+            setFavoritesOnly(false);
+            setCustomOnly(false);
+          }}
+        >
+          <FilterX /> Limpiar filtros
+        </Button>
+      </ResponsiveDialog>
 
       {tab === "foods" ? (
         filteredFoods.length === 0 ? (
@@ -323,14 +313,13 @@ export function CatalogBrowser({
         </div>
       )}
 
-      <Dialog open={selectedFood !== null} onOpenChange={(open) => !open && setSelectedFood(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{selectedFood?.name}</DialogTitle>
-          </DialogHeader>
-          {selectedFood && <FoodDetailSheet food={selectedFood} />}
-        </DialogContent>
-      </Dialog>
+      <ResponsiveDialog
+        open={selectedFood !== null}
+        onOpenChange={(open) => !open && setSelectedFood(null)}
+        title={selectedFood?.name ?? ""}
+      >
+        {selectedFood && <FoodDetailSheet food={selectedFood} />}
+      </ResponsiveDialog>
     </div>
   );
 }
