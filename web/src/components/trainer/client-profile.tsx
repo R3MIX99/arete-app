@@ -81,13 +81,13 @@ export function ClientProfile({
 
   return (
     <div className="flex w-full flex-col gap-5 p-4 pb-24 md:p-8">
-      <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" className="w-fit" asChild>
           <Link href="/entrenador/clientes">
             <ArrowLeft /> Volver a clientes
           </Link>
         </Button>
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  ChevronDown,
   Loader2,
   Pencil,
   Plus,
@@ -92,6 +93,16 @@ export function ProgramBuilder({
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [overridesForAssignment, setOverridesForAssignment] =
     React.useState<ProgramAssignment | null>(null);
+  const [openWeeks, setOpenWeeks] = React.useState<Set<number>>(() => new Set([1]));
+
+  function toggleWeek(week: number) {
+    setOpenWeeks((prev) => {
+      const next = new Set(prev);
+      if (next.has(week)) next.delete(week);
+      else next.add(week);
+      return next;
+    });
+  }
 
   const weeks = React.useMemo(
     () => Array.from({ length: program.duration_weeks }, (_, i) => i + 1),
@@ -164,13 +175,13 @@ export function ProgramBuilder({
 
   return (
     <div className="flex w-full flex-col gap-4 p-4 pb-24 md:p-8">
-      <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" className="w-fit" asChild>
           <Link href="/entrenador/programas">
             <ArrowLeft /> Volver a programas
           </Link>
         </Button>
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
@@ -219,18 +230,36 @@ export function ProgramBuilder({
           <div className="flex flex-col gap-3">
             {weeks.map((week) => {
               const weekSlots = slotsByWeek.get(week) ?? [];
+              const isOpen = openWeeks.has(week);
+              const filledDays = new Set(weekSlots.map((s) => s.day_of_week)).size;
               return (
                 <Card key={week}>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Semana {week}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => toggleWeek(week)}
+                    className="flex w-full items-center justify-between gap-2 px-5 text-left md:cursor-default"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <CardTitle className="text-sm">Semana {week}</CardTitle>
+                      <p className="text-xs text-muted-foreground md:hidden">
+                        {filledDays === 0
+                          ? "Sin rutinas"
+                          : `${filledDays} ${filledDays === 1 ? "día" : "días"} con rutina`}
+                      </p>
+                    </div>
+                    <ChevronDown
+                      className={`size-4 shrink-0 text-muted-foreground transition-transform md:hidden ${isOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  <CardContent
+                    className={`${isOpen ? "flex" : "hidden"} flex-col gap-1.5 md:flex`}
+                  >
                     {[1, 2, 3, 4, 5, 6, 7].map((day) => {
                       const daySlots = weekSlots.filter((s) => s.day_of_week === day);
                       return (
                         <div
                           key={day}
-                          className="flex flex-col gap-2 rounded-lg px-2 py-2.5 odd:bg-foreground/[0.02] md:flex-row md:items-start md:justify-between md:gap-2 md:py-1.5"
+                          className="flex flex-col gap-2 rounded-lg px-2 py-2.5 md:flex-row md:items-start md:justify-between md:gap-2 md:py-1.5 md:odd:bg-foreground/[0.02]"
                         >
                           <span className="text-sm font-semibold md:w-20 md:shrink-0 md:pt-0.5 md:text-xs md:font-medium md:text-muted-foreground">
                             {weekdayLabel(day)}
