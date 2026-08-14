@@ -187,7 +187,7 @@ export function CatalogBrowser({
         filteredFoods.length === 0 ? (
           <EmptyState icon={AppleIcon} empty={foods.length === 0} what="alimentos" />
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
             {filteredFoods.map((food) => {
               const Icon = foodCategoryIcon(food.category_slug);
               const imageUrl = food.image_path
@@ -217,7 +217,7 @@ export function CatalogBrowser({
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-primary">
-                          <Icon className="size-9" />
+                          <Icon className="size-6" />
                         </div>
                       )}
                       <button
@@ -248,7 +248,7 @@ export function CatalogBrowser({
       ) : filteredDishes.length === 0 ? (
         <EmptyState icon={Utensils} empty={dishes.length === 0} what="platillos" />
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
           {filteredDishes.map((dish) => {
             const Icon = mealTypeIcon(dish.meal_type);
             const imageUrl = dish.image_path
@@ -264,7 +264,7 @@ export function CatalogBrowser({
                       <img src={imageUrl} alt={dish.name} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-primary">
-                        <Icon className="size-9" />
+                        <Icon className="size-6" />
                       </div>
                     )}
                   </div>
