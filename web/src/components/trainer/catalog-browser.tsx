@@ -137,29 +137,31 @@ export function CatalogBrowser({
             Platillos
           </button>
         </div>
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={tab === "foods" ? "Buscar alimento" : "Buscar platillo"}
-            className="pl-9"
-          />
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={tab === "foods" ? "Buscar alimento" : "Buscar platillo"}
+              className="pl-9"
+            />
+          </div>
+          {tab === "foods" && (
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Filtros"
+              className="relative shrink-0"
+              onClick={() => setFiltersOpen(true)}
+            >
+              <SlidersHorizontal className="size-4" />
+              {(categoryId || favoritesOnly || customOnly) && (
+                <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
+              )}
+            </Button>
+          )}
         </div>
-        {tab === "foods" && (
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Filtros"
-            className="relative shrink-0"
-            onClick={() => setFiltersOpen(true)}
-          >
-            <SlidersHorizontal className="size-4" />
-            {(categoryId || favoritesOnly || customOnly) && (
-              <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
-            )}
-          </Button>
-        )}
         <Button asChild className="ml-auto hidden md:inline-flex">
           <Link href={newHref}>
             <Plus />
