@@ -2,7 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, Utensils, Apple as AppleIcon, FilterX, Star, UserRound } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Utensils,
+  Apple as AppleIcon,
+  FilterX,
+  Star,
+  UserRound,
+  SlidersHorizontal,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { mealTypeLabel } from "@/lib/format";
@@ -39,6 +48,7 @@ export function CatalogBrowser({
   const [favoritesOnly, setFavoritesOnly] = React.useState(false);
   const [customOnly, setCustomOnly] = React.useState(false);
   const [selectedFood, setSelectedFood] = React.useState<FoodOption | null>(null);
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [favoriteIds, setFavoriteIds] = React.useState(
     () => new Set(foods.filter((f) => f.is_favorite).map((f) => f.id)),
   );
@@ -136,6 +146,20 @@ export function CatalogBrowser({
             className="pl-9"
           />
         </div>
+        {tab === "foods" && (
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Filtros"
+            className="relative shrink-0"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <SlidersHorizontal className="size-4" />
+            {(categoryId || favoritesOnly || customOnly) && (
+              <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
+            )}
+          </Button>
+        )}
         <Button asChild className="ml-auto hidden md:inline-flex">
           <Link href={newHref}>
             <Plus />
@@ -146,59 +170,64 @@ export function CatalogBrowser({
 
       <MobileFab href={newHref} icon={Plus} label={newLabel} />
 
-      {tab === "foods" && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant={favoritesOnly ? "default" : "outline"}
-            className="h-7 cursor-pointer gap-1 px-3"
-            onClick={() => setFavoritesOnly((v) => !v)}
-          >
-            <Star className="size-3" fill={favoritesOnly ? "currentColor" : "none"} />
-            Favoritos
-          </Badge>
-          <Badge
-            variant={customOnly ? "default" : "outline"}
-            className="h-7 cursor-pointer gap-1 px-3"
-            onClick={() => setCustomOnly((v) => !v)}
-          >
-            <UserRound className="size-3" />
-            Personalizados
-          </Badge>
-          <div className="mx-1 h-4 w-px bg-border" />
-          {categories.map((category) => (
+      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Filtros</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-wrap gap-2">
             <Badge
-              key={category.id}
-              variant={categoryId === category.id ? "default" : "outline"}
-              className="h-7 cursor-pointer px-3"
-              onClick={() =>
-                setCategoryId((c) => (c === category.id ? null : category.id))
-              }
+              variant={favoritesOnly ? "default" : "outline"}
+              className="h-7 cursor-pointer gap-1 px-3"
+              onClick={() => setFavoritesOnly((v) => !v)}
             >
-              {category.name}
+              <Star className="size-3" fill={favoritesOnly ? "currentColor" : "none"} />
+              Favoritos
             </Badge>
-          ))}
-          {(categoryId || favoritesOnly || customOnly) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground"
-              onClick={() => {
-                setCategoryId(null);
-                setFavoritesOnly(false);
-                setCustomOnly(false);
-              }}
+            <Badge
+              variant={customOnly ? "default" : "outline"}
+              className="h-7 cursor-pointer gap-1 px-3"
+              onClick={() => setCustomOnly((v) => !v)}
             >
-              <FilterX /> Limpiar
-            </Button>
-          )}
-        </div>
-      )}
+              <UserRound className="size-3" />
+              Personalizados
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <Badge
+                key={category.id}
+                variant={categoryId === category.id ? "default" : "outline"}
+                className="h-7 cursor-pointer px-3"
+                onClick={() =>
+                  setCategoryId((c) => (c === category.id ? null : category.id))
+                }
+              >
+                {category.name}
+              </Badge>
+            ))}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-fit text-muted-foreground"
+            disabled={!categoryId && !favoritesOnly && !customOnly}
+            onClick={() => {
+              setCategoryId(null);
+              setFavoritesOnly(false);
+              setCustomOnly(false);
+            }}
+          >
+            <FilterX /> Limpiar filtros
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {tab === "foods" ? (
         filteredFoods.length === 0 ? (
           <EmptyState icon={AppleIcon} empty={foods.length === 0} what="alimentos" />
         ) : (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
             {filteredFoods.map((food) => {
               const Icon = foodCategoryIcon(food.category_slug);
               const imageUrl = food.image_path
@@ -259,7 +288,7 @@ export function CatalogBrowser({
       ) : filteredDishes.length === 0 ? (
         <EmptyState icon={Utensils} empty={dishes.length === 0} what="platillos" />
       ) : (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
           {filteredDishes.map((dish) => {
             const Icon = mealTypeIcon(dish.meal_type);
             const imageUrl = dish.image_path

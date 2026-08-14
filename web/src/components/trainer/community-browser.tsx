@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, Check, Users2 } from "lucide-react";
+import { Search, Plus, Check, Users2, SlidersHorizontal, FilterX } from "lucide-react";
 import { toast } from "sonner";
 
 import { mealTypeLabel } from "@/lib/format";
@@ -17,6 +17,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 /**
  * Todo lo que cualquier entrenador (o Areté, para los esenciales) ha
@@ -40,6 +46,7 @@ export function CommunityBrowser({
   const [query, setQuery] = React.useState("");
   const [categoryId, setCategoryId] = React.useState<string | null>(null);
   const [addingId, setAddingId] = React.useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
 
   const filteredFoods = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -164,30 +171,58 @@ export function CommunityBrowser({
             className="pl-9"
           />
         </div>
+        {tab === "foods" && (
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Filtros"
+            className="relative shrink-0"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <SlidersHorizontal className="size-4" />
+            {categoryId && (
+              <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
+            )}
+          </Button>
+        )}
       </div>
 
-      {tab === "foods" && (
-        <div className="flex flex-wrap items-center gap-2">
-          {categories.map((category) => (
-            <Badge
-              key={category.id}
-              variant={categoryId === category.id ? "default" : "outline"}
-              className="h-7 cursor-pointer px-3"
-              onClick={() =>
-                setCategoryId((c) => (c === category.id ? null : category.id))
-              }
-            >
-              {category.name}
-            </Badge>
-          ))}
-        </div>
-      )}
+      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Filtros</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <Badge
+                key={category.id}
+                variant={categoryId === category.id ? "default" : "outline"}
+                className="h-7 cursor-pointer px-3"
+                onClick={() =>
+                  setCategoryId((c) => (c === category.id ? null : category.id))
+                }
+              >
+                {category.name}
+              </Badge>
+            ))}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-fit text-muted-foreground"
+            disabled={!categoryId}
+            onClick={() => setCategoryId(null)}
+          >
+            <FilterX /> Limpiar filtros
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {tab === "foods" ? (
         filteredFoods.length === 0 ? (
           <EmptyState what="alimentos" />
         ) : (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
             {filteredFoods.map((food) => {
               const Icon = foodCategoryIcon(food.category_slug);
               const imageUrl = food.image_path
@@ -239,7 +274,7 @@ export function CommunityBrowser({
       ) : filteredDishes.length === 0 ? (
         <EmptyState what="platillos" />
       ) : (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
           {filteredDishes.map((dish) => {
             const Icon = mealTypeIcon(dish.meal_type);
             const imageUrl = dish.image_path
