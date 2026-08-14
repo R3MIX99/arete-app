@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Plus,
@@ -37,6 +38,7 @@ export function CatalogBrowser({
   dishes: DishOption[];
   categories: FoodCategory[];
 }) {
+  const router = useRouter();
   const [tab, setTab] = React.useState<"foods" | "dishes">("foods");
   const [query, setQuery] = React.useState("");
   const [categoryId, setCategoryId] = React.useState<string | null>(null);
@@ -92,7 +94,12 @@ export function CatalogBrowser({
         return next;
       });
       toast.error("No se pudo actualizar favoritos");
+      return;
     }
+    // Sincroniza el prop del servidor — si esta pestaña se desmonta al
+    // cambiar de tab, el favoriteIds local se recalcularía desde `foods`
+    // y se perdería el cambio si no refrescamos aquí.
+    router.refresh();
   }
 
   const newHref =

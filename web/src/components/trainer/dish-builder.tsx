@@ -178,17 +178,26 @@ export function DishBuilder({
           </Link>
         </Button>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil /> {isOwned ? "Editar información" : "Copiar y editar"}
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={isOwned ? "Editar información" : "Copiar y editar"}
+            onClick={() => setEditOpen(true)}
+          >
+            <Pencil />{" "}
+            <span className="hidden md:inline">
+              {isOwned ? "Editar información" : "Copiar y editar"}
+            </span>
           </Button>
           {isOwned && (
             <Button
               variant="ghost"
               size="sm"
+              aria-label="Eliminar"
               className="text-destructive hover:text-destructive"
               onClick={() => setDeleteOpen(true)}
             >
-              <Trash /> Eliminar
+              <Trash /> <span className="hidden md:inline">Eliminar</span>
             </Button>
           )}
         </div>

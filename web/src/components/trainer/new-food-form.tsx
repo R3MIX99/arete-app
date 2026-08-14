@@ -183,10 +183,11 @@ export function NewFoodForm({
           <Button
             variant="ghost"
             size="sm"
+            aria-label="Eliminar"
             className="text-destructive hover:text-destructive"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash /> Eliminar
+            <Trash /> <span className="hidden md:inline">Eliminar</span>
           </Button>
         )}
       </div>
