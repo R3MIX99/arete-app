@@ -1,30 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchRoutineSessionData } from "@/lib/server/client-routine-data";
 import { WorkoutSessionView } from "@/components/client/workout-session-view";
-import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
-
-interface RoutineExerciseRow {
-  id: string;
-  exercise_id: string;
-  order_index: number;
-  notes: string | null;
-  exercises: { name: string; muscle_group: string; equipment: string; video_url: string | null } | { name: string; muscle_group: string; equipment: string; video_url: string | null }[] | null;
-  routine_exercise_sets: {
-    id: string;
-    set_number: number;
-    target_reps_min: number | null;
-    target_reps_max: number | null;
-    suggested_weight: number | null;
-    rest_seconds: number | null;
-    target_minutes: number | null;
-    target_level: number | null;
-  }[];
-}
-
-function one<T>(value: T | T[] | null): T | null {
-  return Array.isArray(value) ? (value[0] ?? null) : value;
-}
+import type { SessionSetLog } from "@/lib/types/client-panel";
 
 export default async function WorkoutSessionPage({
   searchParams,
@@ -40,15 +19,8 @@ export default async function WorkoutSessionPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: routineRow }, { data: exerciseRows }, { data: existingSession }] = await Promise.all([
-    supabase.from("routines").select("id, name, level, goal").eq("id", routine).single(),
-    supabase
-      .from("routine_exercises")
-      .select(
-        "id, exercise_id, order_index, notes, exercises(name, muscle_group, equipment, video_url), routine_exercise_sets(id, set_number, target_reps_min, target_reps_max, suggested_weight, rest_seconds, target_minutes, target_level)",
-      )
-      .eq("routine_id", routine)
-      .order("order_index"),
+  const [routineData, { data: existingSession }] = await Promise.all([
+    fetchRoutineSessionData(supabase, routine),
     supabase
       .from("client_sessions")
       .select("id, started_at, status")
@@ -61,34 +33,7 @@ export default async function WorkoutSessionPage({
       .maybeSingle(),
   ]);
 
-  if (!routineRow) redirect("/cliente/entrenamiento");
-
-  const exercises: SessionExerciseInfo[] = ((exerciseRows ?? []) as RoutineExerciseRow[]).map((row) => {
-    const ex = one(row.exercises);
-    return {
-      id: row.id,
-      exercise_id: row.exercise_id,
-      exercise_name: ex?.name ?? "Ejercicio",
-      muscle_group: ex?.muscle_group ?? "",
-      equipment: ex?.equipment ?? "",
-      video_url: ex?.video_url ?? null,
-      notes: row.notes,
-      order_index: row.order_index,
-      sets: (row.routine_exercise_sets ?? [])
-        .slice()
-        .sort((a, b) => a.set_number - b.set_number)
-        .map((s) => ({
-          id: s.id,
-          set_number: s.set_number,
-          target_reps_min: s.target_reps_min,
-          target_reps_max: s.target_reps_max,
-          suggested_weight: s.suggested_weight,
-          rest_seconds: s.rest_seconds,
-          target_minutes: s.target_minutes,
-          target_level: s.target_level,
-        })),
-    };
-  });
+  if (!routineData) redirect("/cliente/entrenamiento");
 
   let initialLogs: SessionSetLog[] = [];
   const sessionId: string | null = existingSession?.id ?? null;
@@ -108,8 +53,8 @@ export default async function WorkoutSessionPage({
       assignmentId={assignment}
       routineId={routine}
       sessionDate={date}
-      routineName={routineRow.name}
-      exercises={exercises}
+      routineName={routineData.routineName}
+      exercises={routineData.exercises}
       initialSessionId={sessionId}
       initialSessionStatus={sessionStatus}
       initialLogs={initialLogs}

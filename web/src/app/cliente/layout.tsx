@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { BottomNav } from "@/components/client/bottom-nav";
+import { ClientBottomNavGate } from "@/components/client/client-bottom-nav-gate";
 import { ClientTopBar } from "@/components/client/client-top-bar";
 
 export default async function ClientLayout({
@@ -45,7 +45,7 @@ export default async function ClientLayout({
     <div className="flex min-h-screen w-full flex-col bg-background">
       <ClientTopBar brandName={brandName} brandLogoUrl={brandLogoUrl} />
       <main className="flex-1 pb-20">{children}</main>
-      <BottomNav />
+      <ClientBottomNavGate />
     </div>
   );
 }

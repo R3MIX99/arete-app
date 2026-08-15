@@ -13,6 +13,7 @@ export interface SessionExerciseInfo {
   id: string; // routine_exercise_id
   exercise_id: string;
   exercise_name: string;
+  exercise_description: string | null;
   muscle_group: string;
   equipment: string;
   video_url: string | null;

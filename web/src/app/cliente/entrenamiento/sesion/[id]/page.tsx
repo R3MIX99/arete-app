@@ -1,37 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Check, ChevronLeft, Minus } from "lucide-react";
+import { Check, ChevronLeft, Clock, Minus, Target } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchRoutineSessionData } from "@/lib/server/client-routine-data";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ExerciseVideoButton } from "@/components/client/exercise-video-button";
-import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
-
-interface RoutineExerciseRow {
-  id: string;
-  exercise_id: string;
-  order_index: number;
-  notes: string | null;
-  exercises:
-    | { name: string; muscle_group: string; equipment: string; video_url: string | null }
-    | { name: string; muscle_group: string; equipment: string; video_url: string | null }[]
-    | null;
-  routine_exercise_sets: {
-    id: string;
-    set_number: number;
-    target_reps_min: number | null;
-    target_reps_max: number | null;
-    suggested_weight: number | null;
-    rest_seconds: number | null;
-    target_minutes: number | null;
-    target_level: number | null;
-  }[];
-}
-
-function one<T>(value: T | T[] | null): T | null {
-  return Array.isArray(value) ? (value[0] ?? null) : value;
-}
+import type { SessionSetLog } from "@/lib/types/client-panel";
 
 function isCardio(muscleGroup: string) {
   return muscleGroup === "cardio";
@@ -60,59 +36,33 @@ export default async function SessionReviewPage({
 
   const { data: session } = await supabase
     .from("client_sessions")
-    .select("id, routine_id, session_date, duration_seconds, status, routines(name)")
+    .select("id, routine_id, session_date, duration_seconds, status")
     .eq("id", id)
     .eq("client_id", user.id)
     .maybeSingle();
 
   if (!session) redirect("/cliente/entrenamiento");
 
-  const [{ data: exerciseRows }, { data: logRows }] = await Promise.all([
-    supabase
-      .from("routine_exercises")
-      .select(
-        "id, exercise_id, order_index, notes, exercises(name, muscle_group, equipment, video_url), routine_exercise_sets(id, set_number, target_reps_min, target_reps_max, suggested_weight, rest_seconds, target_minutes, target_level)",
-      )
-      .eq("routine_id", session.routine_id)
-      .order("order_index"),
+  const [routineData, { data: logRows }] = await Promise.all([
+    fetchRoutineSessionData(supabase, session.routine_id),
     supabase
       .from("client_set_logs")
       .select("routine_exercise_set_id, actual_reps, actual_weight, actual_minutes, actual_level, is_completed")
       .eq("session_id", id),
   ]);
 
-  const exercises: SessionExerciseInfo[] = ((exerciseRows ?? []) as RoutineExerciseRow[]).map((row) => {
-    const ex = one(row.exercises);
-    return {
-      id: row.id,
-      exercise_id: row.exercise_id,
-      exercise_name: ex?.name ?? "Ejercicio",
-      muscle_group: ex?.muscle_group ?? "",
-      equipment: ex?.equipment ?? "",
-      video_url: ex?.video_url ?? null,
-      notes: row.notes,
-      order_index: row.order_index,
-      sets: (row.routine_exercise_sets ?? [])
-        .slice()
-        .sort((a, b) => a.set_number - b.set_number)
-        .map((s) => ({
-          id: s.id,
-          set_number: s.set_number,
-          target_reps_min: s.target_reps_min,
-          target_reps_max: s.target_reps_max,
-          suggested_weight: s.suggested_weight,
-          rest_seconds: s.rest_seconds,
-          target_minutes: s.target_minutes,
-          target_level: s.target_level,
-        })),
-    };
-  });
+  if (!routineData) redirect("/cliente/entrenamiento");
+  const { routineName, exercises } = routineData;
 
   const logBySetId = new Map(
     ((logRows ?? []) as SessionSetLog[]).map((l) => [l.routine_exercise_set_id, l]),
   );
 
-  const routineName = one(session.routines)?.name ?? "Rutina";
+  const totalSets = exercises.reduce((acc, e) => acc + e.sets.length, 0);
+  const completedSets = exercises.reduce(
+    (acc, e) => acc + e.sets.filter((s) => logBySetId.get(s.id)?.is_completed).length,
+    0,
+  );
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-3 pb-24">
@@ -125,10 +75,30 @@ export default async function SessionReviewPage({
         </Link>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{routineName}</p>
-          <p className="text-xs text-muted-foreground">
-            {formatDate(session.session_date)}
-            {session.duration_seconds ? ` · ${formatDuration(session.duration_seconds)}` : ""}
-          </p>
+          <p className="text-xs text-muted-foreground">{formatDate(session.session_date)}</p>
+        </div>
+      </div>
+
+      <div className="px-4">
+        <div className="glass-card grid grid-cols-2 divide-x rounded-xl">
+          <div className="flex flex-col items-center gap-1 px-4 py-3">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Clock className="size-3.5" />
+              <span className="text-[11px] font-medium uppercase tracking-wide">Duración</span>
+            </div>
+            <p className="text-lg font-semibold tabular-nums">
+              {session.duration_seconds ? formatDuration(session.duration_seconds) : "—"}
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-1 px-4 py-3">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Target className="size-3.5" />
+              <span className="text-[11px] font-medium uppercase tracking-wide">Series</span>
+            </div>
+            <p className="text-lg font-semibold tabular-nums">
+              {completedSets}/{totalSets}
+            </p>
+          </div>
         </div>
       </div>
 

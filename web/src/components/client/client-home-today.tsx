@@ -2,11 +2,10 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { CalendarDays, Check, Dumbbell, PlayCircle } from "lucide-react";
+import { CalendarDays, Check, ChevronRight, Dumbbell } from "lucide-react";
 
 import { todayKey, sessionsInRange, type CalendarAssignment } from "@/lib/calendar-logic";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 interface SessionRef {
   id: string;
@@ -78,41 +77,36 @@ export function ClientHomeToday({
             const key = `${session.assignmentId}:${session.routineId}:${session.date}`;
             const inProgressId = inProgressByKey.get(key);
             const completedSessionId = completedByKey.get(key);
-            const href = `/cliente/entrenamiento/sesion?assignment=${session.assignmentId}&routine=${session.routineId}&date=${session.date}`;
+            const href = completedSessionId
+              ? `/cliente/entrenamiento/sesion/${completedSessionId}`
+              : `/cliente/entrenamiento/sesion/preview?assignment=${session.assignmentId}&routine=${session.routineId}&date=${session.date}`;
             return (
-              <Card key={key} className="overflow-hidden">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <div
-                    className={
-                      completedSessionId
-                        ? "flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary"
-                        : "flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
-                    }
-                  >
-                    {completedSessionId ? <Check className="size-5" /> : <Dumbbell className="size-5" />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{session.routineName}</p>
-                    {completedSessionId ? (
-                      <p className="truncate text-xs text-primary">Completada</p>
-                    ) : session.isProgram && session.programName ? (
-                      <p className="truncate text-xs text-muted-foreground">{session.programName}</p>
-                    ) : null}
-                  </div>
-                  {completedSessionId ? (
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/cliente/entrenamiento/sesion/${completedSessionId}`}>Ver</Link>
-                    </Button>
-                  ) : (
-                    <Button asChild size="sm">
-                      <Link href={href}>
-                        <PlayCircle className="size-4" />
-                        {inProgressId ? "Continuar" : "Empezar"}
-                      </Link>
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
+              <Link key={key} href={href}>
+                <Card className="overflow-hidden transition-colors hover:bg-accent/40">
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <div
+                      className={
+                        completedSessionId
+                          ? "flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary"
+                          : "flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                      }
+                    >
+                      {completedSessionId ? <Check className="size-5" /> : <Dumbbell className="size-5" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{session.routineName}</p>
+                      {completedSessionId ? (
+                        <p className="truncate text-xs text-primary">Completada</p>
+                      ) : inProgressId ? (
+                        <p className="truncate text-xs text-primary">En curso</p>
+                      ) : session.isProgram && session.programName ? (
+                        <p className="truncate text-xs text-muted-foreground">{session.programName}</p>
+                      ) : null}
+                    </div>
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                  </CardContent>
+                </Card>
+              </Link>
             );
           })}
         </div>

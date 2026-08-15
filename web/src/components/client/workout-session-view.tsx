@@ -11,6 +11,7 @@ import { youtubeVideoId } from "@/lib/youtube";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { ExerciseHistoryList } from "@/components/client/exercise-history";
 import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
 
 type LogState = Record<
@@ -229,7 +230,7 @@ export function WorkoutSessionView({
       return;
     }
     toast.success("¡Sesión completada!");
-    router.push("/cliente");
+    router.push(`/cliente/entrenamiento/sesion/${sessionId}`);
   }
 
   const totalSets = exercises.reduce((acc, e) => acc + e.sets.length, 0);
@@ -250,8 +251,12 @@ export function WorkoutSessionView({
           <>
             <Check className="size-8 text-primary" />
             <p className="font-medium">Ya completaste esta sesión</p>
-            <Button variant="outline" size="sm" onClick={() => router.push("/cliente")}>
-              Volver al inicio
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(initialSessionId ? `/cliente/entrenamiento/sesion/${initialSessionId}` : "/cliente")}
+            >
+              Ver resumen
             </Button>
           </>
         )}
@@ -260,9 +265,9 @@ export function WorkoutSessionView({
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-3 pb-24">
+    <div className="mx-auto flex max-w-md flex-col gap-3 pb-28">
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <Button variant="ghost" size="icon" className="shrink-0" onClick={() => router.push("/cliente")}>
+        <Button variant="ghost" size="icon" className="shrink-0" onClick={() => router.push("/cliente")} aria-label="Ir a inicio">
           <ChevronLeft className="size-5" />
         </Button>
         <div className="min-w-0 flex-1">
@@ -426,15 +431,15 @@ export function WorkoutSessionView({
         })}
       </div>
 
-      <div className="px-4">
-        <Button className="w-full" size="lg" disabled={finishing} onClick={handleFinish}>
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 p-4 backdrop-blur-sm">
+        <Button className="mx-auto w-full max-w-md" size="lg" disabled={finishing} onClick={handleFinish}>
           {finishing ? <Loader2 className="size-4 animate-spin" /> : null}
           Terminar sesión
         </Button>
       </div>
 
       {restSecondsLeft !== null ? (
-        <div className="fixed inset-x-0 bottom-20 z-30 flex justify-center px-4">
+        <div className="fixed inset-x-0 bottom-24 z-30 flex justify-center px-4">
           <div className="flex items-center gap-3 rounded-full border bg-card/95 px-4 py-2 shadow-lg backdrop-blur-sm">
             <Timer className="size-4 text-primary" />
             <span className="text-sm font-medium tabular-nums">
@@ -461,115 +466,6 @@ export function WorkoutSessionView({
           <ExerciseHistoryList exercise={historyExercise} cardio={isCardio(historyExercise.muscle_group)} />
         ) : null}
       </ResponsiveDialog>
-    </div>
-  );
-}
-
-interface HistoryRow {
-  session_date: string;
-  set_number: number;
-  actual_reps: number | null;
-  actual_weight: number | null;
-  actual_minutes: number | null;
-  actual_level: number | null;
-}
-
-function ExerciseHistoryList({ exercise, cardio }: { exercise: SessionExerciseInfo; cardio: boolean }) {
-  const supabase = useMemo(() => createClient(), []);
-  const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<HistoryRow[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const setIds = exercise.sets.map((s) => s.id);
-      const { data } = await supabase
-        .from("client_set_logs")
-        .select("session_date, actual_reps, actual_weight, actual_minutes, actual_level, routine_exercise_set_id")
-        .in("routine_exercise_set_id", setIds)
-        .eq("is_completed", true)
-        .order("session_date", { ascending: false })
-        .limit(60);
-      if (cancelled) return;
-      const setNumberById = new Map(exercise.sets.map((s) => [s.id, s.set_number]));
-      const mapped: HistoryRow[] = (data ?? []).map(
-        (row: {
-          session_date: string;
-          actual_reps: number | null;
-          actual_weight: number | null;
-          actual_minutes: number | null;
-          actual_level: number | null;
-          routine_exercise_set_id: string;
-        }) => ({
-          session_date: row.session_date,
-          set_number: setNumberById.get(row.routine_exercise_set_id) ?? 0,
-          actual_reps: row.actual_reps,
-          actual_weight: row.actual_weight,
-          actual_minutes: row.actual_minutes,
-          actual_level: row.actual_level,
-        }),
-      );
-      setRows(mapped);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [exercise, supabase]);
-
-  const byDate = useMemo(() => {
-    const map = new Map<string, HistoryRow[]>();
-    for (const row of rows) {
-      const list = map.get(row.session_date) ?? [];
-      list.push(row);
-      map.set(row.session_date, list);
-    }
-    return Array.from(map.entries());
-  }, [rows]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="size-5 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (byDate.length === 0) {
-    return (
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        Todavía no tienes series completadas de este ejercicio.
-      </p>
-    );
-  }
-
-  return (
-    <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
-      {byDate.map(([date, dayRows]) => (
-        <div key={date} className="rounded-lg border px-3 py-2">
-          <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-            {new Date(date + "T00:00:00").toLocaleDateString("es-MX", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {dayRows
-              .sort((a, b) => a.set_number - b.set_number)
-              .map((row, i) => (
-                <span
-                  key={i}
-                  className="rounded-md bg-muted px-2 py-1 text-xs tabular-nums text-foreground"
-                >
-                  {cardio
-                    ? `${row.actual_minutes ?? "-"} min · nivel ${row.actual_level ?? "-"}`
-                    : `${row.actual_weight ?? "-"} kg × ${row.actual_reps ?? "-"}`}
-                </span>
-              ))}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
