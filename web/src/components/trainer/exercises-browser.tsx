@@ -43,27 +43,53 @@ const EQUIPMENT: Equipment[] = [
   "other",
 ];
 
-export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }) {
+type OriginFilter = "all" | "community" | "created";
+
+const ORIGIN_OPTIONS: { value: OriginFilter; label: string }[] = [
+  { value: "all", label: "Todos" },
+  { value: "community", label: "Comunidad" },
+  { value: "created", label: "Creados" },
+];
+
+export function ExercisesBrowser({
+  exercises,
+  trainerId,
+}: {
+  exercises: ExerciseSummary[];
+  trainerId: string;
+}) {
   const [query, setQuery] = React.useState("");
   const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup | null>(null);
   const [equipment, setEquipment] = React.useState<Equipment | null>(null);
+  const [origin, setOrigin] = React.useState<OriginFilter>("all");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+
+  // "Creados" = lo que yo escribí desde cero. "Comunidad" = esenciales
+  // de Areté o copias que hice de otro entrenador — no nacieron conmigo.
+  function matchesOrigin(exercise: ExerciseSummary) {
+    if (origin === "all") return true;
+    const wasCreatedByMe = exercise.trainer_id === trainerId && !exercise.forked_from;
+    return origin === "created" ? wasCreatedByMe : !wasCreatedByMe;
+  }
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     return exercises.filter((exercise) => {
       if (muscleGroup && exercise.muscle_group !== muscleGroup) return false;
       if (equipment && exercise.equipment !== equipment) return false;
+      if (!matchesOrigin(exercise)) return false;
       if (q && !exercise.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [exercises, query, muscleGroup, equipment]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exercises, query, muscleGroup, equipment, origin, trainerId]);
 
-  const hasActiveFilters = muscleGroup !== null || equipment !== null;
+  const hasActiveFilters = muscleGroup !== null || equipment !== null || origin !== "all";
 
   function clearFilters() {
     setMuscleGroup(null);
     setEquipment(null);
+    setOrigin("all");
   }
 
   return (
@@ -106,6 +132,19 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
 
         {/* Computadora: selectores de filtro visibles en la misma barra. */}
         <div className="hidden items-center gap-2 md:flex">
+          <Select value={origin} onValueChange={(v) => setOrigin(v as OriginFilter)}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ORIGIN_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Select
             value={muscleGroup ?? "all"}
             onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
@@ -166,6 +205,19 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
       />
 
       <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
+        <Select value={origin} onValueChange={(v) => setOrigin(v as OriginFilter)}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {ORIGIN_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Select
           value={muscleGroup ?? "all"}
           onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}

@@ -27,14 +27,18 @@ export default async function ExercisesPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: exercises } = await supabase
-    .from("exercises")
-    .select(
-      "id, name, muscle_group, equipment, description, video_url, trainer_id, forked_from, profiles!exercises_trainer_id_fkey(full_name)",
-    )
-    .order("name");
+  const [{ data: exercises }, { data: hiddenRows }] = await Promise.all([
+    supabase
+      .from("exercises")
+      .select(
+        "id, name, muscle_group, equipment, description, video_url, trainer_id, forked_from, profiles!exercises_trainer_id_fkey(full_name)",
+      )
+      .order("name"),
+    supabase.from("trainer_hidden_exercises").select("exercise_id").eq("trainer_id", user.id),
+  ]);
 
   const allRows = (exercises ?? []) as ExerciseRow[];
+  const hiddenIds = new Set((hiddenRows ?? []).map((r) => r.exercise_id as string));
 
   // Ejercicios ya copiados a mi biblioteca (por id de origen), para
   // marcar en Comunidad cuáles ya tengo agregados.
@@ -43,13 +47,15 @@ export default async function ExercisesPage() {
   );
 
   const myExercises: ExerciseSummary[] = allRows
-    .filter((r) => !r.trainer_id || r.trainer_id === user.id)
+    .filter((r) => (!r.trainer_id && !hiddenIds.has(r.id)) || r.trainer_id === user.id)
     .map((r) => ({
       id: r.id,
       name: r.name,
       muscle_group: r.muscle_group,
       equipment: r.equipment,
       video_url: r.video_url,
+      trainer_id: r.trainer_id,
+      forked_from: r.forked_from,
     }));
 
   const communityExercises: CommunityExerciseOption[] = allRows.map((r) => ({
@@ -62,8 +68,15 @@ export default async function ExercisesPage() {
     trainer_id: r.trainer_id,
     forked_from: r.forked_from,
     creator_name: r.trainer_id ? (one(r.profiles)?.full_name ?? "Entrenador") : "Areté",
-    in_my_library: !r.trainer_id || r.trainer_id === user.id || forkedIds.has(r.id),
+    in_my_library:
+      (!r.trainer_id && !hiddenIds.has(r.id)) || r.trainer_id === user.id || forkedIds.has(r.id),
   }));
 
-  return <ExercisesShell exercises={myExercises} communityExercises={communityExercises} />;
+  return (
+    <ExercisesShell
+      exercises={myExercises}
+      communityExercises={communityExercises}
+      trainerId={user.id}
+    />
+  );
 }

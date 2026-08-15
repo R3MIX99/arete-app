@@ -63,9 +63,14 @@ export function ExerciseForm({
   const [videoUrl, setVideoUrl] = React.useState(exercise?.video_url ?? "");
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [hiding, setHiding] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [hideConfirmOpen, setHideConfirmOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const isOwned = !exercise || exercise.trainer_id === trainerId;
+  // Esencial de Areté: no es mío, pero sí lo puedo quitar de mi propia
+  // biblioteca sin afectar a nadie más.
+  const isEssential = mode === "edit" && !!exercise && exercise.trainer_id === null;
 
   const previewId = videoUrl ? youtubeVideoId(videoUrl) : null;
 
@@ -158,6 +163,24 @@ export function ExerciseForm({
     router.refresh();
   }
 
+  async function handleHide() {
+    if (!exercise) return;
+    setHiding(true);
+    const supabase = createClient();
+    const { error: hideError } = await supabase
+      .from("trainer_hidden_exercises")
+      .insert({ trainer_id: trainerId, exercise_id: exercise.id });
+    setHiding(false);
+    setHideConfirmOpen(false);
+    if (hideError) {
+      toast.error("No se pudo quitar de tu biblioteca");
+      return;
+    }
+    toast.success("Se quitó de tu biblioteca");
+    router.push("/entrenador/ejercicios");
+    router.refresh();
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-8">
       <div className="flex items-center justify-between">
@@ -176,6 +199,18 @@ export function ExerciseForm({
           >
             <Trash />
             <span className="hidden md:inline">Eliminar</span>
+          </Button>
+        )}
+        {mode === "edit" && isEssential && (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Quitar de mi biblioteca"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setHideConfirmOpen(true)}
+          >
+            <Trash />
+            <span className="hidden md:inline">Quitar de mi biblioteca</span>
           </Button>
         )}
       </div>
@@ -314,6 +349,17 @@ export function ExerciseForm({
           description="Esta acción no se puede deshacer. Si está usado en alguna rutina, no se podrá eliminar hasta quitarlo de ahí."
           loading={deleting}
           onConfirm={handleDelete}
+        />
+      )}
+
+      {exercise && (
+        <ConfirmDialog
+          open={hideConfirmOpen}
+          onOpenChange={setHideConfirmOpen}
+          title={`¿Quitar "${exercise.name}" de tu biblioteca?`}
+          description="Deja de aparecer en tu biblioteca, pero sigue disponible en Comunidad para el resto de entrenadores y lo puedes volver a agregar cuando quieras."
+          loading={hiding}
+          onConfirm={handleHide}
         />
       )}
     </div>

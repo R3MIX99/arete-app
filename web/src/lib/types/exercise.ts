@@ -25,6 +25,10 @@ export interface ExerciseSummary {
   muscle_group: MuscleGroup;
   equipment: Equipment;
   video_url: string | null;
+  /** null = esencial de Areté; en mi biblioteca solo puede ser esto o mi
+   * propio id de entrenador (ver ExercisesPage). */
+  trainer_id: string | null;
+  forked_from: string | null;
 }
 
 export interface ExerciseDetail {

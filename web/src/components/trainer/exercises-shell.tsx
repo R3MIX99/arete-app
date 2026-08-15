@@ -14,9 +14,11 @@ import { ExerciseCommunityBrowser } from "@/components/trainer/exercise-communit
 export function ExercisesShell({
   exercises,
   communityExercises,
+  trainerId,
 }: {
   exercises: ExerciseSummary[];
   communityExercises: CommunityExerciseOption[];
+  trainerId: string;
 }) {
   return (
     <div className="flex w-full flex-col gap-4 p-4 pb-24 md:p-8">
@@ -26,10 +28,10 @@ export function ExercisesShell({
           <TabsTrigger value="comunidad">Comunidad</TabsTrigger>
         </TabsList>
         <TabsContent value="biblioteca">
-          <ExercisesBrowser exercises={exercises} />
+          <ExercisesBrowser exercises={exercises} trainerId={trainerId} />
         </TabsContent>
         <TabsContent value="comunidad">
-          <ExerciseCommunityBrowser exercises={communityExercises} />
+          <ExerciseCommunityBrowser exercises={communityExercises} trainerId={trainerId} />
         </TabsContent>
       </Tabs>
     </div>

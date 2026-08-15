@@ -50,7 +50,13 @@ const EQUIPMENT: Equipment[] = [
  * este entrenador ya puede usar. Desde aquí se copia un ejercicio a tu
  * propia biblioteca con "Agregar".
  */
-export function ExerciseCommunityBrowser({ exercises }: { exercises: CommunityExerciseOption[] }) {
+export function ExerciseCommunityBrowser({
+  exercises,
+  trainerId,
+}: {
+  exercises: CommunityExerciseOption[];
+  trainerId: string;
+}) {
   const router = useRouter();
   const [query, setQuery] = React.useState("");
   const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup | null>(null);
@@ -78,6 +84,26 @@ export function ExerciseCommunityBrowser({ exercises }: { exercises: CommunityEx
   async function addToLibrary(exercise: CommunityExerciseOption) {
     setAddingId(exercise.id);
     const supabase = createClient();
+
+    // Esencial de Areté que antes quitaste de tu biblioteca: solo hay
+    // que deshacer el "ocultar", no crear una copia — el ejercicio
+    // esencial sigue siendo el mismo para todos.
+    if (!exercise.trainer_id) {
+      const { error } = await supabase
+        .from("trainer_hidden_exercises")
+        .delete()
+        .eq("trainer_id", trainerId)
+        .eq("exercise_id", exercise.id);
+      setAddingId(null);
+      if (error) {
+        toast.error("No se pudo agregar a tu biblioteca");
+        return;
+      }
+      toast.success(`"${exercise.name}" agregado a tu biblioteca`);
+      router.refresh();
+      return;
+    }
+
     const { error } = await supabase.from("exercises").insert({
       forked_from: exercise.id,
       name: exercise.name,
