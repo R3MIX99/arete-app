@@ -201,7 +201,7 @@ export function DietPlanBuilder({
   const assignedClientIds = assignments.map((a) => a.client_id);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 md:p-8">
+    <div className="flex w-full flex-col gap-4 p-4 pb-24 md:p-8">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" className="w-fit" asChild>
           <Link href="/entrenador/nutricion">
@@ -229,130 +229,138 @@ export function DietPlanBuilder({
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{plan.name}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-1.5">
-            {plan.daily_calorie_target && (
-              <Badge variant="secondary">{Math.round(plan.daily_calorie_target)} kcal/día</Badge>
-            )}
-            {plan.goal_label && <Badge variant="secondary">{plan.goal_label}</Badge>}
-          </div>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <MacroStat label="Kcal" value={Math.round(totals.calories)} />
-            <MacroStat label="Prot" value={`${Math.round(totals.protein)}g`} />
-            <MacroStat label="Carb" value={`${Math.round(totals.carbs)}g`} />
-            <MacroStat label="Grasa" value={`${Math.round(totals.fat)}g`} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {MEAL_TYPES.map((mealType) => {
-        const mealItemsList = itemsByMeal.get(mealType) ?? [];
-        return (
-          <Card key={mealType}>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="text-sm">{mealTypeLabel(mealType)}</CardTitle>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button type="button" variant="outline" size="sm">
-                    <Plus /> Agregar
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onSelect={() => setDishPickerMeal(mealType)}>
-                    Platillo del catálogo
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setFoodPickerMeal(mealType)}>
-                    Alimento individual
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_20rem] md:items-start">
+        {/* Columna izquierda: info del plan + comidas. */}
+        <div className="flex flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{plan.name}</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-1.5">
-              {mealItemsList.length === 0 ? (
-                <p className="py-2 text-sm text-muted-foreground">Sin elementos.</p>
-              ) : (
-                mealItemsList.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-2 rounded-lg bg-foreground/[0.02] px-2 py-1.5"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {item.dish_name ?? item.food_name}
-                        {item.quantity_grams ? ` · ${Math.round(item.quantity_grams)} g` : ""}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {Math.round(item.calories)} kcal · {Math.round(item.protein)}g prot
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Quitar"
-                      className="shrink-0 text-destructive hover:text-destructive"
-                      disabled={removingId === item.id}
-                      onClick={() => handleRemoveItem(item.id)}
-                    >
-                      {removingId === item.id ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="size-3.5" />
-                      )}
-                    </Button>
-                  </div>
-                ))
-              )}
+            <CardContent className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-1.5">
+                {plan.daily_calorie_target && (
+                  <Badge variant="secondary">{Math.round(plan.daily_calorie_target)} kcal/día</Badge>
+                )}
+                {plan.goal_label && <Badge variant="secondary">{plan.goal_label}</Badge>}
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <MacroStat label="Kcal" value={Math.round(totals.calories)} />
+                <MacroStat label="Prot" value={`${Math.round(totals.protein)}g`} />
+                <MacroStat label="Carb" value={`${Math.round(totals.carbs)}g`} />
+                <MacroStat label="Grasa" value={`${Math.round(totals.fat)}g`} />
+              </div>
             </CardContent>
           </Card>
-        );
-      })}
 
-      <div className="mt-2 flex items-center justify-between">
-        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Clientes asignados
-        </h2>
-        <Button type="button" variant="outline" size="sm" onClick={() => setAssignOpen(true)}>
-          <UserPlus /> Asignar a clientes
-        </Button>
-      </div>
-
-      {assignments.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
-            <Users className="size-6" />
-            <p className="text-sm">Todavía no asignas este plan a ningún cliente.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {assignments.map((assignment) => (
-            <div
-              key={assignment.id}
-              className="flex items-center gap-3 rounded-lg border px-3 py-2"
-            >
-              <Avatar className="size-9">
-                <AvatarFallback className="text-xs">
-                  {initialsOf(assignment.client_name) || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{assignment.client_name}</p>
-                <p className="text-xs text-muted-foreground">
-                  Desde el {formatDate(assignment.start_date)}
-                  {assignment.scale_factor !== 1
-                    ? ` · ajustado ${Math.round((assignment.scale_factor - 1) * 100)}%`
-                    : ""}
-                </p>
-              </div>
-            </div>
-          ))}
+          {MEAL_TYPES.map((mealType) => {
+            const mealItemsList = itemsByMeal.get(mealType) ?? [];
+            return (
+              <Card key={mealType}>
+                <CardHeader className="flex-row items-center justify-between">
+                  <CardTitle className="text-sm">{mealTypeLabel(mealType)}</CardTitle>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="outline" size="sm">
+                        <Plus /> Agregar
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onSelect={() => setDishPickerMeal(mealType)}>
+                        Platillo del catálogo
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setFoodPickerMeal(mealType)}>
+                        Alimento individual
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-1.5">
+                  {mealItemsList.length === 0 ? (
+                    <p className="py-2 text-sm text-muted-foreground">Sin elementos.</p>
+                  ) : (
+                    mealItemsList.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between gap-2 rounded-lg bg-foreground/[0.02] px-2 py-1.5"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {item.dish_name ?? item.food_name}
+                            {item.quantity_grams ? ` · ${Math.round(item.quantity_grams)} g` : ""}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {Math.round(item.calories)} kcal · {Math.round(item.protein)}g prot
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Quitar"
+                          className="shrink-0 text-destructive hover:text-destructive"
+                          disabled={removingId === item.id}
+                          onClick={() => handleRemoveItem(item.id)}
+                        >
+                          {removingId === item.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
-      )}
+
+        {/* Columna derecha: clientes asignados, fija al hacer scroll en escritorio. */}
+        <div className="flex flex-col gap-3 md:sticky md:top-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Clientes asignados
+            </h2>
+            <Button type="button" variant="outline" size="sm" onClick={() => setAssignOpen(true)}>
+              <UserPlus /> Asignar
+            </Button>
+          </div>
+
+          {assignments.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
+                <Users className="size-6" />
+                <p className="text-sm">Todavía no asignas este plan a ningún cliente.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {assignments.map((assignment) => (
+                <div
+                  key={assignment.id}
+                  className="flex items-center gap-3 rounded-lg border px-3 py-2"
+                >
+                  <Avatar className="size-9">
+                    <AvatarFallback className="text-xs">
+                      {initialsOf(assignment.client_name) || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{assignment.client_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Desde el {formatDate(assignment.start_date)}
+                      {assignment.scale_factor !== 1
+                        ? ` · ajustado ${Math.round((assignment.scale_factor - 1) * 100)}%`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       <EditDietPlanInfoDialog open={editOpen} onOpenChange={setEditOpen} plan={plan} />
 
