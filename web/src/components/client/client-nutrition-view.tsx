@@ -370,7 +370,7 @@ export function ClientNutritionView({
                 </button>
 
                 {isOpen && (
-                  <CardContent className="flex flex-col gap-3 border-t pt-4">
+                  <CardContent className="flex flex-col gap-3 border-t pt-4 pb-5">
                     {dayPlan.blocks.map((block) => {
                       const blockTotalsRounded = roundTotals(blockTotals(block));
                       return (
