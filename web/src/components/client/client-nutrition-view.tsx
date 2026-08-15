@@ -1,14 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Flame, Repeat } from "lucide-react";
+import { ChevronDown, Flame, Repeat, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { foodCategoryIcon } from "@/lib/food-icons";
+import { cn } from "@/lib/utils";
 import {
   applySubstitutions,
   blockTotals,
+  buildWeeklyShoppingList,
   formatHouseholdEquivalence,
   planTotals,
   roundTotals,
@@ -20,7 +22,9 @@ import type {
   ClientNutritionPlan,
   FoodSubstituteOption,
   MealSubstitutionRow,
+  ShoppingListItem,
 } from "@/lib/types/client-nutrition";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
@@ -86,11 +90,16 @@ export function ClientNutritionView({
   const [target, setTarget] = React.useState<SubstituteTarget | null>(null);
   const [applying, setApplying] = React.useState(false);
   const [detailFood, setDetailFood] = React.useState<DetailFood | null>(null);
+  const [activeTab, setActiveTab] = React.useState("hoy");
+  const [expandedDays, setExpandedDays] = React.useState<Set<string>>(new Set());
+  const [shoppingListOpen, setShoppingListOpen] = React.useState(false);
 
   const effectivePlan = React.useMemo(
     () => (plan ? applySubstitutions(plan, substitutions) : null),
     [plan, substitutions],
   );
+
+  const shoppingList = React.useMemo(() => (plan ? buildWeeklyShoppingList(plan, 7) : []), [plan]);
 
   async function handlePick(option: FoodSubstituteOption) {
     if (!target) return;
@@ -202,11 +211,18 @@ export function ClientNutritionView({
         <h1 className="text-xl font-semibold">{effectivePlan.planName}</h1>
       </div>
 
-      <Tabs defaultValue="hoy">
-        <TabsList>
-          <TabsTrigger value="hoy">Hoy</TabsTrigger>
-          <TabsTrigger value="semana">Semana</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between gap-2">
+          <TabsList>
+            <TabsTrigger value="hoy">Hoy</TabsTrigger>
+            <TabsTrigger value="semana">Semana</TabsTrigger>
+          </TabsList>
+          {activeTab === "semana" && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setShoppingListOpen(true)}>
+              <ShoppingCart /> Lista de compras
+            </Button>
+          )}
+        </div>
 
         <TabsContent value="hoy" className="flex flex-col gap-4 pt-4">
           <Card>
@@ -322,22 +338,83 @@ export function ClientNutritionView({
             // asigne uno nuevo.
             const dayPlan = index === 0 ? effectivePlan : plan;
             const totals = roundTotals(planTotals(dayPlan));
+            const isOpen = expandedDays.has(date);
             return (
-              <Card key={date}>
-                <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-                  <CardTitle className="text-sm capitalize">{weekdayLabel(date, index)}</CardTitle>
-                  <p className="text-xs tabular-nums text-muted-foreground">{totals.calories} kcal</p>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-1.5">
-                  {dayPlan.blocks.map((block) => (
-                    <span
-                      key={block.id}
-                      className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground"
-                    >
-                      {block.name}
-                    </span>
-                  ))}
-                </CardContent>
+              <Card key={date} className="overflow-hidden py-0">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 px-5 py-3.5 text-left"
+                  onClick={() =>
+                    setExpandedDays((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(date)) next.delete(date);
+                      else next.add(date);
+                      return next;
+                    })
+                  }
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium capitalize">
+                      {weekdayLabel(date, index)}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {totals.calories} kcal
+                  </p>
+                  <ChevronDown
+                    className={cn(
+                      "size-4 shrink-0 text-muted-foreground transition-transform",
+                      isOpen && "rotate-180",
+                    )}
+                  />
+                </button>
+
+                {isOpen && (
+                  <CardContent className="flex flex-col gap-3 border-t pt-4">
+                    {dayPlan.blocks.map((block) => {
+                      const blockTotalsRounded = roundTotals(blockTotals(block));
+                      return (
+                        <div key={block.id} className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                              {block.name}
+                            </p>
+                            <p className="text-xs tabular-nums text-muted-foreground">
+                              {blockTotalsRounded.calories} kcal
+                            </p>
+                          </div>
+                          {block.items.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Sin comidas en este bloque.</p>
+                          ) : (
+                            block.items.map((item) =>
+                              item.kind === "food" && item.food ? (
+                                <FoodRow
+                                  key={item.id}
+                                  food={item.food}
+                                  onOpenDetail={() => setDetailFood(item.food)}
+                                />
+                              ) : (
+                                <div key={item.id} className="flex flex-col gap-2">
+                                  <p className="text-sm font-medium">{item.dishName}</p>
+                                  <div className="flex flex-col gap-2">
+                                    {(item.ingredients ?? []).map((ing) => (
+                                      <FoodRow
+                                        key={ing.dishIngredientId}
+                                        food={ing}
+                                        nested
+                                        onOpenDetail={() => setDetailFood(ing)}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              ),
+                            )
+                          )}
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                )}
               </Card>
             );
           })}
@@ -357,6 +434,12 @@ export function ClientNutritionView({
       )}
 
       <FoodDetailDrawer food={detailFood} onOpenChange={(open) => !open && setDetailFood(null)} />
+
+      <ShoppingListDialog
+        open={shoppingListOpen}
+        onOpenChange={setShoppingListOpen}
+        items={shoppingList}
+      />
     </div>
   );
 }
@@ -369,7 +452,7 @@ function FoodRow({
 }: {
   food: ClientNutritionDirectFood | ClientNutritionIngredient;
   nested?: boolean;
-  onSubstitute: () => void;
+  onSubstitute?: () => void;
   onOpenDetail: () => void;
 }) {
   const equivalence = formatHouseholdEquivalence(
@@ -411,14 +494,16 @@ function FoodRow({
           </p>
         </div>
       </button>
-      <button
-        type="button"
-        onClick={onSubstitute}
-        aria-label={`Sustituir ${food.name}`}
-        className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-      >
-        <Repeat className="size-4" />
-      </button>
+      {onSubstitute && (
+        <button
+          type="button"
+          onClick={onSubstitute}
+          aria-label={`Sustituir ${food.name}`}
+          className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <Repeat className="size-4" />
+        </button>
+      )}
     </div>
   );
 }
@@ -483,6 +568,57 @@ function FoodDetailDrawer({
           </div>
         </div>
       )}
+    </ResponsiveDialog>
+  );
+}
+
+function ShoppingListDialog({
+  open,
+  onOpenChange,
+  items,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  items: ShoppingListItem[];
+}) {
+  return (
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange} title="Lista de compras de la semana">
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">
+          Lo que necesitas comprar para cumplir tu dieta los próximos 7 días — tu plan se repite a
+          diario. Las cantidades están redondeadas hacia arriba, mejor que sobre a que falte.
+        </p>
+        {items.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Todavía no hay alimentos en tu plan para armar una lista.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            {items.map((item) => (
+              <div
+                key={item.foodId}
+                className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5"
+              >
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+                  {React.createElement(foodCategoryIcon(item.categorySlug), { className: "size-4" })}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{item.name}</p>
+                  {item.householdUnitName && item.householdUnitQuantity ? (
+                    <p className="truncate text-xs text-muted-foreground">
+                      ≈ {item.householdUnitQuantity}{" "}
+                      {item.householdUnitQuantity === 1
+                        ? item.householdUnitName
+                        : `${item.householdUnitName}s`}
+                    </p>
+                  ) : null}
+                </div>
+                <p className="shrink-0 text-sm font-semibold tabular-nums">{item.totalGrams} g</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </ResponsiveDialog>
   );
 }

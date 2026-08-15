@@ -77,3 +77,12 @@ export interface NutritionTotals {
   carbs: number;
   fat: number;
 }
+
+export interface ShoppingListItem {
+  foodId: string;
+  name: string;
+  categorySlug: string | null;
+  totalGrams: number;
+  householdUnitName: string | null;
+  householdUnitQuantity: number | null;
+}

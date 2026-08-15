@@ -7,6 +7,7 @@ import type {
   ClientNutritionPlan,
   MealSubstitutionRow,
   NutritionTotals,
+  ShoppingListItem,
 } from "@/lib/types/client-nutrition";
 
 /** "huevo mediano" × 3 → "huevos medianos" — heurística simple (no
@@ -156,4 +157,66 @@ export function applySubstitutions(
       }),
     })),
   };
+}
+
+/**
+ * Lista de compras de la semana: el plan se repite todos los días, así
+ * que se suma cuánto de cada alimento hace falta EN UN DÍA (juntando
+ * todas las apariciones del mismo alimento, sea suelto o como
+ * ingrediente de un platillo) y se multiplica por los días — redondeado
+ * siempre hacia arriba, mejor que sobre a que falte. Usa el plan base
+ * (sin sustituciones del día), porque una sustitución es un ajuste
+ * puntual de un día concreto, no un cambio permanente de la receta.
+ */
+export function buildWeeklyShoppingList(plan: ClientNutritionPlan, days = 7): ShoppingListItem[] {
+  const totals = new Map<
+    string,
+    {
+      name: string;
+      categorySlug: string | null;
+      dailyGrams: number;
+      householdUnitName: string | null;
+      householdUnitGrams: number | null;
+    }
+  >();
+
+  function addFood(food: ClientNutritionFoodRef & { quantityGrams: number }) {
+    if (!food.foodId) return;
+    const prev = totals.get(food.foodId) ?? {
+      name: food.name,
+      categorySlug: food.categorySlug,
+      dailyGrams: 0,
+      householdUnitName: food.householdUnitName,
+      householdUnitGrams: food.householdUnitGrams,
+    };
+    prev.dailyGrams += food.quantityGrams;
+    totals.set(food.foodId, prev);
+  }
+
+  for (const block of plan.blocks) {
+    for (const item of block.items) {
+      if (item.kind === "food" && item.food) addFood(item.food);
+      if (item.kind === "dish" && item.ingredients) {
+        for (const ing of item.ingredients) addFood(ing);
+      }
+    }
+  }
+
+  return Array.from(totals.entries())
+    .map(([foodId, t]) => {
+      const totalGrams = Math.ceil(t.dailyGrams * days);
+      const householdUnitQuantity =
+        t.householdUnitGrams && t.householdUnitGrams > 0
+          ? Math.ceil(totalGrams / t.householdUnitGrams)
+          : null;
+      return {
+        foodId,
+        name: t.name,
+        categorySlug: t.categorySlug,
+        totalGrams,
+        householdUnitName: t.householdUnitName,
+        householdUnitQuantity,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
