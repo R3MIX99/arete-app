@@ -12,6 +12,27 @@ export interface ClientProfile {
   created_at: string;
 }
 
+/** Un programa o rutina suelta asignada a un cliente — vista desde el
+ * perfil del cliente, para no tener que entrar al programa/rutina y
+ * buscarlo en su lista de clientes asignados. */
+export interface ClientTrainingAssignment {
+  id: string;
+  start_date: string;
+  is_program: boolean;
+  program_id: string | null;
+  program_name: string | null;
+  program_duration_weeks: number | null;
+  routine_id: string | null;
+  routine_name: string | null;
+}
+
+export interface ClientDietPlanAssignment {
+  id: string;
+  start_date: string;
+  diet_plan_id: string;
+  diet_plan_name: string;
+}
+
 export interface PendingInvitation {
   id: string;
   email: string;

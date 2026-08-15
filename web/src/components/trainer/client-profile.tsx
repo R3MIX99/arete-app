@@ -3,7 +3,19 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarClock, Dumbbell, Eye, Pencil, Plus, UserCheck, UserX } from "lucide-react";
+import {
+  Apple,
+  ArrowLeft,
+  CalendarClock,
+  CalendarRange,
+  ClipboardList,
+  Dumbbell,
+  Eye,
+  Pencil,
+  Plus,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -13,7 +25,11 @@ import { isCardioGroup } from "@/lib/client-exercise-target";
 import { MEASUREMENT_FIELDS, type MeasurementKey } from "@/lib/types/progress";
 import type { ExerciseProgressSummary, ProgressMeasurement } from "@/lib/types/progress";
 import type { CompletedSessionRow } from "@/lib/types/client-panel";
-import type { ClientProfile as ClientProfileType } from "@/lib/types/client";
+import type {
+  ClientProfile as ClientProfileType,
+  ClientTrainingAssignment,
+  ClientDietPlanAssignment,
+} from "@/lib/types/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,12 +73,16 @@ export function ClientProfile({
   measurements,
   exerciseSummaries,
   completedSessions,
+  trainingAssignments,
+  dietPlanAssignments,
 }: {
   trainerId: string;
   client: ClientProfileType;
   measurements: ProgressMeasurement[];
   exerciseSummaries: ExerciseProgressSummary[];
   completedSessions: CompletedSessionRow[];
+  trainingAssignments: ClientTrainingAssignment[];
+  dietPlanAssignments: ClientDietPlanAssignment[];
 }) {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -183,6 +203,70 @@ export function ClientProfile({
               </div>
             </div>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Asignado</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              {trainingAssignments.length === 0 && dietPlanAssignments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Todavía no tiene ningún programa, rutina ni plan nutricional asignado.
+                </p>
+              ) : (
+                <>
+                  {trainingAssignments.map((assignment) => (
+                    <Link
+                      key={assignment.id}
+                      href={
+                        assignment.is_program
+                          ? `/entrenador/programas/${assignment.program_id}`
+                          : `/entrenador/rutinas/${assignment.routine_id}`
+                      }
+                      className="flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors hover:border-primary/40 hover:bg-accent"
+                    >
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+                        {assignment.is_program ? (
+                          <CalendarRange className="size-4" />
+                        ) : (
+                          <ClipboardList className="size-4" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {assignment.is_program ? assignment.program_name : assignment.routine_name}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {assignment.is_program
+                            ? `Programa · ${assignment.program_duration_weeks} ${assignment.program_duration_weeks === 1 ? "semana" : "semanas"}`
+                            : "Rutina suelta"}
+                          {" · desde el "}
+                          {formatDate(assignment.start_date)}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                  {dietPlanAssignments.map((assignment) => (
+                    <Link
+                      key={assignment.id}
+                      href={`/entrenador/nutricion/planes/${assignment.diet_plan_id}`}
+                      className="flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors hover:border-primary/40 hover:bg-accent"
+                    >
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+                        <Apple className="size-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{assignment.diet_plan_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          Plan nutricional · desde el {formatDate(assignment.start_date)}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </>
+              )}
+            </CardContent>
+          </Card>
 
           {client.health_notes && (
             <Card>

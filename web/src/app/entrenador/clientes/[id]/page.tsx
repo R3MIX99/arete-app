@@ -2,7 +2,11 @@ import { notFound, redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { ClientProfile } from "@/components/trainer/client-profile";
-import type { ClientProfile as ClientProfileType } from "@/lib/types/client";
+import type {
+  ClientProfile as ClientProfileType,
+  ClientTrainingAssignment,
+  ClientDietPlanAssignment,
+} from "@/lib/types/client";
 import type { ExerciseProgressSummary, ProgressMeasurement } from "@/lib/types/progress";
 import type { CompletedSessionRow } from "@/lib/types/client-panel";
 
@@ -41,37 +45,55 @@ export default async function ClientDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: client }, { data: measurements }, { data: setLogs }, { data: sessionRows }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, full_name, email, phone, goal, health_notes, status, created_at")
-        .eq("id", id)
-        .eq("role", "client")
-        .single(),
-      supabase
-        .from("progress_measurements")
-        .select("id, entry_date, metric_key, value, notes")
-        .eq("client_id", id)
-        .order("entry_date"),
-      supabase
-        .from("client_set_logs")
-        .select(
-          "session_date, actual_weight, routine_exercise_sets(routine_exercises(exercise_id, exercises(name, muscle_group)))",
-        )
-        .eq("client_id", id)
-        .eq("is_completed", true)
-        .not("actual_weight", "is", null)
-        .order("session_date"),
-      supabase
-        .from("client_sessions")
-        .select("id, session_date, duration_seconds, routines(name)")
-        .eq("client_id", id)
-        .eq("status", "completed")
-        .order("session_date", { ascending: false })
-        .order("finished_at", { ascending: false })
-        .limit(60),
-    ]);
+  const [
+    { data: client },
+    { data: measurements },
+    { data: setLogs },
+    { data: sessionRows },
+    { data: trainingAssignmentRows },
+    { data: dietPlanAssignmentRows },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name, email, phone, goal, health_notes, status, created_at")
+      .eq("id", id)
+      .eq("role", "client")
+      .single(),
+    supabase
+      .from("progress_measurements")
+      .select("id, entry_date, metric_key, value, notes")
+      .eq("client_id", id)
+      .order("entry_date"),
+    supabase
+      .from("client_set_logs")
+      .select(
+        "session_date, actual_weight, routine_exercise_sets(routine_exercises(exercise_id, exercises(name, muscle_group)))",
+      )
+      .eq("client_id", id)
+      .eq("is_completed", true)
+      .not("actual_weight", "is", null)
+      .order("session_date"),
+    supabase
+      .from("client_sessions")
+      .select("id, session_date, duration_seconds, routines(name)")
+      .eq("client_id", id)
+      .eq("status", "completed")
+      .order("session_date", { ascending: false })
+      .order("finished_at", { ascending: false })
+      .limit(60),
+    supabase
+      .from("client_assignments")
+      .select(
+        "id, start_date, program_id, routine_id, programs(id, name, duration_weeks), routines(id, name)",
+      )
+      .eq("client_id", id)
+      .order("start_date", { ascending: false }),
+    supabase
+      .from("diet_plan_assignments")
+      .select("id, start_date, diet_plan_id, diet_plans(id, name)")
+      .eq("client_id", id)
+      .order("start_date", { ascending: false }),
+  ]);
 
   if (!client) notFound();
 
@@ -128,6 +150,46 @@ export default async function ClientDetailPage({
     durationSeconds: row.duration_seconds,
   }));
 
+  interface TrainingAssignmentRow {
+    id: string;
+    start_date: string;
+    program_id: string | null;
+    routine_id: string | null;
+    programs: { id: string; name: string; duration_weeks: number } | { id: string; name: string; duration_weeks: number }[] | null;
+    routines: { id: string; name: string } | { id: string; name: string }[] | null;
+  }
+  const trainingAssignments: ClientTrainingAssignment[] = (
+    (trainingAssignmentRows ?? []) as TrainingAssignmentRow[]
+  ).map((row) => {
+    const program = one(row.programs);
+    const routine = one(row.routines);
+    return {
+      id: row.id,
+      start_date: row.start_date,
+      is_program: program !== null,
+      program_id: program?.id ?? null,
+      program_name: program?.name ?? null,
+      program_duration_weeks: program?.duration_weeks ?? null,
+      routine_id: routine?.id ?? null,
+      routine_name: routine?.name ?? null,
+    };
+  });
+
+  interface DietPlanAssignmentRow {
+    id: string;
+    start_date: string;
+    diet_plan_id: string;
+    diet_plans: { id: string; name: string } | { id: string; name: string }[] | null;
+  }
+  const dietPlanAssignments: ClientDietPlanAssignment[] = (
+    (dietPlanAssignmentRows ?? []) as DietPlanAssignmentRow[]
+  ).map((row) => ({
+    id: row.id,
+    start_date: row.start_date,
+    diet_plan_id: row.diet_plan_id,
+    diet_plan_name: one(row.diet_plans)?.name ?? "Plan",
+  }));
+
   return (
     <ClientProfile
       trainerId={user.id}
@@ -135,6 +197,8 @@ export default async function ClientDetailPage({
       measurements={(measurements ?? []) as ProgressMeasurement[]}
       exerciseSummaries={exerciseSummaries}
       completedSessions={completedSessions}
+      trainingAssignments={trainingAssignments}
+      dietPlanAssignments={dietPlanAssignments}
     />
   );
 }
