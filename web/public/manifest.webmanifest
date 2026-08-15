@@ -1,0 +1,32 @@
+{
+  "name": "Areté",
+  "short_name": "Areté",
+  "description": "Areté: panel de entrenador y de cliente para gestionar clientes, rutinas, programas, nutrición y progreso.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b0b12",
+  "theme_color": "#4F46E5",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
