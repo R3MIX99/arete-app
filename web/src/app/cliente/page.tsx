@@ -1,11 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { CalendarDays, Check, Dumbbell, PlayCircle } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
-import { todayKey, sessionsInRange, type CalendarAssignment } from "@/lib/calendar-logic";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { addDays, todayKey, type CalendarAssignment } from "@/lib/calendar-logic";
+import { ClientHomeToday } from "@/components/client/client-home-today";
 
 interface ProgramRoutineRow {
   id: string;
@@ -42,15 +39,36 @@ export default async function ClientHomePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: assignmentRows }] = await Promise.all([
-    supabase.from("profiles").select("full_name").eq("id", user.id).single(),
-    supabase
-      .from("client_assignments")
-      .select(
-        "id, client_id, start_date, programs(name, duration_weeks, program_routines(id, week_number, day_of_week, routines(id, name))), routines(id, name), assignment_overrides(program_routine_id, routines(id, name))",
-      )
-      .eq("client_id", user.id),
-  ]);
+  // Ventana de un día antes/después de la fecha del servidor (normalmente
+  // UTC) — margen de sobra para que la sesión "de hoy"/"en curso" del
+  // cliente aparezca sin importar su zona horaria; el día real que se
+  // muestra lo decide el navegador (ver ClientHomeToday).
+  const serverToday = todayKey();
+  const windowStart = addDays(serverToday, -1);
+  const windowEnd = addDays(serverToday, 1);
+
+  const [{ data: profile }, { data: assignmentRows }, { data: inProgressSessions }, { data: completedSessions }] =
+    await Promise.all([
+      supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+      supabase
+        .from("client_assignments")
+        .select(
+          "id, client_id, start_date, programs(name, duration_weeks, program_routines(id, week_number, day_of_week, routines(id, name))), routines(id, name), assignment_overrides(program_routine_id, routines(id, name))",
+        )
+        .eq("client_id", user.id),
+      supabase
+        .from("client_sessions")
+        .select("id, assignment_id, routine_id, session_date")
+        .eq("client_id", user.id)
+        .eq("status", "in_progress"),
+      supabase
+        .from("client_sessions")
+        .select("id, assignment_id, routine_id, session_date")
+        .eq("client_id", user.id)
+        .eq("status", "completed")
+        .gte("session_date", windowStart)
+        .lte("session_date", windowEnd),
+    ]);
 
   const assignments: CalendarAssignment[] = ((assignmentRows ?? []) as AssignmentRow[]).map((row) => {
     const program = one(row.programs);
@@ -88,101 +106,14 @@ export default async function ClientHomePage() {
     };
   });
 
-  const today = todayKey();
-  const todaySessions = sessionsInRange(assignments, today, today);
-
-  const [{ data: inProgressSessions }, { data: completedTodaySessions }] = await Promise.all([
-    supabase
-      .from("client_sessions")
-      .select("id, assignment_id, routine_id, session_date")
-      .eq("client_id", user.id)
-      .eq("status", "in_progress"),
-    supabase
-      .from("client_sessions")
-      .select("id, assignment_id, routine_id, session_date")
-      .eq("client_id", user.id)
-      .eq("status", "completed")
-      .eq("session_date", today),
-  ]);
-
-  const inProgressByKey = new Map(
-    (inProgressSessions ?? []).map((s) => [`${s.assignment_id}:${s.routine_id}:${s.session_date}`, s.id]),
-  );
-  const completedByKey = new Map(
-    (completedTodaySessions ?? []).map((s) => [`${s.assignment_id}:${s.routine_id}:${s.session_date}`, s.id]),
-  );
-
   const firstName = (profile?.full_name || "").trim().split(" ")[0] || "";
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-5 p-4">
-      <div>
-        <p className="text-sm text-muted-foreground">Hola{firstName ? `, ${firstName}` : ""} 👋</p>
-        <h1 className="text-xl font-semibold">Tu entrenamiento de hoy</h1>
-      </div>
-
-      {todaySessions.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
-            <CalendarDays className="size-8 text-muted-foreground" />
-            <p className="font-medium">Hoy es día de descanso</p>
-            <p className="text-sm text-muted-foreground">
-              No tienes ninguna rutina asignada para hoy. Aprovecha para recuperarte.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {todaySessions.map((session) => {
-            const key = `${session.assignmentId}:${session.routineId}:${session.date}`;
-            const inProgressId = inProgressByKey.get(key);
-            const completedSessionId = completedByKey.get(key);
-            const href = `/cliente/entrenamiento/sesion?assignment=${session.assignmentId}&routine=${session.routineId}&date=${session.date}`;
-            return (
-              <Card key={key} className="overflow-hidden">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <div
-                    className={
-                      completedSessionId
-                        ? "flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary"
-                        : "flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
-                    }
-                  >
-                    {completedSessionId ? <Check className="size-5" /> : <Dumbbell className="size-5" />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{session.routineName}</p>
-                    {completedSessionId ? (
-                      <p className="truncate text-xs text-primary">Completada</p>
-                    ) : session.isProgram && session.programName ? (
-                      <p className="truncate text-xs text-muted-foreground">{session.programName}</p>
-                    ) : null}
-                  </div>
-                  {completedSessionId ? (
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/cliente/entrenamiento/sesion/${completedSessionId}`}>Ver</Link>
-                    </Button>
-                  ) : (
-                    <Button asChild size="sm">
-                      <Link href={href}>
-                        <PlayCircle className="size-4" />
-                        {inProgressId ? "Continuar" : "Empezar"}
-                      </Link>
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      <Link
-        href="/cliente/agenda"
-        className="text-center text-sm font-medium text-primary hover:underline"
-      >
-        Ver agenda de entrenamiento
-      </Link>
-    </div>
+    <ClientHomeToday
+      firstName={firstName}
+      assignments={assignments}
+      inProgressSessions={inProgressSessions ?? []}
+      recentCompletedSessions={completedSessions ?? []}
+    />
   );
 }
