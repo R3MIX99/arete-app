@@ -530,7 +530,7 @@ export function RoutineForm({
                   </div>
 
                   {videoId && (
-                    <div className="aspect-video w-full max-w-64 overflow-hidden rounded-lg border border-border">
+                    <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
                       <iframe
                         className="size-full"
                         src={`https://www.youtube.com/embed/${videoId}`}
