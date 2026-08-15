@@ -70,6 +70,7 @@ export default async function ClientDetailPage({
         "session_date, actual_weight, routine_exercise_sets(routine_exercises(exercise_id, exercises(name)))",
       )
       .eq("client_id", id)
+      .eq("is_completed", true)
       .not("actual_weight", "is", null)
       .order("session_date"),
   ]);
@@ -83,7 +84,15 @@ export default async function ClientDetailPage({
     if (!re) continue;
     const exerciseName = one(re.exercises)?.name ?? "Ejercicio";
     const entry = byExercise.get(re.exercise_id) ?? { name: exerciseName, logs: [] };
-    entry.logs.push({ date: row.session_date, weight: row.actual_weight });
+    // Varias series del mismo día cuentan como un solo registro (el
+    // más pesado) — si no, un ejercicio con 3 series en una sesión
+    // aparecía como 3 puntos separados en la misma fecha en la gráfica.
+    const existingForDate = entry.logs.find((l) => l.date === row.session_date);
+    if (existingForDate) {
+      existingForDate.weight = Math.max(existingForDate.weight, row.actual_weight);
+    } else {
+      entry.logs.push({ date: row.session_date, weight: row.actual_weight });
+    }
     byExercise.set(re.exercise_id, entry);
   }
 
