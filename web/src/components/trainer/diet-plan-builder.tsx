@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ArrowUp,
   Copy,
+  ImagePlus,
   Loader2,
   Pencil,
   Plus,
@@ -16,11 +17,13 @@ import {
   UserMinus,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { formatDate, initialsOf } from "@/lib/format";
+import { compressImage } from "@/lib/image-compress";
 import type {
   CommunityDishOption,
   CommunityFoodOption,
@@ -109,6 +112,8 @@ export function DietPlanBuilder({
   const [cloningBlockId, setCloningBlockId] = React.useState<string | null>(null);
   const [blockToDelete, setBlockToDelete] = React.useState<string | null>(null);
   const [deletingBlock, setDeletingBlock] = React.useState(false);
+  const [uploadingBlockImageId, setUploadingBlockImageId] = React.useState<string | null>(null);
+  const blockImageInputs = React.useRef<Record<string, HTMLInputElement | null>>({});
 
   const sortedBlocks = React.useMemo(
     () => [...blocks].sort((a, b) => a.order_index - b.order_index),
@@ -349,6 +354,50 @@ export function DietPlanBuilder({
     router.refresh();
   }
 
+  async function handleBlockImageSelected(blockId: string, event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setUploadingBlockImageId(blockId);
+    const supabase = createClient();
+    const compressed = await compressImage(file);
+    const path = `${trainerId}/diet-block-${Date.now()}.jpg`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("food-images")
+      .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
+    if (uploadError) {
+      setUploadingBlockImageId(null);
+      toast.error("No se pudo subir la imagen");
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from("diet_plan_blocks")
+      .update({ image_path: path })
+      .eq("id", blockId);
+    setUploadingBlockImageId(null);
+    if (updateError) {
+      toast.error("No se pudo guardar la imagen");
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleRemoveBlockImage(blockId: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("diet_plan_blocks")
+      .update({ image_path: null })
+      .eq("id", blockId);
+    if (error) {
+      toast.error("No se pudo quitar la imagen");
+      return;
+    }
+    router.refresh();
+  }
+
   const assignedClientIds = assignments.map((a) => a.client_id);
   const blockPendingDelete = sortedBlocks.find((b) => b.id === blockToDelete);
 
@@ -501,6 +550,29 @@ export function DietPlanBuilder({
                     >
                       <Trash2 className="size-4" />
                     </Button>
+                    <input
+                      ref={(el) => {
+                        blockImageInputs.current[block.id] = el;
+                      }}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleBlockImageSelected(block.id, e)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={block.image_path ? "Cambiar foto del bloque" : "Agregar foto al bloque"}
+                      disabled={uploadingBlockImageId === block.id}
+                      onClick={() => blockImageInputs.current[block.id]?.click()}
+                    >
+                      {uploadingBlockImageId === block.id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <ImagePlus className="size-4" />
+                      )}
+                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button type="button" variant="outline" size="sm" className="ml-1">
@@ -519,6 +591,27 @@ export function DietPlanBuilder({
                   </div>
                 </div>
                 <CardContent className="flex flex-col gap-1.5">
+                  {block.image_path && (
+                    <div className="relative mb-1 aspect-[4/3] w-full overflow-hidden rounded-lg border border-border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={
+                          createClient().storage.from("food-images").getPublicUrl(block.image_path)
+                            .data.publicUrl
+                        }
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Quitar foto del bloque"
+                        onClick={() => handleRemoveBlockImage(block.id)}
+                        className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-black/60 text-white"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                  )}
                   {blockItems.length === 0 ? (
                     <p className="py-2 text-sm text-muted-foreground">Sin elementos.</p>
                   ) : (

@@ -23,6 +23,7 @@ import type {
 } from "@/lib/types/client-nutrition";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { SubstituteFoodDialog } from "@/components/client/substitute-food-dialog";
 
 type SubstitutionWithFood = MealSubstitutionRow & { substituteFood: ClientNutritionFoodRef | null };
@@ -60,6 +61,12 @@ function weekdayLabel(dateIso: string, index: number): string {
   return index === 0 ? `Hoy · ${label}` : label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+type DetailFood = ClientNutritionDirectFood | ClientNutritionIngredient;
+
+function publicImageUrl(path: string): string {
+  return createClient().storage.from("food-images").getPublicUrl(path).data.publicUrl;
+}
+
 export function ClientNutritionView({
   clientId,
   trainerId,
@@ -78,6 +85,7 @@ export function ClientNutritionView({
   const [substitutions, setSubstitutions] = React.useState(initialSubstitutions);
   const [target, setTarget] = React.useState<SubstituteTarget | null>(null);
   const [applying, setApplying] = React.useState(false);
+  const [detailFood, setDetailFood] = React.useState<DetailFood | null>(null);
 
   const effectivePlan = React.useMemo(
     () => (plan ? applySubstitutions(plan, substitutions) : null),
@@ -233,6 +241,16 @@ export function ClientNutritionView({
                   </p>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
+                  {block.imagePath && (
+                    <div className="aspect-[4/3] w-full overflow-hidden rounded-lg border border-border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={publicImageUrl(block.imagePath)}
+                        alt={block.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
                   {block.items.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Sin comidas en este bloque.</p>
                   ) : (
@@ -251,10 +269,21 @@ export function ClientNutritionView({
                               name: item.food!.name,
                             })
                           }
+                          onOpenDetail={() => setDetailFood(item.food)}
                         />
                       ) : (
                         <div key={item.id} className="flex flex-col gap-2 rounded-lg border px-3 py-2.5">
                           <p className="text-sm font-medium">{item.dishName}</p>
+                          {item.dishImagePath && (
+                            <div className="aspect-[4/3] w-full overflow-hidden rounded-lg">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={publicImageUrl(item.dishImagePath)}
+                                alt={item.dishName ?? ""}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
                           <div className="flex flex-col gap-2">
                             {(item.ingredients ?? []).map((ing) => (
                               <FoodRow
@@ -271,6 +300,7 @@ export function ClientNutritionView({
                                     name: ing.name,
                                   })
                                 }
+                                onOpenDetail={() => setDetailFood(ing)}
                               />
                             ))}
                           </div>
@@ -325,6 +355,8 @@ export function ClientNutritionView({
           onPick={handlePick}
         />
       )}
+
+      <FoodDetailDrawer food={detailFood} onOpenChange={(open) => !open && setDetailFood(null)} />
     </div>
   );
 }
@@ -333,10 +365,12 @@ function FoodRow({
   food,
   nested,
   onSubstitute,
+  onOpenDetail,
 }: {
   food: ClientNutritionDirectFood | ClientNutritionIngredient;
   nested?: boolean;
   onSubstitute: () => void;
+  onOpenDetail: () => void;
 }) {
   const equivalence = formatHouseholdEquivalence(
     food.quantityGrams,
@@ -347,26 +381,36 @@ function FoodRow({
     <div
       className={
         nested
-          ? "flex items-center gap-2.5"
-          : "flex items-center gap-2.5 rounded-lg border px-3 py-2.5"
+          ? "flex items-center gap-1"
+          : "flex items-center gap-1 rounded-lg border pr-1"
       }
     >
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-        {React.createElement(foodCategoryIcon(food.categorySlug), { className: "size-4" })}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">
-          {food.name}
-          {food.isSubstituted && (
-            <span className="ml-1.5 rounded-full bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:text-indigo-400">
-              sustituido
-            </span>
-          )}
-        </p>
-        <p className="truncate text-xs text-muted-foreground">
-          {Math.round(food.quantityGrams)} g{equivalence ? ` (${equivalence})` : ""}
-        </p>
-      </div>
+      <button
+        type="button"
+        onClick={onOpenDetail}
+        className={
+          nested
+            ? "flex min-w-0 flex-1 items-center gap-2.5 rounded-lg py-1 text-left hover:bg-accent"
+            : "flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 text-left hover:bg-accent"
+        }
+      >
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+          {React.createElement(foodCategoryIcon(food.categorySlug), { className: "size-4" })}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">
+            {food.name}
+            {food.isSubstituted && (
+              <span className="ml-1.5 rounded-full bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:text-indigo-400">
+                sustituido
+              </span>
+            )}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {Math.round(food.quantityGrams)} g{equivalence ? ` (${equivalence})` : ""}
+          </p>
+        </div>
+      </button>
       <button
         type="button"
         onClick={onSubstitute}
@@ -376,5 +420,69 @@ function FoodRow({
         <Repeat className="size-4" />
       </button>
     </div>
+  );
+}
+
+function FoodDetailDrawer({
+  food,
+  onOpenChange,
+}: {
+  food: DetailFood | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const equivalence = food
+    ? formatHouseholdEquivalence(food.quantityGrams, food.householdUnitName, food.householdUnitGrams)
+    : null;
+  const factor = food ? food.quantityGrams / 100 : 0;
+
+  return (
+    <ResponsiveDialog open={food !== null} onOpenChange={onOpenChange} title={food?.name ?? ""}>
+      {food && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+              {React.createElement(foodCategoryIcon(food.categorySlug), { className: "size-5" })}
+            </div>
+            <div className="min-w-0">
+              <p className="font-medium">{Math.round(food.quantityGrams)} g</p>
+              {equivalence && <p className="text-sm text-muted-foreground">{equivalence}</p>}
+            </div>
+          </div>
+
+          {food.isSubstituted && (
+            <p className="rounded-lg bg-indigo-500/10 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400">
+              Sustituiste el alimento original por este.
+            </p>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg border px-3 py-2.5">
+              <p className="text-xs text-muted-foreground uppercase">Calorías</p>
+              <p className="text-lg font-semibold tabular-nums">
+                {Math.round(food.caloriesPer100g * factor)}
+              </p>
+            </div>
+            <div className="rounded-lg border px-3 py-2.5">
+              <p className="text-xs text-muted-foreground uppercase">Proteína</p>
+              <p className="text-lg font-semibold tabular-nums">
+                {Math.round(food.proteinPer100g * factor)} g
+              </p>
+            </div>
+            <div className="rounded-lg border px-3 py-2.5">
+              <p className="text-xs text-muted-foreground uppercase">Carbohidratos</p>
+              <p className="text-lg font-semibold tabular-nums">
+                {Math.round(food.carbsPer100g * factor)} g
+              </p>
+            </div>
+            <div className="rounded-lg border px-3 py-2.5">
+              <p className="text-xs text-muted-foreground uppercase">Grasa</p>
+              <p className="text-lg font-semibold tabular-nums">
+                {Math.round(food.fatPer100g * factor)} g
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </ResponsiveDialog>
   );
 }

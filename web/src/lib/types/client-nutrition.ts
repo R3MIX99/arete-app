@@ -27,6 +27,7 @@ export interface ClientNutritionMealItem {
   id: string;
   kind: "dish" | "food";
   dishName: string | null;
+  dishImagePath: string | null;
   food: ClientNutritionDirectFood | null;
   ingredients: ClientNutritionIngredient[] | null;
 }
@@ -35,6 +36,7 @@ export interface ClientNutritionBlock {
   id: string;
   name: string;
   orderIndex: number;
+  imagePath: string | null;
   items: ClientNutritionMealItem[];
 }
 

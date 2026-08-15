@@ -25,6 +25,7 @@ interface BlockRow {
   id: string;
   name: string;
   order_index: number;
+  image_path: string | null;
 }
 
 interface MealRow {
@@ -34,7 +35,7 @@ interface MealRow {
   dish_id: string | null;
   food_id: string | null;
   quantity_grams: number | null;
-  dishes: { name: string } | { name: string }[] | null;
+  dishes: { name: string; image_path: string | null } | { name: string; image_path: string | null }[] | null;
   foods: FoodRow | FoodRow[] | null;
 }
 
@@ -126,12 +127,14 @@ export async function fetchClientNutritionPlan(
     supabase.from("diet_plans").select("id, name").eq("id", assignment.diet_plan_id).maybeSingle(),
     supabase
       .from("diet_plan_blocks")
-      .select("id, name, order_index")
+      .select("id, name, order_index, image_path")
       .eq("diet_plan_id", assignment.diet_plan_id)
       .order("order_index"),
     supabase
       .from("diet_plan_meals")
-      .select(`id, order_index, block_id, dish_id, food_id, quantity_grams, dishes(name), foods(${foodSelect})`)
+      .select(
+        `id, order_index, block_id, dish_id, food_id, quantity_grams, dishes(name, image_path), foods(${foodSelect})`,
+      )
       .eq("diet_plan_id", assignment.diet_plan_id)
       .order("order_index"),
   ]);
@@ -181,10 +184,12 @@ export async function fetchClientNutritionPlan(
           householdUnitGrams: ref?.householdUnitGrams ?? null,
         };
       });
+      const dish = one(meal.dishes);
       item = {
         id: meal.id,
         kind: "dish",
-        dishName: one(meal.dishes)?.name ?? "Platillo",
+        dishName: dish?.name ?? "Platillo",
+        dishImagePath: dish?.image_path ?? null,
         food: null,
         ingredients,
       };
@@ -205,7 +210,14 @@ export async function fetchClientNutritionPlan(
         householdUnitName: ref?.householdUnitName ?? null,
         householdUnitGrams: ref?.householdUnitGrams ?? null,
       };
-      item = { id: meal.id, kind: "food", dishName: null, food: directFood, ingredients: null };
+      item = {
+        id: meal.id,
+        kind: "food",
+        dishName: null,
+        dishImagePath: null,
+        food: directFood,
+        ingredients: null,
+      };
     }
     const list = itemsByBlock.get(meal.block_id) ?? [];
     list.push(item);
@@ -216,6 +228,7 @@ export async function fetchClientNutritionPlan(
     id: b.id,
     name: b.name,
     orderIndex: b.order_index,
+    imagePath: b.image_path,
     items: itemsByBlock.get(b.id) ?? [],
   }));
 

@@ -113,7 +113,7 @@ export default async function DietPlanDetailPage({
       .single(),
     supabase
       .from("diet_plan_blocks")
-      .select("id, name, order_index")
+      .select("id, name, order_index, image_path")
       .eq("diet_plan_id", id)
       .order("order_index"),
     supabase

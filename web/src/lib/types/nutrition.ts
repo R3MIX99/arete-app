@@ -76,6 +76,7 @@ export interface DietPlanBlock {
   id: string;
   name: string;
   order_index: number;
+  image_path: string | null;
 }
 
 export interface MealItemInput {
