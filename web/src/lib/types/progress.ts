@@ -41,6 +41,7 @@ export interface ExerciseWeightLog {
 export interface ExerciseProgressSummary {
   exercise_id: string;
   exercise_name: string;
+  muscle_group: string;
   starting_weight: number;
   current_weight: number;
   logs: ExerciseWeightLog[];
