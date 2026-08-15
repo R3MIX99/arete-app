@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Check, ChevronLeft, Clock, Minus, Target } from "lucide-react";
+import { Check, ChevronLeft, Clock, History, Minus, Target } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { fetchRoutineSessionData } from "@/lib/server/client-routine-data";
@@ -112,6 +112,13 @@ export default async function SessionReviewPage({
                 {exercise.video_url ? (
                   <ExerciseVideoButton videoUrl={exercise.video_url} exerciseName={exercise.exercise_name} />
                 ) : null}
+                <Link
+                  href={`/cliente/entrenamiento/ejercicio-historial/${exercise.id}`}
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                  aria-label={`Ver historial de ${exercise.exercise_name}`}
+                >
+                  <History className="size-4.5" />
+                </Link>
               </div>
               <div className="border-t px-4 py-3">
                 <div className="grid grid-cols-[1.5rem_1fr_1fr_1.5rem] items-center gap-2 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">

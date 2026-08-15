@@ -34,7 +34,7 @@ export function ExerciseHistoryPageView({
   sessions,
 }: {
   exerciseName: string;
-  targetSummary: string;
+  targetSummary?: string;
   cardio: boolean;
   sessions: ExerciseHistorySession[];
 }) {
@@ -101,7 +101,7 @@ export function ExerciseHistoryPageView({
         </Button>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{exerciseName}</p>
-          <p className="text-xs text-muted-foreground">{targetSummary}</p>
+          {targetSummary ? <p className="text-xs text-muted-foreground">{targetSummary}</p> : null}
         </div>
       </div>
 
@@ -171,7 +171,9 @@ export function ExerciseHistoryPageView({
 
                   {isOpen ? (
                     <div className="border-t px-4 py-3">
-                      <p className="mb-2 text-xs font-medium text-muted-foreground">{targetSummary}</p>
+                      {targetSummary ? (
+                        <p className="mb-2 text-xs font-medium text-muted-foreground">{targetSummary}</p>
+                      ) : null}
                       <div className="grid grid-cols-[1.5rem_1fr_1fr] items-center gap-2 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                         <span>#</span>
                         <span>{cardio ? "Minutos" : "Peso"}</span>
