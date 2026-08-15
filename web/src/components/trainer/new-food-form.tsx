@@ -37,10 +37,10 @@ export function NewFoodForm({
   const router = useRouter();
   const [name, setName] = React.useState(food?.name ?? "");
   const [categoryId, setCategoryId] = React.useState(food?.food_category_id ?? "");
-  const [calories, setCalories] = React.useState(food?.calories_per_100g ?? 0);
-  const [protein, setProtein] = React.useState(food?.protein_per_100g ?? 0);
-  const [carbs, setCarbs] = React.useState(food?.carbs_per_100g ?? 0);
-  const [fat, setFat] = React.useState(food?.fat_per_100g ?? 0);
+  const [calories, setCalories] = React.useState<number | "">(food?.calories_per_100g ?? 0);
+  const [protein, setProtein] = React.useState<number | "">(food?.protein_per_100g ?? 0);
+  const [carbs, setCarbs] = React.useState<number | "">(food?.carbs_per_100g ?? 0);
+  const [fat, setFat] = React.useState<number | "">(food?.fat_per_100g ?? 0);
   const [unitName, setUnitName] = React.useState(food?.household_unit_name ?? "");
   const [unitGrams, setUnitGrams] = React.useState<number | "">(
     food?.household_unit_grams ?? "",
@@ -95,10 +95,10 @@ export function NewFoodForm({
     const payload = {
       food_category_id: categoryId,
       name,
-      calories_per_100g: calories,
-      protein_per_100g: protein,
-      carbs_per_100g: carbs,
-      fat_per_100g: fat,
+      calories_per_100g: calories === "" ? 0 : calories,
+      protein_per_100g: protein === "" ? 0 : protein,
+      carbs_per_100g: carbs === "" ? 0 : carbs,
+      fat_per_100g: fat === "" ? 0 : fat,
       household_unit_name: hasUnit ? unitName : null,
       household_unit_grams: hasUnit ? Number(unitGrams) : null,
       image_path: imagePath,
@@ -291,7 +291,9 @@ export function NewFoodForm({
                   step="0.1"
                   required
                   value={calories}
-                  onChange={(e) => setCalories(Number(e.target.value))}
+                  onChange={(e) =>
+                    setCalories(e.target.value === "" ? "" : Number(e.target.value))
+                  }
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -303,7 +305,9 @@ export function NewFoodForm({
                   step="0.1"
                   required
                   value={protein}
-                  onChange={(e) => setProtein(Number(e.target.value))}
+                  onChange={(e) =>
+                    setProtein(e.target.value === "" ? "" : Number(e.target.value))
+                  }
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -315,7 +319,9 @@ export function NewFoodForm({
                   step="0.1"
                   required
                   value={carbs}
-                  onChange={(e) => setCarbs(Number(e.target.value))}
+                  onChange={(e) =>
+                    setCarbs(e.target.value === "" ? "" : Number(e.target.value))
+                  }
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -327,7 +333,9 @@ export function NewFoodForm({
                   step="0.1"
                   required
                   value={fat}
-                  onChange={(e) => setFat(Number(e.target.value))}
+                  onChange={(e) =>
+                    setFat(e.target.value === "" ? "" : Number(e.target.value))
+                  }
                 />
               </div>
             </div>

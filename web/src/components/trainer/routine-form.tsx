@@ -481,7 +481,8 @@ export function RoutineForm({
                             value={set.target_minutes ?? ""}
                             onChange={(e) =>
                               updateSet(exerciseIndex, setIndex, {
-                                target_minutes: Number(e.target.value),
+                                target_minutes:
+                                  e.target.value === "" ? null : Number(e.target.value),
                               })
                             }
                           />
@@ -492,7 +493,8 @@ export function RoutineForm({
                             value={set.target_level ?? ""}
                             onChange={(e) =>
                               updateSet(exerciseIndex, setIndex, {
-                                target_level: Number(e.target.value),
+                                target_level:
+                                  e.target.value === "" ? null : Number(e.target.value),
                               })
                             }
                           />
@@ -541,7 +543,8 @@ export function RoutineForm({
                             value={set.target_reps_min ?? ""}
                             onChange={(e) =>
                               updateSet(exerciseIndex, setIndex, {
-                                target_reps_min: Number(e.target.value),
+                                target_reps_min:
+                                  e.target.value === "" ? null : Number(e.target.value),
                               })
                             }
                           />
@@ -551,7 +554,8 @@ export function RoutineForm({
                             value={set.target_reps_max ?? ""}
                             onChange={(e) =>
                               updateSet(exerciseIndex, setIndex, {
-                                target_reps_max: Number(e.target.value),
+                                target_reps_max:
+                                  e.target.value === "" ? null : Number(e.target.value),
                               })
                             }
                           />
@@ -562,7 +566,8 @@ export function RoutineForm({
                             value={set.rest_seconds ?? ""}
                             onChange={(e) =>
                               updateSet(exerciseIndex, setIndex, {
-                                rest_seconds: Number(e.target.value),
+                                rest_seconds:
+                                  e.target.value === "" ? null : Number(e.target.value),
                               })
                             }
                           />

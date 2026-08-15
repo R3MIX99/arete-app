@@ -25,7 +25,7 @@ export function QuantityDialog({
   itemName: string;
   onConfirm: (grams: number) => void;
 }) {
-  const [grams, setGrams] = React.useState(100);
+  const [grams, setGrams] = React.useState<number | "">(100);
 
   React.useEffect(() => {
     if (open) setGrams(100);
@@ -47,13 +47,15 @@ export function QuantityDialog({
               min={1}
               autoFocus
               value={grams}
-              onChange={(e) => setGrams(Number(e.target.value))}
+              onChange={(e) =>
+                setGrams(e.target.value === "" ? "" : Number(e.target.value))
+              }
             />
           </div>
           <Button
             type="button"
-            disabled={grams <= 0}
-            onClick={() => onConfirm(grams)}
+            disabled={grams === "" || grams <= 0}
+            onClick={() => onConfirm(grams === "" ? 0 : grams)}
           >
             Agregar
           </Button>
