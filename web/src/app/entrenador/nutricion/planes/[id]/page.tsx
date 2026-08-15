@@ -6,6 +6,7 @@ import type {
   CommunityDishOption,
   CommunityFoodOption,
   DietPlanAssignmentSummary,
+  DietPlanBlock,
   DishOption,
   FoodOption,
   MealItemInput,
@@ -23,7 +24,7 @@ interface FoodMacros {
 
 interface MealRow {
   id: string;
-  meal_type: MealType;
+  block_id: string;
   order_index: number;
   dish_id: string | null;
   food_id: string | null;
@@ -96,6 +97,7 @@ export default async function DietPlanDetailPage({
 
   const [
     { data: plan },
+    { data: blocks },
     { data: meals },
     { data: foods },
     { data: dishes },
@@ -110,12 +112,16 @@ export default async function DietPlanDetailPage({
       .eq("id", id)
       .single(),
     supabase
+      .from("diet_plan_blocks")
+      .select("id, name, order_index")
+      .eq("diet_plan_id", id)
+      .order("order_index"),
+    supabase
       .from("diet_plan_meals")
       .select(
-        "id, meal_type, order_index, dish_id, food_id, quantity_grams, dishes(name), foods(name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g)",
+        "id, block_id, order_index, dish_id, food_id, quantity_grams, dishes(name), foods(name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g)",
       )
       .eq("diet_plan_id", id)
-      .order("meal_type")
       .order("order_index"),
     supabase
       .from("foods")
@@ -190,7 +196,7 @@ export default async function DietPlanDetailPage({
       const totals = dishTotals.get(row.dish_id) ?? { calories: 0, protein: 0, carbs: 0, fat: 0 };
       return {
         id: row.id,
-        meal_type: row.meal_type,
+        block_id: row.block_id,
         order_index: row.order_index,
         dish_id: row.dish_id,
         dish_name: one(row.dishes)?.name ?? "Platillo",
@@ -207,7 +213,7 @@ export default async function DietPlanDetailPage({
     const factor = (row.quantity_grams ?? 0) / 100;
     return {
       id: row.id,
-      meal_type: row.meal_type,
+      block_id: row.block_id,
       order_index: row.order_index,
       dish_id: null,
       dish_name: null,
@@ -307,6 +313,7 @@ export default async function DietPlanDetailPage({
     <DietPlanBuilder
       trainerId={user.id}
       plan={plan}
+      blocks={(blocks ?? []) as DietPlanBlock[]}
       mealItems={mealItems}
       foodCatalog={foodOptions}
       dishCatalog={(dishes ?? []) as DishOption[]}

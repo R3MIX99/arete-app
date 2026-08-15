@@ -44,6 +44,15 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
       return;
     }
 
+    // Arranca con los 4 bloques de siempre — se pueden renombrar,
+    // quitar o agregar más después.
+    await supabase.from("diet_plan_blocks").insert([
+      { diet_plan_id: data.id, name: "Desayuno", order_index: 0 },
+      { diet_plan_id: data.id, name: "Almuerzo", order_index: 1 },
+      { diet_plan_id: data.id, name: "Cena", order_index: 2 },
+      { diet_plan_id: data.id, name: "Snack", order_index: 3 },
+    ]);
+
     toast.success("Plan creado");
     router.push(`/entrenador/nutricion/planes/${data.id}`);
     router.refresh();

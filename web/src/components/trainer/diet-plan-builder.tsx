@@ -4,7 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
+  Copy,
   Loader2,
   Pencil,
   Plus,
@@ -16,15 +19,15 @@ import {
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
-import { mealTypeLabel, formatDate, initialsOf } from "@/lib/format";
+import { formatDate, initialsOf } from "@/lib/format";
 import type {
   CommunityDishOption,
   CommunityFoodOption,
   DietPlanAssignmentSummary,
+  DietPlanBlock,
   DishOption,
   FoodOption,
   MealItemInput,
-  MealType,
 } from "@/lib/types/nutrition";
 import type { ClientProfile } from "@/lib/types/client";
 import { Button } from "@/components/ui/button";
@@ -51,8 +54,6 @@ import { FoodPickerDialog } from "@/components/trainer/food-picker-dialog";
 import { QuantityDialog } from "@/components/trainer/quantity-dialog";
 import { AssignDietPlanDialog } from "@/components/trainer/assign-diet-plan-dialog";
 
-const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
-
 interface PlanInfo {
   id: string;
   name: string;
@@ -63,6 +64,7 @@ interface PlanInfo {
 export function DietPlanBuilder({
   trainerId,
   plan,
+  blocks,
   mealItems,
   foodCatalog,
   dishCatalog,
@@ -73,6 +75,7 @@ export function DietPlanBuilder({
 }: {
   trainerId: string;
   plan: PlanInfo;
+  blocks: DietPlanBlock[];
   mealItems: MealItemInput[];
   foodCatalog: FoodOption[];
   dishCatalog: DishOption[];
@@ -82,24 +85,36 @@ export function DietPlanBuilder({
   assignments: DietPlanAssignmentSummary[];
 }) {
   const router = useRouter();
-  const [items, setItems] = React.useState(mealItems);
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [removingId, setRemovingId] = React.useState<string | null>(null);
 
-  const [dishPickerMeal, setDishPickerMeal] = React.useState<MealType | null>(null);
-  const [foodPickerMeal, setFoodPickerMeal] = React.useState<MealType | null>(null);
+  const [dishPickerBlock, setDishPickerBlock] = React.useState<string | null>(null);
+  const [foodPickerBlock, setFoodPickerBlock] = React.useState<string | null>(null);
   const [pendingFood, setPendingFood] = React.useState<{
-    mealType: MealType;
+    blockId: string;
     food: FoodOption;
   } | null>(null);
   const [addingItem, setAddingItem] = React.useState(false);
 
+  const [addingBlock, setAddingBlock] = React.useState(false);
+  const [editingBlockId, setEditingBlockId] = React.useState<string | null>(null);
+  const [editingName, setEditingName] = React.useState("");
+  const [movingBlockId, setMovingBlockId] = React.useState<string | null>(null);
+  const [cloningBlockId, setCloningBlockId] = React.useState<string | null>(null);
+  const [blockToDelete, setBlockToDelete] = React.useState<string | null>(null);
+  const [deletingBlock, setDeletingBlock] = React.useState(false);
+
+  const sortedBlocks = React.useMemo(
+    () => [...blocks].sort((a, b) => a.order_index - b.order_index),
+    [blocks],
+  );
+
   const totals = React.useMemo(
     () =>
-      items.reduce(
+      mealItems.reduce(
         (acc, item) => ({
           calories: acc.calories + item.calories,
           protein: acc.protein + item.protein,
@@ -108,28 +123,28 @@ export function DietPlanBuilder({
         }),
         { calories: 0, protein: 0, carbs: 0, fat: 0 },
       ),
-    [items],
+    [mealItems],
   );
 
-  const itemsByMeal = React.useMemo(() => {
-    const map = new Map<MealType, MealItemInput[]>();
-    for (const item of items) {
-      const list = map.get(item.meal_type) ?? [];
+  const itemsByBlock = React.useMemo(() => {
+    const map = new Map<string, MealItemInput[]>();
+    for (const item of mealItems) {
+      const list = map.get(item.block_id) ?? [];
       list.push(item);
-      map.set(item.meal_type, list);
+      map.set(item.block_id, list);
     }
     return map;
-  }, [items]);
+  }, [mealItems]);
 
-  async function handleAddDish(mealType: MealType, dish: DishOption) {
+  async function handleAddDish(blockId: string, dish: DishOption) {
     setAddingItem(true);
     const supabase = createClient();
-    const orderIndex = (itemsByMeal.get(mealType) ?? []).length;
+    const orderIndex = (itemsByBlock.get(blockId) ?? []).length;
     const { data, error } = await supabase
       .from("diet_plan_meals")
       .insert({
         diet_plan_id: plan.id,
-        meal_type: mealType,
+        block_id: blockId,
         order_index: orderIndex,
         dish_id: dish.id,
       })
@@ -144,15 +159,15 @@ export function DietPlanBuilder({
     router.refresh();
   }
 
-  async function handleAddFood(mealType: MealType, food: FoodOption, grams: number) {
+  async function handleAddFood(blockId: string, food: FoodOption, grams: number) {
     setAddingItem(true);
     const supabase = createClient();
-    const orderIndex = (itemsByMeal.get(mealType) ?? []).length;
+    const orderIndex = (itemsByBlock.get(blockId) ?? []).length;
     const { data, error } = await supabase
       .from("diet_plan_meals")
       .insert({
         diet_plan_id: plan.id,
-        meal_type: mealType,
+        block_id: blockId,
         order_index: orderIndex,
         food_id: food.id,
         quantity_grams: grams,
@@ -179,8 +194,8 @@ export function DietPlanBuilder({
       toast.error("No se pudo quitar");
       return;
     }
-    setItems((prev) => prev.filter((item) => item.id !== itemId));
     toast.success("Elemento quitado");
+    router.refresh();
   }
 
   async function handleDeletePlan() {
@@ -198,7 +213,123 @@ export function DietPlanBuilder({
     router.refresh();
   }
 
+  async function handleAddBlock() {
+    setAddingBlock(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("diet_plan_blocks").insert({
+      diet_plan_id: plan.id,
+      name: "Nuevo bloque",
+      order_index: sortedBlocks.length,
+    });
+    setAddingBlock(false);
+    if (error) {
+      toast.error("No se pudo agregar el bloque");
+      return;
+    }
+    toast.success("Bloque agregado");
+    router.refresh();
+  }
+
+  function startEditingBlock(block: DietPlanBlock) {
+    setEditingBlockId(block.id);
+    setEditingName(block.name);
+  }
+
+  async function saveBlockName(blockId: string) {
+    const name = editingName.trim();
+    setEditingBlockId(null);
+    const original = sortedBlocks.find((b) => b.id === blockId);
+    if (!name || name === original?.name) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("diet_plan_blocks").update({ name }).eq("id", blockId);
+    if (error) {
+      toast.error("No se pudo renombrar el bloque");
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleMoveBlock(blockId: string, direction: -1 | 1) {
+    const index = sortedBlocks.findIndex((b) => b.id === blockId);
+    const targetIndex = index + direction;
+    if (index === -1 || targetIndex < 0 || targetIndex >= sortedBlocks.length) return;
+    const current = sortedBlocks[index];
+    const target = sortedBlocks[targetIndex];
+    setMovingBlockId(blockId);
+    const supabase = createClient();
+    const [r1, r2] = await Promise.all([
+      supabase.from("diet_plan_blocks").update({ order_index: target.order_index }).eq("id", current.id),
+      supabase.from("diet_plan_blocks").update({ order_index: current.order_index }).eq("id", target.id),
+    ]);
+    setMovingBlockId(null);
+    if (r1.error || r2.error) {
+      toast.error("No se pudo reordenar el bloque");
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleCloneBlock(blockId: string) {
+    const source = sortedBlocks.find((b) => b.id === blockId);
+    if (!source) return;
+    setCloningBlockId(blockId);
+    const supabase = createClient();
+    const { data: newBlock, error: blockError } = await supabase
+      .from("diet_plan_blocks")
+      .insert({
+        diet_plan_id: plan.id,
+        name: `${source.name} (copia)`,
+        order_index: sortedBlocks.length,
+      })
+      .select("id")
+      .single();
+    if (blockError || !newBlock) {
+      setCloningBlockId(null);
+      toast.error("No se pudo clonar el bloque");
+      return;
+    }
+
+    const sourceItems = itemsByBlock.get(blockId) ?? [];
+    if (sourceItems.length > 0) {
+      const { error: itemsError } = await supabase.from("diet_plan_meals").insert(
+        sourceItems.map((item) => ({
+          diet_plan_id: plan.id,
+          block_id: newBlock.id,
+          order_index: item.order_index,
+          dish_id: item.dish_id,
+          food_id: item.food_id,
+          quantity_grams: item.quantity_grams,
+        })),
+      );
+      if (itemsError) {
+        setCloningBlockId(null);
+        toast.error("No se pudo clonar el bloque");
+        return;
+      }
+    }
+
+    setCloningBlockId(null);
+    toast.success(`"${source.name}" clonado`);
+    router.refresh();
+  }
+
+  async function handleDeleteBlock() {
+    if (!blockToDelete || sortedBlocks.length <= 1) return;
+    setDeletingBlock(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("diet_plan_blocks").delete().eq("id", blockToDelete);
+    setDeletingBlock(false);
+    if (error) {
+      toast.error("No se pudo eliminar el bloque");
+      return;
+    }
+    setBlockToDelete(null);
+    toast.success("Bloque eliminado");
+    router.refresh();
+  }
+
   const assignedClientIds = assignments.map((a) => a.client_id);
+  const blockPendingDelete = sortedBlocks.find((b) => b.id === blockToDelete);
 
   return (
     <div className="flex w-full flex-col gap-4 p-4 pb-24 md:p-8">
@@ -230,7 +361,7 @@ export function DietPlanBuilder({
       </div>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_20rem] md:items-start">
-        {/* Columna izquierda: info del plan + comidas. */}
+        {/* Columna izquierda: info del plan + bloques de comida. */}
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader>
@@ -252,33 +383,125 @@ export function DietPlanBuilder({
             </CardContent>
           </Card>
 
-          {MEAL_TYPES.map((mealType) => {
-            const mealItemsList = itemsByMeal.get(mealType) ?? [];
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Bloques
+            </h2>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={addingBlock}
+              onClick={handleAddBlock}
+            >
+              {addingBlock ? <Loader2 className="animate-spin" /> : <Plus />}
+              Agregar bloque
+            </Button>
+          </div>
+
+          {sortedBlocks.map((block, index) => {
+            const blockItems = itemsByBlock.get(block.id) ?? [];
             return (
-              <Card key={mealType}>
-                <CardHeader className="flex-row items-center justify-between">
-                  <CardTitle className="text-sm">{mealTypeLabel(mealType)}</CardTitle>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button type="button" variant="outline" size="sm">
-                        <Plus /> Agregar
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onSelect={() => setDishPickerMeal(mealType)}>
-                        Platillo del catálogo
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setFoodPickerMeal(mealType)}>
-                        Alimento individual
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardHeader>
+              <Card key={block.id}>
+                <div className="flex flex-col gap-2 px-5 py-3 md:flex-row md:items-center md:justify-between">
+                  {editingBlockId === block.id ? (
+                    <Input
+                      autoFocus
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onBlur={() => saveBlockName(block.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          saveBlockName(block.id);
+                        }
+                        if (e.key === "Escape") setEditingBlockId(null);
+                      }}
+                      className="h-8 max-w-[14rem]"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => startEditingBlock(block)}
+                      className="flex w-fit items-center gap-1.5 text-left"
+                    >
+                      <CardTitle className="text-sm">{block.name}</CardTitle>
+                      <Pencil className="size-3 shrink-0 text-muted-foreground" />
+                    </button>
+                  )}
+
+                  <div className="flex shrink-0 items-center justify-end gap-0.5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Subir bloque"
+                      disabled={index === 0 || movingBlockId !== null}
+                      onClick={() => handleMoveBlock(block.id, -1)}
+                    >
+                      {movingBlockId === block.id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <ArrowUp className="size-4" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Bajar bloque"
+                      disabled={index === sortedBlocks.length - 1 || movingBlockId !== null}
+                      onClick={() => handleMoveBlock(block.id, 1)}
+                    >
+                      <ArrowDown className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Clonar bloque"
+                      disabled={cloningBlockId !== null}
+                      onClick={() => handleCloneBlock(block.id)}
+                    >
+                      {cloningBlockId === block.id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Copy className="size-4" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Eliminar bloque"
+                      className="text-destructive hover:text-destructive"
+                      disabled={sortedBlocks.length <= 1}
+                      onClick={() => setBlockToDelete(block.id)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="outline" size="sm" className="ml-1">
+                          <Plus /> Agregar
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onSelect={() => setDishPickerBlock(block.id)}>
+                          Platillo del catálogo
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setFoodPickerBlock(block.id)}>
+                          Alimento individual
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
                 <CardContent className="flex flex-col gap-1.5">
-                  {mealItemsList.length === 0 ? (
+                  {blockItems.length === 0 ? (
                     <p className="py-2 text-sm text-muted-foreground">Sin elementos.</p>
                   ) : (
-                    mealItemsList.map((item) => (
+                    blockItems.map((item) => (
                       <div
                         key={item.id}
                         className="flex items-center justify-between gap-2 rounded-lg bg-foreground/[0.02] px-2 py-1.5"
@@ -373,29 +596,38 @@ export function DietPlanBuilder({
         onConfirm={handleDeletePlan}
       />
 
+      <ConfirmDialog
+        open={blockToDelete !== null}
+        onOpenChange={(open) => !open && setBlockToDelete(null)}
+        title={`¿Eliminar el bloque "${blockPendingDelete?.name}"?`}
+        description="Esta acción no se puede deshacer. Los elementos que tenga este bloque también se eliminarán."
+        loading={deletingBlock}
+        onConfirm={handleDeleteBlock}
+      />
+
       <DishPickerDialog
-        open={dishPickerMeal !== null}
-        onOpenChange={(open) => !open && setDishPickerMeal(null)}
+        open={dishPickerBlock !== null}
+        onOpenChange={(open) => !open && setDishPickerBlock(null)}
         dishes={dishCatalog}
         communityDishes={communityDishes}
         trainerId={trainerId}
         onPick={(dish) => {
-          const mealType = dishPickerMeal!;
-          setDishPickerMeal(null);
-          void handleAddDish(mealType, dish);
+          const blockId = dishPickerBlock!;
+          setDishPickerBlock(null);
+          void handleAddDish(blockId, dish);
         }}
       />
 
       <FoodPickerDialog
-        open={foodPickerMeal !== null}
-        onOpenChange={(open) => !open && setFoodPickerMeal(null)}
+        open={foodPickerBlock !== null}
+        onOpenChange={(open) => !open && setFoodPickerBlock(null)}
         foods={foodCatalog}
         communityFoods={communityFoods}
         trainerId={trainerId}
         onPick={(food) => {
-          const mealType = foodPickerMeal!;
-          setFoodPickerMeal(null);
-          setPendingFood({ mealType, food });
+          const blockId = foodPickerBlock!;
+          setFoodPickerBlock(null);
+          setPendingFood({ blockId, food });
         }}
       />
 
@@ -405,7 +637,7 @@ export function DietPlanBuilder({
         itemName={pendingFood?.food.name ?? ""}
         onConfirm={(grams) => {
           if (!pendingFood) return;
-          void handleAddFood(pendingFood.mealType, pendingFood.food, grams);
+          void handleAddFood(pendingFood.blockId, pendingFood.food, grams);
         }}
       />
 

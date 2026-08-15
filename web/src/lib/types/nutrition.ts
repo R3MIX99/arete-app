@@ -72,9 +72,15 @@ export interface DietPlanSummary {
   created_at: string;
 }
 
+export interface DietPlanBlock {
+  id: string;
+  name: string;
+  order_index: number;
+}
+
 export interface MealItemInput {
   id?: string;
-  meal_type: MealType;
+  block_id: string;
   order_index: number;
   dish_id: string | null;
   dish_name: string | null;
