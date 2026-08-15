@@ -2,7 +2,16 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, Check, Users2, SlidersHorizontal, FilterX, Dumbbell } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Check,
+  Users2,
+  SlidersHorizontal,
+  FilterX,
+  Dumbbell,
+  ArrowUpDown,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
@@ -44,6 +53,15 @@ const EQUIPMENT: Equipment[] = [
   "other",
 ];
 
+type SortOption = "name_asc" | "added_first" | "not_added_first" | "date_desc";
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "name_asc", label: "Alfabético (A-Z)" },
+  { value: "added_first", label: "Agregados primero" },
+  { value: "not_added_first", label: "No agregados primero" },
+  { value: "date_desc", label: "Más recientes primero" },
+];
+
 /**
  * Todo lo que cualquier entrenador (o Areté, para los esenciales) ha
  * creado — a diferencia de "Mi biblioteca", que solo muestra lo que
@@ -61,18 +79,48 @@ export function ExerciseCommunityBrowser({
   const [query, setQuery] = React.useState("");
   const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup | null>(null);
   const [equipment, setEquipment] = React.useState<Equipment | null>(null);
+  const [sort, setSort] = React.useState<SortOption>("name_asc");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [sortOpen, setSortOpen] = React.useState(false);
   const [addingId, setAddingId] = React.useState<string | null>(null);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    return exercises.filter((exercise) => {
+    const result = exercises.filter((exercise) => {
       if (muscleGroup && exercise.muscle_group !== muscleGroup) return false;
       if (equipment && exercise.equipment !== equipment) return false;
       if (q && !exercise.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [exercises, query, muscleGroup, equipment]);
+
+    const sorted = [...result];
+    switch (sort) {
+      case "added_first":
+        sorted.sort((a, b) =>
+          a.in_my_library === b.in_my_library
+            ? a.name.localeCompare(b.name)
+            : a.in_my_library
+              ? -1
+              : 1,
+        );
+        break;
+      case "not_added_first":
+        sorted.sort((a, b) =>
+          a.in_my_library === b.in_my_library
+            ? a.name.localeCompare(b.name)
+            : a.in_my_library
+              ? 1
+              : -1,
+        );
+        break;
+      case "date_desc":
+        sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
+        break;
+      default:
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return sorted;
+  }, [exercises, query, muscleGroup, equipment, sort]);
 
   const hasActiveFilters = muscleGroup !== null || equipment !== null;
 
@@ -137,6 +185,15 @@ export function ExerciseCommunityBrowser({
           <Button
             variant="outline"
             size="icon"
+            aria-label="Ordenar"
+            className="shrink-0 md:hidden"
+            onClick={() => setSortOpen(true)}
+          >
+            <ArrowUpDown className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
             aria-label="Filtros"
             className="relative shrink-0 md:hidden"
             onClick={() => setFiltersOpen(true)}
@@ -147,6 +204,20 @@ export function ExerciseCommunityBrowser({
         </div>
 
         <div className="hidden items-center gap-2 md:flex">
+          <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+            <SelectTrigger className="w-[200px]">
+              <ArrowUpDown className="size-3.5 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Select
             value={muscleGroup ?? "all"}
             onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
@@ -192,6 +263,29 @@ export function ExerciseCommunityBrowser({
           </Button>
         </div>
       </div>
+
+      <ResponsiveDialog open={sortOpen} onOpenChange={setSortOpen} title="Ordenar por">
+        <div className="flex flex-col gap-1">
+          {SORT_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                setSort(option.value);
+                setSortOpen(false);
+              }}
+              className={
+                sort === option.value
+                  ? "flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2.5 text-left text-sm font-medium text-primary"
+                  : "flex items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm hover:bg-accent"
+              }
+            >
+              {option.label}
+              {sort === option.value && <Check className="size-4" />}
+            </button>
+          ))}
+        </div>
+      </ResponsiveDialog>
 
       <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
         <Select
