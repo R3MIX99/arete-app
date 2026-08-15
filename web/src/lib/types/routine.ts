@@ -16,6 +16,7 @@ export interface ExerciseOption {
   name: string;
   muscle_group: string;
   equipment: string;
+  video_url: string | null;
 }
 
 export interface RoutineSetInput {
@@ -38,6 +39,7 @@ export interface RoutineExerciseInput {
   // Grupo muscular del ejercicio — determina si sus series se capturan
   // como reps/descanso (fuerza) o minutos/nivel (cardio).
   exercise_muscle_group: string;
+  exercise_video_url: string | null;
   order_index: number;
   notes: string;
   sets: RoutineSetInput[];

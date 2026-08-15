@@ -13,10 +13,12 @@ import {
   Dumbbell,
   Trash,
   Sparkles,
+  PlayCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { youtubeVideoId } from "@/lib/youtube";
 import type {
   ExerciseOption,
   RoutineDetail,
@@ -138,6 +140,7 @@ export function RoutineForm({
         exercise_id: matched.id,
         exercise_name: matched.name,
         exercise_muscle_group: matched.muscle_group,
+        exercise_video_url: matched.video_url,
         order_index: nextExercises.length,
         notes: aiExercise.notes || "",
         sets: aiExercise.sets.map((s) => ({
@@ -168,6 +171,7 @@ export function RoutineForm({
         exercise_id: exercise.id,
         exercise_name: exercise.name,
         exercise_muscle_group: exercise.muscle_group,
+        exercise_video_url: exercise.video_url,
         order_index: prev.length,
         notes: "",
         sets: [defaultSet(1, isCardioGroup(exercise.muscle_group))],
@@ -471,15 +475,25 @@ export function RoutineForm({
           </Card>
         ) : (
           <div className="flex flex-col gap-3">
-            {exercises.map((exercise, exerciseIndex) => (
+            {exercises.map((exercise, exerciseIndex) => {
+              const videoId = exercise.exercise_video_url
+                ? youtubeVideoId(exercise.exercise_video_url)
+                : null;
+              return (
               <Card key={`${exercise.exercise_id}-${exerciseIndex}`}>
                 <CardContent className="flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-                        <Dumbbell className="size-4" />
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <div
+                        className={
+                          videoId
+                            ? "flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary"
+                            : "flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground/[0.06] text-muted-foreground"
+                        }
+                      >
+                        {videoId ? <PlayCircle className="size-4" /> : <Dumbbell className="size-4" />}
                       </div>
-                      <p className="text-sm font-semibold">{exercise.exercise_name}</p>
+                      <p className="min-w-0 truncate text-sm font-semibold">{exercise.exercise_name}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button
@@ -514,6 +528,17 @@ export function RoutineForm({
                       </Button>
                     </div>
                   </div>
+
+                  {videoId && (
+                    <div className="aspect-video w-full max-w-64 overflow-hidden rounded-lg border border-border">
+                      <iframe
+                        className="size-full"
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        title={exercise.exercise_name}
+                        allowFullScreen
+                      />
+                    </div>
+                  )}
 
                   <Input
                     value={exercise.notes}
@@ -660,7 +685,8 @@ export function RoutineForm({
                   )}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
 

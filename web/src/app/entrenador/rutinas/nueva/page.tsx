@@ -13,7 +13,7 @@ export default async function NewRoutinePage() {
 
   const { data: exercises } = await supabase
     .from("exercises")
-    .select("id, name, muscle_group, equipment")
+    .select("id, name, muscle_group, equipment, video_url")
     // Solo mi biblioteca (esenciales de Areté + los míos) — el resto de
     // la comunidad se agrega desde la biblioteca antes de poder usarse aquí.
     .or(`trainer_id.is.null,trainer_id.eq.${user.id}`)
