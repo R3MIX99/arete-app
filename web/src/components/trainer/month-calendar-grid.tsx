@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { formatMonthYear } from "@/lib/format";
 import { toKey, todayKey } from "@/lib/calendar-logic";
+import { useSwipeNavigation } from "@/lib/use-swipe-navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +64,8 @@ export function MonthCalendarGrid({
     onSelectDate(today);
   }
 
+  const swipeHandlers = useSwipeNavigation(goToNextMonth, goToPrevMonth);
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
@@ -89,7 +92,11 @@ export function MonthCalendarGrid({
         </Button>
       </div>
 
-      <div className="grid grid-cols-7 gap-y-1 text-center">
+      <div
+        className="grid grid-cols-7 gap-y-1 text-center"
+        onTouchStart={swipeHandlers.onTouchStart}
+        onTouchEnd={swipeHandlers.onTouchEnd}
+      >
         {WEEKDAY_LABELS.map((label) => (
           <span key={label} className="text-[11px] font-medium text-muted-foreground">
             {label}

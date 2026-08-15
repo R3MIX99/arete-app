@@ -14,6 +14,7 @@ import {
   type CalendarAssignment,
 } from "@/lib/calendar-logic";
 import { cn } from "@/lib/utils";
+import { useSwipeNavigation } from "@/lib/use-swipe-navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -72,8 +73,17 @@ export function ClientAgenda({
     selectDate(addDays(selectedDate, delta));
   }
 
+  const swipeHandlers = useSwipeNavigation(
+    () => stepDay(1),
+    () => stepDay(-1),
+  );
+
   return (
-    <div className="flex flex-col gap-3">
+    <div
+      className="flex flex-col gap-3"
+      onTouchStart={swipeHandlers.onTouchStart}
+      onTouchEnd={swipeHandlers.onTouchEnd}
+    >
       <div className="flex items-center gap-2">
         <Drawer open={monthSheetOpen} onOpenChange={setMonthSheetOpen} direction="top">
           <Button

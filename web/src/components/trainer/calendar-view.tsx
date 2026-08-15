@@ -13,6 +13,7 @@ import {
   todayKey,
   type CalendarAssignment,
 } from "@/lib/calendar-logic";
+import { useSwipeNavigation } from "@/lib/use-swipe-navigation";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -79,10 +80,19 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
     selectDate(addDays(selectedDate, delta));
   }
 
+  const swipeHandlers = useSwipeNavigation(
+    () => stepDay(1),
+    () => stepDay(-1),
+  );
+
   return (
     <div className="flex w-full flex-col gap-4 p-4 pb-24 md:p-8">
       {/* Teléfono: botón de mes + navegador de día arriba, lista abajo. */}
-      <div className="flex flex-col gap-3 md:hidden">
+      <div
+        className="flex flex-col gap-3 md:hidden"
+        onTouchStart={swipeHandlers.onTouchStart}
+        onTouchEnd={swipeHandlers.onTouchEnd}
+      >
         <div className="flex items-center gap-2">
           <Drawer open={monthSheetOpen} onOpenChange={setMonthSheetOpen} direction="top">
             <Button
@@ -189,7 +199,11 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-4">
+        <div
+          className="flex flex-1 flex-col gap-4"
+          onTouchStart={swipeHandlers.onTouchStart}
+          onTouchEnd={swipeHandlers.onTouchEnd}
+        >
           <div className="flex items-center gap-2">
             <Button
               type="button"
