@@ -34,7 +34,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4F46E5",
+  // La barra de estado del teléfono (hora, batería, señal) toma este
+  // color — debe coincidir con el fondo real de la app (--background
+  // en globals.css) en cada tema, no con el acento de marca. Al ser dos
+  // entradas con media query, el navegador cambia sola en cuanto el
+  // sistema pasa de claro a oscuro o viceversa, sin recargar.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FAFAFA" },
+    { media: "(prefers-color-scheme: dark)", color: "#141417" },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
