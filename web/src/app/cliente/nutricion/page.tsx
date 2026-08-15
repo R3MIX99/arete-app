@@ -1,15 +1,38 @@
-import { Apple } from "lucide-react";
+import { redirect } from "next/navigation";
 
-export default function ClientNutritionPage() {
+import { createClient } from "@/lib/supabase/server";
+import {
+  fetchActiveDietAssignment,
+  fetchClientNutritionPlan,
+  fetchSubstitutionsForDate,
+} from "@/lib/server/client-nutrition-data";
+import { ClientNutritionView } from "@/components/client/client-nutrition-view";
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export default async function ClientNutritionPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const assignment = await fetchActiveDietAssignment(supabase, user.id);
+  const [plan, substitutions] = await Promise.all([
+    assignment ? fetchClientNutritionPlan(supabase, assignment) : Promise.resolve(null),
+    assignment
+      ? fetchSubstitutionsForDate(supabase, user.id, todayIso())
+      : Promise.resolve([]),
+  ]);
+
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-10 text-center">
-      <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-        <Apple className="size-6" />
-      </div>
-      <p className="font-medium">Nutrición — Próximamente</p>
-      <p className="text-sm text-muted-foreground">
-        Aquí verás tu plan nutricional, comidas del día y sustitutos de alimentos.
-      </p>
-    </div>
+    <ClientNutritionView
+      clientId={user.id}
+      trainerId={assignment?.trainer_id ?? ""}
+      plan={plan}
+      initialSubstitutions={substitutions}
+    />
   );
 }
