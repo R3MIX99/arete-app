@@ -391,6 +391,7 @@ export function ClientNutritionView({
                                 <FoodRow
                                   key={item.id}
                                   food={item.food}
+                                  nested
                                   onOpenDetail={() => setDetailFood(item.food)}
                                 />
                               ) : (
