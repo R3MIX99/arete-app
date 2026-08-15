@@ -109,17 +109,54 @@ export function ExerciseForm({
 
       // No es tuyo (esencial de Areté, o de otro entrenador): guardar
       // crea tu propia copia personalizada en vez de tocar el
-      // compartido — a los demás no les cambia nada.
-      const { error: forkError } = await supabase
+      // compartido — a los demás no les cambia nada. Pero esa copia no
+      // se queda huérfana: se reemplaza el original por la copia en
+      // TODO lo tuyo (tus rutinas, y el historial/evolución de tus
+      // clientes para ese ejercicio) para que no queden dos versiones
+      // sueltas del mismo ejercicio.
+      const { data: forkRow, error: forkError } = await supabase
         .from("exercises")
-        .insert({ ...payload, trainer_id: trainerId, forked_from: exercise.id });
-      setSaving(false);
-      if (forkError) {
+        .insert({ ...payload, trainer_id: trainerId, forked_from: exercise.id })
+        .select("id")
+        .single();
+      if (forkError || !forkRow) {
+        setSaving(false);
         setError("No se pudo guardar tu copia personalizada. Intenta de nuevo.");
         toast.error("No se pudo guardar tu copia personalizada");
         return;
       }
-      toast.success("Se creó tu copia personalizada de este ejercicio");
+
+      const { error: replaceError } = await supabase.rpc("replace_exercise_everywhere", {
+        p_original_exercise_id: exercise.id,
+        p_new_exercise_id: forkRow.id,
+      });
+      if (replaceError) {
+        // La copia ya se creó y se puede usar; solo avisamos que el
+        // reemplazo automático en rutinas/historial no se pudo hacer.
+        console.error(replaceError);
+        toast.error(
+          "Se creó tu copia, pero no se pudo reemplazar automáticamente en tus rutinas e historial.",
+        );
+      }
+
+      // Si el original era esencial de Areté, se quita de tu biblioteca
+      // para que ya no aparezcan dos versiones del mismo ejercicio — tu
+      // copia editada la reemplaza. No afecta a otros entrenadores.
+      if (!exercise.trainer_id) {
+        await supabase
+          .from("trainer_hidden_exercises")
+          .upsert(
+            { trainer_id: trainerId, exercise_id: exercise.id },
+            { onConflict: "trainer_id,exercise_id", ignoreDuplicates: true },
+          );
+      }
+
+      setSaving(false);
+      toast.success(
+        replaceError
+          ? "Se creó tu copia personalizada de este ejercicio"
+          : "Se reemplazó este ejercicio por tu copia personalizada en tus rutinas e historial",
+      );
       router.push("/entrenador/ejercicios");
       router.refresh();
       return;
