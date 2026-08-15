@@ -13,23 +13,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-/** Diálogo genérico para pedir una cantidad en gramos. */
+/** Diálogo genérico para pedir una cantidad en gramos — se reutiliza
+ * tanto para agregar un ingrediente/platillo nuevo (cantidad inicial
+ * 100g) como para editar la cantidad de uno que ya está agregado
+ * (arranca con su cantidad actual). */
 export function QuantityDialog({
   open,
   onOpenChange,
   itemName,
+  initialGrams = 100,
+  confirmLabel = "Agregar",
   onConfirm,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   itemName: string;
+  initialGrams?: number;
+  confirmLabel?: string;
   onConfirm: (grams: number) => void;
 }) {
-  const [grams, setGrams] = React.useState<number | "">(100);
+  const [grams, setGrams] = React.useState<number | "">(initialGrams);
 
   React.useEffect(() => {
-    if (open) setGrams(100);
-  }, [open]);
+    if (open) setGrams(initialGrams);
+  }, [open, initialGrams]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,7 +64,7 @@ export function QuantityDialog({
             disabled={grams === "" || grams <= 0}
             onClick={() => onConfirm(grams === "" ? 0 : grams)}
           >
-            Agregar
+            {confirmLabel}
           </Button>
         </div>
       </DialogContent>

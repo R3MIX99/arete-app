@@ -4,7 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   ImagePlus,
   Loader2,
   Pencil,
@@ -78,6 +80,11 @@ export function DishBuilder({
   const [pendingFood, setPendingFood] = React.useState<FoodOption | null>(null);
   const [adding, setAdding] = React.useState(false);
   const [removingId, setRemovingId] = React.useState<string | null>(null);
+  const [movingId, setMovingId] = React.useState<string | null>(null);
+  const [editingIngredient, setEditingIngredient] = React.useState<DishIngredientInput | null>(
+    null,
+  );
+  const [savingQuantity, setSavingQuantity] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
@@ -152,6 +159,52 @@ export function DishBuilder({
     }
     setIngredients((prev) => prev.filter((ing) => ing.id !== ingredientId));
     toast.success("Ingrediente quitado");
+  }
+
+  async function handleMoveIngredient(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= ingredients.length) return;
+    const current = ingredients[index];
+    const swapWith = ingredients[target];
+    if (!current.id || !swapWith.id) return;
+
+    setMovingId(current.id);
+    const supabase = createClient();
+    const [{ error: errorA }, { error: errorB }] = await Promise.all([
+      supabase.from("dish_ingredients").update({ order_index: target }).eq("id", current.id),
+      supabase.from("dish_ingredients").update({ order_index: index }).eq("id", swapWith.id),
+    ]);
+    setMovingId(null);
+    if (errorA || errorB) {
+      toast.error("No se pudo reordenar el ingrediente");
+      return;
+    }
+
+    setIngredients((prev) => {
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
+  async function handleSaveQuantity(grams: number) {
+    if (!editingIngredient?.id) return;
+    setSavingQuantity(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("dish_ingredients")
+      .update({ quantity_grams: grams })
+      .eq("id", editingIngredient.id);
+    setSavingQuantity(false);
+    if (error) {
+      toast.error("No se pudo actualizar la cantidad");
+      return;
+    }
+    setIngredients((prev) =>
+      prev.map((ing) => (ing.id === editingIngredient.id ? { ...ing, quantity_grams: grams } : ing)),
+    );
+    toast.success("Cantidad actualizada");
+    setEditingIngredient(null);
   }
 
   async function handleDelete() {
@@ -256,7 +309,7 @@ export function DishBuilder({
         </Card>
       ) : (
         <div className="flex flex-col gap-2">
-          {ingredients.map((ing) => {
+          {ingredients.map((ing, index) => {
             const measure = householdMeasureFor(
               ing.quantity_grams,
               ing.household_unit_name,
@@ -265,14 +318,48 @@ export function DishBuilder({
             const kcal = Math.round((ing.calories_per_100g * ing.quantity_grams) / 100);
             return (
               <Card key={ing.id ?? ing.food_id}>
-                <CardContent className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{ing.food_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {Math.round(ing.quantity_grams)} g
-                      {measure ? ` · ${measure}` : ""} · {kcal} kcal
-                    </p>
-                  </div>
+                <CardContent className="flex items-center gap-1">
+                  {isOwned && (
+                    <div className="flex shrink-0 flex-col">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Mover arriba"
+                        className="size-6"
+                        disabled={index === 0 || movingId !== null}
+                        onClick={() => handleMoveIngredient(index, -1)}
+                      >
+                        <ArrowUp className="size-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Mover abajo"
+                        className="size-6"
+                        disabled={index === ingredients.length - 1 || movingId !== null}
+                        onClick={() => handleMoveIngredient(index, 1)}
+                      >
+                        <ArrowDown className="size-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    disabled={!isOwned}
+                    onClick={() => setEditingIngredient(ing)}
+                    className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg py-1 text-left disabled:cursor-default"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{ing.food_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {Math.round(ing.quantity_grams)} g
+                        {measure ? ` · ${measure}` : ""} · {kcal} kcal
+                      </p>
+                    </div>
+                    {isOwned && <Pencil className="size-3.5 shrink-0 text-muted-foreground" />}
+                  </button>
                   {isOwned && (
                     <Button
                       type="button"
@@ -309,6 +396,15 @@ export function DishBuilder({
         onOpenChange={(open) => !open && setPendingFood(null)}
         itemName={pendingFood?.name ?? ""}
         onConfirm={handleAddIngredient}
+      />
+
+      <QuantityDialog
+        open={editingIngredient !== null}
+        onOpenChange={(open) => !open && setEditingIngredient(null)}
+        itemName={editingIngredient?.food_name ?? ""}
+        initialGrams={editingIngredient?.quantity_grams ?? 100}
+        confirmLabel={savingQuantity ? "Guardando..." : "Guardar"}
+        onConfirm={handleSaveQuantity}
       />
 
       {adding && (
