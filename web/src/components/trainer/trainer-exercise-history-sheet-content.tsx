@@ -6,32 +6,22 @@ import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ExerciseHistoryPageView, type ExerciseHistorySession } from "@/components/client/exercise-history-page-view";
 
-interface RoutineExerciseRef {
-  exercise_id: string;
-}
-
-interface SetRef {
-  set_number: number;
-  routine_exercises: RoutineExerciseRef | RoutineExerciseRef[] | null;
-}
-
 interface SetLogRow {
   session_date: string;
+  set_number: number;
   actual_reps: number | null;
   actual_weight: number | null;
   actual_minutes: number | null;
   actual_level: number | null;
-  routine_exercise_sets: SetRef | SetRef[] | null;
-}
-
-function one<T>(value: T | T[] | null): T | null {
-  return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
 /** Contenido del sheet flotante de historial de un ejercicio para un
  * cliente en particular — misma vista (meses, gráfica deslizable
  * peso/reps, acordeón de sesiones) que ya tiene el panel de cliente,
- * cargada en el navegador para mostrarse sin navegar a otra página. */
+ * cargada en el navegador para mostrarse sin navegar a otra página. Se
+ * lee directo de client_set_logs.exercise_id (no de la rutina viva) para
+ * que se mantenga intacta aunque el entrenador después edite o borre la
+ * rutina que originó estos registros. */
 export function TrainerExerciseHistorySheetContent({
   clientId,
   exerciseId,
@@ -50,22 +40,18 @@ export function TrainerExerciseHistorySheetContent({
     (async () => {
       const { data: logRows } = await supabase
         .from("client_set_logs")
-        .select(
-          "session_date, actual_reps, actual_weight, actual_minutes, actual_level, routine_exercise_sets(set_number, routine_exercises(exercise_id))",
-        )
+        .select("session_date, set_number, actual_reps, actual_weight, actual_minutes, actual_level")
         .eq("client_id", clientId)
+        .eq("exercise_id", exerciseId)
         .eq("is_completed", true)
         .order("session_date", { ascending: false });
       if (cancelled) return;
 
       const byDate = new Map<string, ExerciseHistorySession["sets"]>();
-      for (const row of (logRows ?? []) as unknown as SetLogRow[]) {
-        const setInfo = one(row.routine_exercise_sets);
-        const re = one(setInfo?.routine_exercises ?? null);
-        if (!re || re.exercise_id !== exerciseId) continue;
+      for (const row of (logRows ?? []) as SetLogRow[]) {
         const list = byDate.get(row.session_date) ?? [];
         list.push({
-          setNumber: setInfo?.set_number ?? 0,
+          setNumber: row.set_number,
           actual_reps: row.actual_reps,
           actual_weight: row.actual_weight,
           actual_minutes: row.actual_minutes,

@@ -52,7 +52,9 @@ export function ExerciseDetailDialog({
           ) : null}
 
           <Button asChild type="button" variant="outline" size="sm" className="w-fit gap-2">
-            <Link href={`/cliente/entrenamiento/ejercicio-historial/${exercise.id}`}>
+            <Link
+              href={`/cliente/entrenamiento/evolucion/${exercise.exercise_id}?name=${encodeURIComponent(exercise.exercise_name)}&muscle=${encodeURIComponent(exercise.muscle_group)}`}
+            >
               <History className="size-4" />
               Ver historial
             </Link>

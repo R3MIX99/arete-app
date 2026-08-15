@@ -125,6 +125,20 @@ export function WorkoutSessionView({
     return () => clearTimeout(t);
   }, [restSecondsLeft]);
 
+  // exercise_id y set_number se guardan tal cual en cada registro (no
+  // solo el enlace a la serie planeada) para que el historial y la
+  // evolución del cliente sobrevivan intactos aunque el entrenador
+  // después edite o borre esta rutina.
+  const setMeta = useMemo(() => {
+    const map = new Map<string, { exerciseId: string; setNumber: number }>();
+    for (const exercise of exercises) {
+      for (const set of exercise.sets) {
+        map.set(set.id, { exerciseId: exercise.exercise_id, setNumber: set.set_number });
+      }
+    }
+    return map;
+  }, [exercises]);
+
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   function scheduleSave(setId: string) {
@@ -136,9 +150,13 @@ export function WorkoutSessionView({
   async function persistLog(setId: string, overrideLog?: LogState[string]) {
     if (!sessionId) return;
     const log = overrideLog ?? logs[setId] ?? emptyLog();
+    const meta = setMeta.get(setId);
+    if (!meta) return;
     await supabase.from("client_set_logs").upsert(
       {
         routine_exercise_set_id: setId,
+        exercise_id: meta.exerciseId,
+        set_number: meta.setNumber,
         client_id: clientId,
         session_id: sessionId,
         session_date: sessionDate,

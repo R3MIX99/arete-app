@@ -15,18 +15,11 @@ interface ExerciseRef {
   muscle_group: string;
 }
 
-interface RoutineExerciseRef {
-  exercise_id: string;
-  exercises: ExerciseRef | ExerciseRef[] | null;
-}
-
 interface SetLogRow {
   session_date: string;
   actual_weight: number;
-  routine_exercise_sets:
-    | { routine_exercises: RoutineExerciseRef | RoutineExerciseRef[] | null }
-    | { routine_exercises: RoutineExerciseRef | RoutineExerciseRef[] | null }[]
-    | null;
+  exercise_id: string;
+  exercises: ExerciseRef | ExerciseRef[] | null;
 }
 
 function one<T>(value: T | T[] | null): T | null {
@@ -66,9 +59,7 @@ export default async function ClientDetailPage({
       .order("entry_date"),
     supabase
       .from("client_set_logs")
-      .select(
-        "session_date, actual_weight, routine_exercise_sets(routine_exercises(exercise_id, exercises(name, muscle_group)))",
-      )
+      .select("session_date, actual_weight, exercise_id, exercises(name, muscle_group)")
       .eq("client_id", id)
       .eq("is_completed", true)
       .not("actual_weight", "is", null)
@@ -102,11 +93,8 @@ export default async function ClientDetailPage({
     { name: string; muscleGroup: string; logs: { date: string; weight: number }[] }
   >();
   for (const row of (setLogs ?? []) as SetLogRow[]) {
-    const res = one(row.routine_exercise_sets);
-    const re = one(res?.routine_exercises ?? null);
-    if (!re) continue;
-    const exercise = one(re.exercises);
-    const entry = byExercise.get(re.exercise_id) ?? {
+    const exercise = one(row.exercises);
+    const entry = byExercise.get(row.exercise_id) ?? {
       name: exercise?.name ?? "Ejercicio",
       muscleGroup: exercise?.muscle_group ?? "",
       logs: [],
@@ -120,7 +108,7 @@ export default async function ClientDetailPage({
     } else {
       entry.logs.push({ date: row.session_date, weight: row.actual_weight });
     }
-    byExercise.set(re.exercise_id, entry);
+    byExercise.set(row.exercise_id, entry);
   }
 
   const exerciseSummaries: ExerciseProgressSummary[] = Array.from(byExercise.entries())

@@ -17,7 +17,10 @@ interface HistoryRow {
 
 /** Series completadas de un ejercicio a lo largo del tiempo, agrupadas
  * por fecha — usado tanto en la sesión activa como en la vista previa
- * de una rutina. */
+ * de una rutina. Se lee por exercise_id (no por los ids de las series de
+ * la rutina vigente) para que muestre todo el historial real del
+ * ejercicio, incluso el registrado con una versión anterior de la
+ * rutina. */
 export function ExerciseHistoryList({ exercise, cardio }: { exercise: SessionExerciseInfo; cardio: boolean }) {
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
@@ -26,34 +29,15 @@ export function ExerciseHistoryList({ exercise, cardio }: { exercise: SessionExe
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const setIds = exercise.sets.map((s) => s.id);
       const { data } = await supabase
         .from("client_set_logs")
-        .select("session_date, actual_reps, actual_weight, actual_minutes, actual_level, routine_exercise_set_id")
-        .in("routine_exercise_set_id", setIds)
+        .select("session_date, set_number, actual_reps, actual_weight, actual_minutes, actual_level")
+        .eq("exercise_id", exercise.exercise_id)
         .eq("is_completed", true)
         .order("session_date", { ascending: false })
         .limit(60);
       if (cancelled) return;
-      const setNumberById = new Map(exercise.sets.map((s) => [s.id, s.set_number]));
-      const mapped: HistoryRow[] = (data ?? []).map(
-        (row: {
-          session_date: string;
-          actual_reps: number | null;
-          actual_weight: number | null;
-          actual_minutes: number | null;
-          actual_level: number | null;
-          routine_exercise_set_id: string;
-        }) => ({
-          session_date: row.session_date,
-          set_number: setNumberById.get(row.routine_exercise_set_id) ?? 0,
-          actual_reps: row.actual_reps,
-          actual_weight: row.actual_weight,
-          actual_minutes: row.actual_minutes,
-          actual_level: row.actual_level,
-        }),
-      );
-      setRows(mapped);
+      setRows((data ?? []) as HistoryRow[]);
       setLoading(false);
     })();
     return () => {

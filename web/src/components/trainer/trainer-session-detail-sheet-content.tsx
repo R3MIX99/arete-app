@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Clock, Loader2, Minus, Target } from "lucide-react";
+import { Check, Clock, History, Loader2, Minus, Target } from "lucide-react";
+import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/client";
-import { fetchRoutineSessionData } from "@/lib/server/client-routine-data";
+import { fetchCompletedSessionView, type CompletedSessionView } from "@/lib/server/completed-session-view";
 import { cn } from "@/lib/utils";
 import { ExerciseVideoButton } from "@/components/client/exercise-video-button";
-import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
 
 function isCardio(muscleGroup: string) {
   return muscleGroup === "cardio";
@@ -25,7 +25,10 @@ function formatDuration(seconds: number | null): string {
 /** Contenido del sheet flotante de detalle de una sesión ya completada
  * por un cliente — misma información que la página de solo lectura,
  * pero cargada en el navegador para poder mostrarse dentro del panel
- * sin navegar a otra página. */
+ * sin navegar a otra página. Se arma a partir de lo que el cliente
+ * realmente registró (client_set_logs), no de la rutina vigente — así
+ * sigue viéndose igual aunque el entrenador después edite o borre esa
+ * rutina. */
 export function TrainerSessionDetailSheetContent({
   clientId,
   sessionId,
@@ -35,34 +38,14 @@ export function TrainerSessionDetailSheetContent({
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
-  const [durationSeconds, setDurationSeconds] = useState<number | null>(null);
-  const [exercises, setExercises] = useState<SessionExerciseInfo[]>([]);
-  const [logBySetId, setLogBySetId] = useState<Map<string, SessionSetLog>>(new Map());
+  const [view, setView] = useState<CompletedSessionView | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: session } = await supabase
-        .from("client_sessions")
-        .select("id, routine_id, duration_seconds")
-        .eq("id", sessionId)
-        .eq("client_id", clientId)
-        .maybeSingle();
-      if (!session) {
-        if (!cancelled) setLoading(false);
-        return;
-      }
-      const [routineData, { data: logRows }] = await Promise.all([
-        fetchRoutineSessionData(supabase, session.routine_id),
-        supabase
-          .from("client_set_logs")
-          .select("routine_exercise_set_id, actual_reps, actual_weight, actual_minutes, actual_level, is_completed")
-          .eq("session_id", sessionId),
-      ]);
+      const data = await fetchCompletedSessionView(supabase, sessionId, clientId);
       if (cancelled) return;
-      setDurationSeconds(session.duration_seconds);
-      setExercises(routineData?.exercises ?? []);
-      setLogBySetId(new Map(((logRows ?? []) as SessionSetLog[]).map((l) => [l.routine_exercise_set_id, l])));
+      setView(data);
       setLoading(false);
     })();
     return () => {
@@ -78,9 +61,10 @@ export function TrainerSessionDetailSheetContent({
     );
   }
 
+  const exercises = view?.exercises ?? [];
   const totalSets = exercises.reduce((acc, e) => acc + e.sets.length, 0);
   const completedSets = exercises.reduce(
-    (acc, e) => acc + e.sets.filter((s) => logBySetId.get(s.id)?.is_completed).length,
+    (acc, e) => acc + e.sets.filter((s) => s.isCompleted).length,
     0,
   );
 
@@ -93,7 +77,7 @@ export function TrainerSessionDetailSheetContent({
             <span className="text-[11px] font-medium uppercase tracking-wide">Duración</span>
           </div>
           <p className="text-lg font-semibold tabular-nums">
-            {durationSeconds ? formatDuration(durationSeconds) : "—"}
+            {view?.durationSeconds ? formatDuration(view.durationSeconds) : "—"}
           </p>
         </div>
         <div className="flex flex-col items-center gap-1 px-4 py-3">
@@ -109,14 +93,21 @@ export function TrainerSessionDetailSheetContent({
 
       <div className="flex flex-col gap-3">
         {exercises.map((exercise) => {
-          const cardio = isCardio(exercise.muscle_group);
+          const cardio = isCardio(exercise.muscleGroup);
           return (
-            <div key={exercise.id} className="overflow-hidden rounded-xl border">
+            <div key={exercise.exerciseId} className="overflow-hidden rounded-xl border">
               <div className="flex items-center gap-2 border-b bg-foreground/[0.02] px-4 py-3">
-                <p className="min-w-0 flex-1 truncate text-sm font-medium">{exercise.exercise_name}</p>
-                {exercise.video_url ? (
-                  <ExerciseVideoButton videoUrl={exercise.video_url} exerciseName={exercise.exercise_name} />
+                <p className="min-w-0 flex-1 truncate text-sm font-medium">{exercise.exerciseName}</p>
+                {exercise.videoUrl ? (
+                  <ExerciseVideoButton videoUrl={exercise.videoUrl} exerciseName={exercise.exerciseName} />
                 ) : null}
+                <Link
+                  href={`/entrenador/clientes/${clientId}/ejercicio/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&muscle=${encodeURIComponent(exercise.muscleGroup)}`}
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                  aria-label={`Ver historial de ${exercise.exerciseName}`}
+                >
+                  <History className="size-4.5" />
+                </Link>
               </div>
               <div className="px-4 py-3">
                 <div className="grid grid-cols-[1.5rem_1fr_1fr_1.5rem] items-center gap-2 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -126,29 +117,26 @@ export function TrainerSessionDetailSheetContent({
                   <span />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  {exercise.sets.map((set) => {
-                    const log = logBySetId.get(set.id);
-                    return (
-                      <div key={set.id} className="grid grid-cols-[1.5rem_1fr_1fr_1.5rem] items-center gap-2 text-sm">
-                        <span className="text-muted-foreground">{set.set_number}</span>
-                        <span className="tabular-nums">
-                          {cardio
-                            ? (log?.actual_minutes ? `${log.actual_minutes} min` : "—")
-                            : log?.actual_weight
-                              ? `${log.actual_weight} kg`
-                              : "—"}
-                        </span>
-                        <span className="tabular-nums">
-                          {cardio ? (log?.actual_level ?? "—") : (log?.actual_reps ?? "—")}
-                        </span>
-                        {log?.is_completed ? (
-                          <Check className="size-4 text-primary" />
-                        ) : (
-                          <Minus className={cn("size-4 text-muted-foreground/40")} />
-                        )}
-                      </div>
-                    );
-                  })}
+                  {exercise.sets.map((set, i) => (
+                    <div key={i} className="grid grid-cols-[1.5rem_1fr_1fr_1.5rem] items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">{set.setNumber}</span>
+                      <span className="tabular-nums">
+                        {cardio
+                          ? (set.actualMinutes ? `${set.actualMinutes} min` : "—")
+                          : set.actualWeight
+                            ? `${set.actualWeight} kg`
+                            : "—"}
+                      </span>
+                      <span className="tabular-nums">
+                        {cardio ? (set.actualLevel ?? "—") : (set.actualReps ?? "—")}
+                      </span>
+                      {set.isCompleted ? (
+                        <Check className="size-4 text-primary" />
+                      ) : (
+                        <Minus className={cn("size-4 text-muted-foreground/40")} />
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

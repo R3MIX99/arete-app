@@ -233,7 +233,11 @@ export function RoutineForm({
         return;
       }
       // Se borran y recrean los ejercicios/series — más simple y confiable
-      // que diferenciar cambios fila por fila; cascada borra las series.
+      // que diferenciar cambios fila por fila. La cascada borra
+      // routine_exercise_sets, pero client_set_logs ya NO cuelga de esa
+      // cascada (ver migración client_set_logs_survive_routine_edits):
+      // el historial y la evolución que el cliente ya registró se
+      // quedan intactos aunque se reconstruya la rutina desde cero.
       await supabase.from("routine_exercises").delete().eq("routine_id", routineId!);
     }
 

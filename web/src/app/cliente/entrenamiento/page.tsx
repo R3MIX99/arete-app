@@ -18,18 +18,11 @@ interface ExerciseRef {
   muscle_group: string;
 }
 
-interface RoutineExerciseRef {
-  exercise_id: string;
-  exercises: ExerciseRef | ExerciseRef[] | null;
-}
-
 interface SetLogRow {
   session_date: string;
   actual_weight: number | null;
-  routine_exercise_sets:
-    | { routine_exercises: RoutineExerciseRef | RoutineExerciseRef[] | null }
-    | { routine_exercises: RoutineExerciseRef | RoutineExerciseRef[] | null }[]
-    | null;
+  exercise_id: string;
+  exercises: ExerciseRef | ExerciseRef[] | null;
 }
 
 function one<T>(value: T | T[] | null): T | null {
@@ -66,9 +59,7 @@ export default async function ClientTrainingPage() {
         .order("entry_date"),
       supabase
         .from("client_set_logs")
-        .select(
-          "session_date, actual_weight, routine_exercise_sets(routine_exercises(exercise_id, exercises(name, muscle_group)))",
-        )
+        .select("session_date, actual_weight, exercise_id, exercises(name, muscle_group)")
         .eq("client_id", user.id)
         .eq("is_completed", true)
         .not("actual_weight", "is", null)
@@ -84,13 +75,11 @@ export default async function ClientTrainingPage() {
 
   const byExercise = new Map<string, ClientExerciseProgress>();
   for (const row of (setLogRows ?? []) as unknown as SetLogRow[]) {
-    const setInfo = one(row.routine_exercise_sets);
-    const re = one(setInfo?.routine_exercises ?? null);
-    const exercise = one(re?.exercises ?? null);
-    if (!re || !exercise || exercise.muscle_group === "cardio" || row.actual_weight === null) continue;
+    const exercise = one(row.exercises);
+    if (!exercise || exercise.muscle_group === "cardio" || row.actual_weight === null) continue;
 
-    const existing = byExercise.get(re.exercise_id) ?? {
-      exerciseId: re.exercise_id,
+    const existing = byExercise.get(row.exercise_id) ?? {
+      exerciseId: row.exercise_id,
       exerciseName: exercise.name,
       muscleGroup: exercise.muscle_group,
       logs: [],
@@ -101,7 +90,7 @@ export default async function ClientTrainingPage() {
     } else {
       existing.logs.push({ date: row.session_date, weight: row.actual_weight });
     }
-    byExercise.set(re.exercise_id, existing);
+    byExercise.set(row.exercise_id, existing);
   }
   const exerciseProgress = Array.from(byExercise.values())
     .map((e) => ({ ...e, logs: e.logs.sort((a, b) => a.date.localeCompare(b.date)) }))
