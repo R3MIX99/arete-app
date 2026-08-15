@@ -25,9 +25,10 @@ function todayIso() {
 }
 
 /**
- * Diálogo reutilizable para asignar un programa completo o una rutina
- * suelta a varios clientes a la vez — una fila por cliente en
- * `client_assignments`, con `program_id` xor `routine_id`.
+ * Diálogo para asignar un programa completo a varios clientes a la
+ * vez — una fila por cliente en `client_assignments`. Solo programas:
+ * no existe (ni debe existir) una forma de asignar una rutina suelta,
+ * sin programa, a un cliente.
  */
 export function AssignToClientsDialog({
   open,
@@ -36,7 +37,6 @@ export function AssignToClientsDialog({
   clients,
   alreadyAssignedClientIds,
   programId,
-  routineId,
   onAssigned,
 }: {
   open: boolean;
@@ -44,8 +44,7 @@ export function AssignToClientsDialog({
   trainerId: string;
   clients: ClientProfile[];
   alreadyAssignedClientIds: string[];
-  programId?: string;
-  routineId?: string;
+  programId: string;
   onAssigned: () => void;
 }) {
   const [query, setQuery] = React.useState("");
@@ -94,8 +93,7 @@ export function AssignToClientsDialog({
     const rows = Array.from(selected).map((clientId) => ({
       trainer_id: trainerId,
       client_id: clientId,
-      program_id: programId ?? null,
-      routine_id: routineId ?? null,
+      program_id: programId,
       start_date: startDate,
     }));
 

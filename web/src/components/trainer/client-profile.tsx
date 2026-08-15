@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   CalendarClock,
   CalendarRange,
-  ClipboardList,
   Dumbbell,
   Eye,
   Pencil,
@@ -95,6 +94,10 @@ export function ClientProfile({
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
   const [openSession, setOpenSession] = React.useState<CompletedSessionRow | null>(null);
   const [openExercise, setOpenExercise] = React.useState<ExerciseProgressSummary | null>(null);
+  const programAssignments = React.useMemo(
+    () => trainingAssignments.filter((a) => a.is_program),
+    [trainingAssignments],
+  );
 
   function handleSessionClick(session: CompletedSessionRow) {
     if (isMobile) {
@@ -209,37 +212,25 @@ export function ClientProfile({
               <CardTitle className="text-sm">Asignado</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {trainingAssignments.length === 0 && dietPlanAssignments.length === 0 ? (
+              {programAssignments.length === 0 && dietPlanAssignments.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Todavía no tiene ningún programa, rutina ni plan nutricional asignado.
+                  Todavía no tiene ningún programa ni plan nutricional asignado.
                 </p>
               ) : (
                 <>
-                  {trainingAssignments.map((assignment) => (
+                  {programAssignments.map((assignment) => (
                     <Link
                       key={assignment.id}
-                      href={
-                        assignment.is_program
-                          ? `/entrenador/programas/${assignment.program_id}`
-                          : `/entrenador/rutinas/${assignment.routine_id}`
-                      }
+                      href={`/entrenador/programas/${assignment.program_id}`}
                       className="flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors hover:border-primary/40 hover:bg-accent"
                     >
                       <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-                        {assignment.is_program ? (
-                          <CalendarRange className="size-4" />
-                        ) : (
-                          <ClipboardList className="size-4" />
-                        )}
+                        <CalendarRange className="size-4" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {assignment.is_program ? assignment.program_name : assignment.routine_name}
-                        </p>
+                        <p className="truncate text-sm font-medium">{assignment.program_name}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {assignment.is_program
-                            ? `Programa · ${assignment.program_duration_weeks} ${assignment.program_duration_weeks === 1 ? "semana" : "semanas"}`
-                            : "Rutina suelta"}
+                          {`Programa · ${assignment.program_duration_weeks} ${assignment.program_duration_weeks === 1 ? "semana" : "semanas"}`}
                           {" · desde el "}
                           {formatDate(assignment.start_date)}
                         </p>
