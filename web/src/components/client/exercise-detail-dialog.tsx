@@ -4,7 +4,7 @@ import Link from "next/link";
 import { History } from "lucide-react";
 
 import { youtubeVideoId } from "@/lib/youtube";
-import { summarizeTarget } from "@/lib/client-exercise-target";
+import { isCardioGroup } from "@/lib/client-exercise-target";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import type { SessionExerciseInfo } from "@/lib/types/client-panel";
@@ -19,6 +19,7 @@ export function ExerciseDetailDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const videoId = exercise?.video_url ? youtubeVideoId(exercise.video_url) : null;
+  const cardio = exercise ? isCardioGroup(exercise.muscle_group) : false;
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange} title={exercise?.exercise_name ?? ""}>
@@ -35,9 +36,50 @@ export function ExerciseDetailDialog({
             </div>
           ) : null}
 
-          <div className="rounded-lg bg-muted px-3 py-2.5">
+          <div className="flex flex-col gap-1.5">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Objetivo</p>
-            <p className="text-sm font-medium">{summarizeTarget(exercise)}</p>
+            {exercise.sets.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sin series definidas</p>
+            ) : (
+              <div className="overflow-hidden rounded-lg border border-border">
+                <div className="grid grid-cols-[2.5rem_1fr_1fr] gap-2 bg-muted px-3 py-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                  <span>Serie</span>
+                  <span>{cardio ? "Minutos" : "Reps"}</span>
+                  <span>{cardio ? "Nivel" : "Descanso"}</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {exercise.sets.map((set) => (
+                    <div
+                      key={set.id}
+                      className="grid grid-cols-[2.5rem_1fr_1fr] items-center gap-2 px-3 py-2 text-sm"
+                    >
+                      <span className="font-medium tabular-nums">{set.set_number}</span>
+                      {cardio ? (
+                        <>
+                          <span className="tabular-nums">
+                            {set.target_minutes != null ? `${set.target_minutes} min` : "—"}
+                          </span>
+                          <span className="tabular-nums">{set.target_level ?? "—"}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="tabular-nums">
+                            {set.target_reps_min != null && set.target_reps_max != null
+                              ? set.target_reps_min === set.target_reps_max
+                                ? `${set.target_reps_min}`
+                                : `${set.target_reps_min}-${set.target_reps_max}`
+                              : "—"}
+                          </span>
+                          <span className="tabular-nums">
+                            {set.rest_seconds != null ? `${set.rest_seconds}s` : "—"}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {exercise.exercise_description ? (
@@ -45,10 +87,12 @@ export function ExerciseDetailDialog({
           ) : null}
 
           {exercise.notes ? (
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Nota del entrenador: </span>
-              {exercise.notes}
-            </p>
+            <div className="rounded-lg bg-primary/8 px-3 py-2.5">
+              <p className="text-xs font-medium text-primary uppercase tracking-wide">
+                Instrucciones del entrenador
+              </p>
+              <p className="text-sm">{exercise.notes}</p>
+            </div>
           ) : null}
 
           <Button asChild type="button" variant="outline" size="sm" className="w-fit gap-2">
