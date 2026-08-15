@@ -51,7 +51,6 @@ export function AssignDietPlanDialog({
 }) {
   const [step, setStep] = React.useState<"select" | "scale">("select");
   const [query, setQuery] = React.useState("");
-  const [startDate, setStartDate] = React.useState(todayIso());
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [clientTarget, setClientTarget] = React.useState<number | "">("");
   const [saving, setSaving] = React.useState(false);
@@ -60,7 +59,6 @@ export function AssignDietPlanDialog({
     if (open) {
       setStep("select");
       setQuery("");
-      setStartDate(todayIso());
       setSelected(new Set());
       setClientTarget("");
     }
@@ -107,7 +105,7 @@ export function AssignDietPlanDialog({
       trainer_id: trainerId,
       client_id: clientId,
       diet_plan_id: dietPlanId,
-      start_date: startDate,
+      start_date: todayIso(),
       target_daily_calories: targetDailyCalories,
       scale_factor: scaleFactor,
     }));
@@ -206,21 +204,12 @@ export function AssignDietPlanDialog({
         <DialogHeader>
           <DialogTitle>Asignar a clientes</DialogTitle>
           <DialogDescription>
-            Elige la fecha de inicio y los clientes que recibirán este plan.
+            Elige los clientes que recibirán este plan — empieza a verlo hoy mismo, en cuanto lo
+            asignes.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="start_date">Empieza el</Label>
-            <Input
-              id="start_date"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </div>
-
           <div className="relative">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
