@@ -34,4 +34,21 @@ export interface ExerciseDetail {
   equipment: Equipment;
   description: string | null;
   video_url: string | null;
+  trainer_id: string | null;
+  forked_from: string | null;
+}
+
+/** Ejercicio visto desde la pestaña Comunidad — cualquiera creado por
+ * cualquier entrenador, o esencial de Areté (trainer_id null). */
+export interface CommunityExerciseOption {
+  id: string;
+  name: string;
+  muscle_group: MuscleGroup;
+  equipment: Equipment;
+  description: string | null;
+  video_url: string | null;
+  trainer_id: string | null;
+  forked_from: string | null;
+  creator_name: string;
+  in_my_library: boolean;
 }

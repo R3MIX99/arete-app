@@ -18,7 +18,7 @@ export default async function ExerciseDetailPage({
 
   const { data: exercise } = await supabase
     .from("exercises")
-    .select("id, name, muscle_group, equipment, description, video_url")
+    .select("id, name, muscle_group, equipment, description, video_url, trainer_id, forked_from")
     .eq("id", id)
     .single();
 

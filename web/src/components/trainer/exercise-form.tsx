@@ -65,6 +65,7 @@ export function ExerciseForm({
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const isOwned = !exercise || exercise.trainer_id === trainerId;
 
   const previewId = videoUrl ? youtubeVideoId(videoUrl) : null;
 
@@ -76,7 +77,6 @@ export function ExerciseForm({
     const supabase = createClient();
 
     const payload = {
-      trainer_id: trainerId,
       name,
       muscle_group: muscleGroup,
       equipment,
@@ -84,29 +84,52 @@ export function ExerciseForm({
       video_url: videoUrl || null,
     };
 
-    if (mode === "create") {
-      const { error: insertError } = await supabase.from("exercises").insert(payload);
-      if (insertError) {
-        setError("No se pudo crear el ejercicio. Intenta de nuevo.");
-        toast.error("No se pudo crear el ejercicio");
+    if (mode === "edit" && exercise) {
+      if (isOwned) {
+        const { error: updateError } = await supabase
+          .from("exercises")
+          .update(payload)
+          .eq("id", exercise.id);
         setSaving(false);
+        if (updateError) {
+          setError("No se pudieron guardar los cambios. Intenta de nuevo.");
+          toast.error("No se pudieron guardar los cambios");
+          return;
+        }
+        toast.success("Cambios guardados");
+        router.push("/entrenador/ejercicios");
+        router.refresh();
         return;
       }
-      toast.success("Ejercicio creado");
-    } else {
-      const { error: updateError } = await supabase
+
+      // No es tuyo (esencial de Areté, o de otro entrenador): guardar
+      // crea tu propia copia personalizada en vez de tocar el
+      // compartido — a los demás no les cambia nada.
+      const { error: forkError } = await supabase
         .from("exercises")
-        .update(payload)
-        .eq("id", exercise!.id);
-      if (updateError) {
-        setError("No se pudieron guardar los cambios. Intenta de nuevo.");
-        toast.error("No se pudieron guardar los cambios");
-        setSaving(false);
+        .insert({ ...payload, trainer_id: trainerId, forked_from: exercise.id });
+      setSaving(false);
+      if (forkError) {
+        setError("No se pudo guardar tu copia personalizada. Intenta de nuevo.");
+        toast.error("No se pudo guardar tu copia personalizada");
         return;
       }
-      toast.success("Cambios guardados");
+      toast.success("Se creó tu copia personalizada de este ejercicio");
+      router.push("/entrenador/ejercicios");
+      router.refresh();
+      return;
     }
 
+    const { error: insertError } = await supabase
+      .from("exercises")
+      .insert({ ...payload, trainer_id: trainerId });
+    setSaving(false);
+    if (insertError) {
+      setError("No se pudo crear el ejercicio. Intenta de nuevo.");
+      toast.error("No se pudo crear el ejercicio");
+      return;
+    }
+    toast.success("Ejercicio creado");
     router.push("/entrenador/ejercicios");
     router.refresh();
   }
@@ -143,7 +166,7 @@ export function ExerciseForm({
             <ArrowLeft /> Volver a la biblioteca
           </Link>
         </Button>
-        {mode === "edit" && (
+        {mode === "edit" && isOwned && (
           <Button
             variant="ghost"
             size="sm"
@@ -156,6 +179,13 @@ export function ExerciseForm({
           </Button>
         )}
       </div>
+
+      {mode === "edit" && !isOwned && (
+        <p className="rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
+          Este ejercicio es de {exercise?.trainer_id ? "otro entrenador" : "Areté"}. Al guardar se
+          creará tu propia copia personalizada — el original no cambia para nadie más.
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="flex items-center gap-3">

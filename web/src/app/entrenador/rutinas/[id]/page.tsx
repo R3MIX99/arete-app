@@ -55,7 +55,11 @@ export default async function RoutineDetailPage({
         .eq("routine_id", id)
         .order("order_index")
         .order("set_number", { referencedTable: "routine_exercise_sets" }),
-      supabase.from("exercises").select("id, name, muscle_group, equipment").order("name"),
+      supabase
+        .from("exercises")
+        .select("id, name, muscle_group, equipment")
+        .or(`trainer_id.is.null,trainer_id.eq.${user.id}`)
+        .order("name"),
     ]);
 
   if (!routine) notFound();

@@ -1,15 +1,18 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { Search, Plus, Dumbbell, PlayCircle, SlidersHorizontal, FilterX } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, Plus, Check, Users2, SlidersHorizontal, FilterX, Dumbbell } from "lucide-react";
+import { toast } from "sonner";
 
 import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
-import type { ExerciseSummary, MuscleGroup, Equipment } from "@/lib/types/exercise";
+import { createClient } from "@/lib/supabase/client";
+import type { CommunityExerciseOption, MuscleGroup, Equipment } from "@/lib/types/exercise";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import {
   Select,
   SelectContent,
@@ -17,8 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
-import { MobileFab } from "@/components/trainer/mobile-fab";
 
 const MUSCLE_GROUPS: MuscleGroup[] = [
   "chest",
@@ -43,11 +44,19 @@ const EQUIPMENT: Equipment[] = [
   "other",
 ];
 
-export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }) {
+/**
+ * Todo lo que cualquier entrenador (o Areté, para los esenciales) ha
+ * creado — a diferencia de "Mi biblioteca", que solo muestra lo que
+ * este entrenador ya puede usar. Desde aquí se copia un ejercicio a tu
+ * propia biblioteca con "Agregar".
+ */
+export function ExerciseCommunityBrowser({ exercises }: { exercises: CommunityExerciseOption[] }) {
+  const router = useRouter();
   const [query, setQuery] = React.useState("");
   const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup | null>(null);
   const [equipment, setEquipment] = React.useState<Equipment | null>(null);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [addingId, setAddingId] = React.useState<string | null>(null);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -66,45 +75,51 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
     setEquipment(null);
   }
 
+  async function addToLibrary(exercise: CommunityExerciseOption) {
+    setAddingId(exercise.id);
+    const supabase = createClient();
+    const { error } = await supabase.from("exercises").insert({
+      forked_from: exercise.id,
+      name: exercise.name,
+      muscle_group: exercise.muscle_group,
+      equipment: exercise.equipment,
+      description: exercise.description,
+      video_url: exercise.video_url,
+    });
+    setAddingId(null);
+    if (error) {
+      toast.error("No se pudo agregar a tu biblioteca");
+      return;
+    }
+    toast.success(`"${exercise.name}" agregado a tu biblioteca`);
+    router.refresh();
+  }
+
   return (
-    <div className="flex w-full flex-col gap-6 pt-4">
+    <div className="flex flex-col gap-6 pt-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs md:hidden">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs">
           <div className="relative min-w-0 flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar ejercicio por nombre"
+              placeholder="Buscar ejercicio"
               className="pl-9"
             />
           </div>
-          {/* Teléfono: ícono que abre un drawer con los filtros. */}
           <Button
             variant="outline"
             size="icon"
             aria-label="Filtros"
-            className="relative shrink-0"
+            className="relative shrink-0 md:hidden"
             onClick={() => setFiltersOpen(true)}
           >
             <SlidersHorizontal className="size-4" />
-            {hasActiveFilters && (
-              <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
-            )}
+            {hasActiveFilters && <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />}
           </Button>
         </div>
 
-        <div className="relative hidden w-full max-w-xs md:block">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar ejercicio por nombre"
-            className="pl-9"
-          />
-        </div>
-
-        {/* Computadora: selectores de filtro visibles en la misma barra. */}
         <div className="hidden items-center gap-2 md:flex">
           <Select
             value={muscleGroup ?? "all"}
@@ -150,20 +165,7 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
             <FilterX /> Limpiar filtros
           </Button>
         </div>
-
-        <Button asChild className="ml-auto hidden md:inline-flex">
-          <Link href="/entrenador/ejercicios/nuevo">
-            <Plus />
-            Nuevo ejercicio
-          </Link>
-        </Button>
       </div>
-
-      <MobileFab
-        href="/entrenador/ejercicios/nuevo"
-        icon={Plus}
-        label="Nuevo ejercicio"
-      />
 
       <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
         <Select
@@ -213,50 +215,44 @@ export function ExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
-          <Dumbbell className="size-8" />
-          <p className="text-sm">
-            {exercises.length === 0
-              ? "Todavía no tienes ejercicios."
-              : "Ningún ejercicio coincide con la búsqueda o los filtros."}
-          </p>
+          <Users2 className="size-8" />
+          <p className="text-sm">Ningún ejercicio coincide con la búsqueda o los filtros.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((exercise) => {
-            const hasVideo = Boolean(exercise.video_url);
-            return (
-              <Link key={exercise.id} href={`/entrenador/ejercicios/${exercise.id}`}>
-                <Card className="h-full card-hover-glow transition-colors hover:border-primary/40">
-                  <CardContent className="flex h-full flex-col gap-3">
-                    <div
-                      className={
-                        hasVideo
-                          ? "flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary"
-                          : "flex size-10 items-center justify-center rounded-full bg-foreground/[0.06] text-muted-foreground"
-                      }
+          {filtered.map((exercise) => (
+            <Card key={exercise.id} className="h-full">
+              <CardContent className="flex h-full flex-col gap-3">
+                <div className="flex size-10 items-center justify-center rounded-full bg-foreground/[0.06] text-muted-foreground">
+                  <Dumbbell className="size-[18px]" />
+                </div>
+                <div className="mt-auto flex flex-col gap-1">
+                  <p className="truncate text-sm font-semibold">{exercise.name}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">Por {exercise.creator_name}</p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    <Badge variant="secondary">{muscleGroupLabel(exercise.muscle_group)}</Badge>
+                    <Badge variant="secondary">{equipmentLabel(exercise.equipment)}</Badge>
+                  </div>
+                  {exercise.in_my_library ? (
+                    <Badge variant="secondary" className="mt-1 w-fit gap-1 text-[10px]">
+                      <Check className="size-3" /> En tu biblioteca
+                    </Badge>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="mt-1 w-fit"
+                      disabled={addingId === exercise.id}
+                      onClick={() => addToLibrary(exercise)}
                     >
-                      {hasVideo ? (
-                        <PlayCircle className="size-[18px]" />
-                      ) : (
-                        <Dumbbell className="size-[18px]" />
-                      )}
-                    </div>
-                    <div className="mt-auto">
-                      <p className="truncate text-sm font-semibold">{exercise.name}</p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <Badge variant="secondary">
-                          {muscleGroupLabel(exercise.muscle_group)}
-                        </Badge>
-                        <Badge variant="secondary">
-                          {equipmentLabel(exercise.equipment)}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+                      <Plus className="size-3.5" /> Agregar
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
