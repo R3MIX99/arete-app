@@ -34,7 +34,7 @@ function FloatingSheetContent({
       <DialogPrimitive.Content
         data-slot="floating-sheet-content"
         className={cn(
-          "fixed inset-y-4 right-4 z-50 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-2xl outline-none",
+          "fixed inset-y-4 right-4 z-50 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border bg-popover text-popover-foreground shadow-2xl outline-none",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
           "data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",
           "data-[state=open]:duration-300 data-[state=closed]:duration-200 data-[state=open]:ease-out data-[state=closed]:ease-in",
