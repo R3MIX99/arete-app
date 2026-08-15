@@ -260,7 +260,10 @@ export function ExerciseCommunityBrowser({
                     <Badge variant="secondary">{equipmentLabel(exercise.equipment)}</Badge>
                   </div>
                   {exercise.in_my_library ? (
-                    <Badge variant="secondary" className="mt-1 w-fit gap-1 text-[10px]">
+                    <Badge
+                      variant="secondary"
+                      className="mt-1 w-fit gap-1 border-transparent bg-indigo-500/15 text-[10px] text-indigo-600 dark:text-indigo-400"
+                    >
                       <Check className="size-3" /> En tu biblioteca
                     </Badge>
                   ) : (
