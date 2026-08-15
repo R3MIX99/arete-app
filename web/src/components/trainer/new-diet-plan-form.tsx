@@ -3,14 +3,16 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import type { AiDietResult } from "@/lib/types/ai";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GenerateDietDialog } from "@/components/trainer/generate-diet-dialog";
 
 export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
   const router = useRouter();
@@ -19,6 +21,20 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
   const [dailyCalorieTarget, setDailyCalorieTarget] = React.useState<number | "">("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [aiOpen, setAiOpen] = React.useState(false);
+
+  async function createPlan(
+    supabase: ReturnType<typeof createClient>,
+    payload: { name: string; goal_label: string | null; daily_calorie_target: number | null },
+  ) {
+    const { data, error: insertError } = await supabase
+      .from("diet_plans")
+      .insert({ trainer_id: trainerId, ...payload })
+      .select("id")
+      .single();
+    if (insertError || !data) return null;
+    return data.id as string;
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -26,18 +42,13 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
     setError(null);
 
     const supabase = createClient();
-    const { data, error: insertError } = await supabase
-      .from("diet_plans")
-      .insert({
-        trainer_id: trainerId,
-        name,
-        goal_label: goalLabel || null,
-        daily_calorie_target: dailyCalorieTarget === "" ? null : Number(dailyCalorieTarget),
-      })
-      .select("id")
-      .single();
+    const planId = await createPlan(supabase, {
+      name,
+      goal_label: goalLabel || null,
+      daily_calorie_target: dailyCalorieTarget === "" ? null : Number(dailyCalorieTarget),
+    });
 
-    if (insertError || !data) {
+    if (!planId) {
       setError("No se pudo crear el plan. Intenta de nuevo.");
       toast.error("No se pudo crear el plan");
       setLoading(false);
@@ -47,14 +58,59 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
     // Arranca con los 4 bloques de siempre — se pueden renombrar,
     // quitar o agregar más después.
     await supabase.from("diet_plan_blocks").insert([
-      { diet_plan_id: data.id, name: "Desayuno", order_index: 0 },
-      { diet_plan_id: data.id, name: "Almuerzo", order_index: 1 },
-      { diet_plan_id: data.id, name: "Cena", order_index: 2 },
-      { diet_plan_id: data.id, name: "Snack", order_index: 3 },
+      { diet_plan_id: planId, name: "Desayuno", order_index: 0 },
+      { diet_plan_id: planId, name: "Almuerzo", order_index: 1 },
+      { diet_plan_id: planId, name: "Cena", order_index: 2 },
+      { diet_plan_id: planId, name: "Snack", order_index: 3 },
     ]);
 
     toast.success("Plan creado");
-    router.push(`/entrenador/nutricion/planes/${data.id}`);
+    router.push(`/entrenador/nutricion/planes/${planId}`);
+    router.refresh();
+  }
+
+  async function handleAiGenerated(result: AiDietResult) {
+    setLoading(true);
+    setError(null);
+    const supabase = createClient();
+
+    const planId = await createPlan(supabase, {
+      name: name || result.name,
+      goal_label: goalLabel || null,
+      daily_calorie_target: dailyCalorieTarget === "" ? null : Number(dailyCalorieTarget),
+    });
+    if (!planId) {
+      setError("No se pudo crear el plan. Intenta de nuevo.");
+      toast.error("No se pudo crear el plan");
+      setLoading(false);
+      return;
+    }
+
+    // Los bloques y las comidas los propone la IA — no se arrancan los
+    // 4 de siempre, para no duplicar contra lo que ya sugirió.
+    for (let blockIndex = 0; blockIndex < result.blocks.length; blockIndex++) {
+      const block = result.blocks[blockIndex];
+      const { data: blockRow, error: blockError } = await supabase
+        .from("diet_plan_blocks")
+        .insert({ diet_plan_id: planId, name: block.name, order_index: blockIndex })
+        .select("id")
+        .single();
+      if (blockError || !blockRow) continue;
+
+      const items = block.items.map((item, itemIndex) => ({
+        block_id: blockRow.id,
+        order_index: itemIndex,
+        dish_id: item.type === "dish" ? item.id : null,
+        food_id: item.type === "food" ? item.id : null,
+        quantity_grams: item.type === "food" ? (item.quantity_grams ?? 100) : null,
+      }));
+      if (items.length > 0) {
+        await supabase.from("diet_plan_meals").insert(items);
+      }
+    }
+
+    toast.success("Plan generado con IA — revísalo antes de asignarlo");
+    router.push(`/entrenador/nutricion/planes/${planId}`);
     router.refresh();
   }
 
@@ -111,13 +167,32 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
               </p>
             ) : null}
 
-            <Button type="submit" disabled={loading} className="mt-1 w-fit">
-              {loading ? <Loader2 className="animate-spin" /> : null}
-              Crear plan
-            </Button>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Button type="submit" disabled={loading}>
+                {loading ? <Loader2 className="animate-spin" /> : null}
+                Crear plan
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={loading}
+                onClick={() => setAiOpen(true)}
+              >
+                <Sparkles /> Generar con IA
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      <GenerateDietDialog
+        key={aiOpen ? "ai-open" : "ai-closed"}
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        trainerId={trainerId}
+        defaultCalorieTarget={dailyCalorieTarget === "" ? null : dailyCalorieTarget}
+        onGenerated={handleAiGenerated}
+      />
     </div>
   );
 }

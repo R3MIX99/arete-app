@@ -12,6 +12,7 @@ import {
   Trash2,
   Dumbbell,
   Trash,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,7 +21,9 @@ import type {
   ExerciseOption,
   RoutineDetail,
   RoutineExerciseInput,
+  RoutineGoal,
 } from "@/lib/types/routine";
+import type { AiRoutineResult } from "@/lib/types/ai";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +39,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ExercisePickerDialog } from "@/components/trainer/exercise-picker-dialog";
+import { GenerateRoutineDialog } from "@/components/trainer/generate-routine-dialog";
+import { RoutineAiScoreCard } from "@/components/trainer/routine-ai-score-card";
 
 const LEVEL_OPTIONS = [
   { value: "beginner", label: "Principiante" },
@@ -101,10 +106,60 @@ export function RoutineForm({
     initialExercises ?? [],
   );
   const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [aiOpen, setAiOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  function handleAiGenerated(result: AiRoutineResult) {
+    if (name.trim() === "") setName(result.name);
+    if (description.trim() === "") setDescription(result.description);
+
+    const unmatched: string[] = [];
+    const nextExercises: RoutineExerciseInput[] = [];
+    for (const aiExercise of result.exercises) {
+      // Prioriza el id que sugirió la IA (viene de tu propio catálogo);
+      // si no vino o no existe, intenta encontrar el mismo ejercicio por
+      // nombre antes de darlo por no encontrado.
+      const matched =
+        (aiExercise.exercise_id &&
+          exerciseCatalog.find((e) => e.id === aiExercise.exercise_id)) ||
+        exerciseCatalog.find(
+          (e) => e.name.trim().toLowerCase() === aiExercise.exercise_name.trim().toLowerCase(),
+        );
+
+      if (!matched) {
+        unmatched.push(aiExercise.exercise_name);
+        continue;
+      }
+
+      nextExercises.push({
+        exercise_id: matched.id,
+        exercise_name: matched.name,
+        exercise_muscle_group: matched.muscle_group,
+        order_index: nextExercises.length,
+        notes: aiExercise.notes || "",
+        sets: aiExercise.sets.map((s) => ({
+          set_number: s.set_number,
+          target_reps_min: s.target_reps_min ?? null,
+          target_reps_max: s.target_reps_max ?? null,
+          rest_seconds: s.rest_seconds ?? null,
+          target_minutes: s.target_minutes ?? null,
+          target_level: s.target_level ?? null,
+        })),
+      });
+    }
+
+    setExercises(nextExercises);
+    toast.success("Rutina generada — revísala antes de guardar");
+    if (unmatched.length > 0) {
+      toast.info(
+        `La IA sugirió estos ejercicios pero no están en tu biblioteca todavía, así que no se agregaron: ${unmatched.join(", ")}`,
+        { duration: 8000 },
+      );
+    }
+  }
 
   function addExercise(exercise: ExerciseOption) {
     setExercises((prev) => [
@@ -392,14 +447,19 @@ export function RoutineForm({
           <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Ejercicios
           </h2>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setPickerOpen(true)}
-          >
-            <Plus /> Agregar ejercicio
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => setAiOpen(true)}>
+              <Sparkles /> Generar con IA
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPickerOpen(true)}
+            >
+              <Plus /> Agregar ejercicio
+            </Button>
+          </div>
         </div>
 
         {exercises.length === 0 ? (
@@ -604,6 +664,19 @@ export function RoutineForm({
           </div>
         )}
 
+        {routine && (
+          <RoutineAiScoreCard
+            routineId={routine.id}
+            name={name}
+            level={level}
+            goal={(goal || null) as RoutineGoal | null}
+            exercises={exercises}
+            initialScore={routine.ai_score}
+            initialReasoning={routine.ai_score_summary}
+            initialAnalyzedAt={routine.ai_analyzed_at}
+          />
+        )}
+
         {error ? (
           <p className="text-sm text-destructive" role="alert">
             {error}
@@ -621,6 +694,14 @@ export function RoutineForm({
         onOpenChange={setPickerOpen}
         exercises={exerciseCatalog}
         onPick={addExercise}
+      />
+
+      <GenerateRoutineDialog
+        key={aiOpen ? "ai-open" : "ai-closed"}
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        exerciseCatalog={exerciseCatalog}
+        onGenerated={handleAiGenerated}
       />
 
       {routine && (
