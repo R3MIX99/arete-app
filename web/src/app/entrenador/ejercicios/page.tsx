@@ -59,20 +59,26 @@ export default async function ExercisesPage() {
       forked_from: r.forked_from,
     }));
 
-  const communityExercises: CommunityExerciseOption[] = allRows.map((r) => ({
-    id: r.id,
-    name: r.name,
-    muscle_group: r.muscle_group,
-    equipment: r.equipment,
-    description: r.description,
-    video_url: r.video_url,
-    trainer_id: r.trainer_id,
-    forked_from: r.forked_from,
-    creator_name: r.trainer_id ? (one(r.profiles)?.full_name ?? "Entrenador") : "Areté",
-    created_at: r.created_at,
-    in_my_library:
-      (!r.trainer_id && !hiddenIds.has(r.id)) || r.trainer_id === user.id || forkedIds.has(r.id),
-  }));
+  // La comunidad solo muestra ejercicios originales — una copia
+  // personalizada (forked_from no nulo) es tuya, no algo nuevo que
+  // aportaste a la comunidad, así que no aparece aquí ni para ti ni
+  // para nadie más.
+  const communityExercises: CommunityExerciseOption[] = allRows
+    .filter((r) => !r.forked_from)
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      muscle_group: r.muscle_group,
+      equipment: r.equipment,
+      description: r.description,
+      video_url: r.video_url,
+      trainer_id: r.trainer_id,
+      forked_from: r.forked_from,
+      creator_name: r.trainer_id ? (one(r.profiles)?.full_name ?? "Entrenador") : "Areté",
+      created_at: r.created_at,
+      in_my_library:
+        (!r.trainer_id && !hiddenIds.has(r.id)) || r.trainer_id === user.id || forkedIds.has(r.id),
+    }));
 
   return (
     <ExercisesShell

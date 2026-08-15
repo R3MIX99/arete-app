@@ -124,17 +124,25 @@ export default async function NutritionPage() {
     .filter((d) => !d.trainer_id || d.trainer_id === user.id)
     .map(toDishOption);
 
-  const communityFoods: CommunityFoodOption[] = allFoodRows.map((f) => ({
-    ...toFoodOption(f),
-    creator_name: f.trainer_id ? (one(f.profiles)?.full_name ?? "Entrenador") : "Areté",
-    in_my_catalog: !f.trainer_id || f.trainer_id === user.id || forkedFoodIds.has(f.id),
-  }));
+  // La comunidad solo muestra alimentos/platillos originales — una copia
+  // personalizada (forked_from no nulo) es tuya, no algo nuevo que
+  // aportaste a la comunidad, así que no aparece aquí ni para ti ni para
+  // nadie más.
+  const communityFoods: CommunityFoodOption[] = allFoodRows
+    .filter((f) => !f.forked_from)
+    .map((f) => ({
+      ...toFoodOption(f),
+      creator_name: f.trainer_id ? (one(f.profiles)?.full_name ?? "Entrenador") : "Areté",
+      in_my_catalog: !f.trainer_id || f.trainer_id === user.id || forkedFoodIds.has(f.id),
+    }));
 
-  const communityDishes: CommunityDishOption[] = allDishRows.map((d) => ({
-    ...toDishOption(d),
-    creator_name: d.trainer_id ? (one(d.profiles)?.full_name ?? "Entrenador") : "Areté",
-    in_my_catalog: !d.trainer_id || d.trainer_id === user.id || forkedDishIds.has(d.id),
-  }));
+  const communityDishes: CommunityDishOption[] = allDishRows
+    .filter((d) => !d.forked_from)
+    .map((d) => ({
+      ...toDishOption(d),
+      creator_name: d.trainer_id ? (one(d.profiles)?.full_name ?? "Entrenador") : "Areté",
+      in_my_catalog: !d.trainer_id || d.trainer_id === user.id || forkedDishIds.has(d.id),
+    }));
 
   return (
     <NutritionShell
