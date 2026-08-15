@@ -14,6 +14,7 @@ import {
   Plus,
   Trash,
   Trash2,
+  UserMinus,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -96,6 +97,8 @@ export function ProgramBuilder({
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [overridesForAssignment, setOverridesForAssignment] =
     React.useState<ProgramAssignment | null>(null);
+  const [unassignTarget, setUnassignTarget] = React.useState<ProgramAssignment | null>(null);
+  const [unassigning, setUnassigning] = React.useState(false);
   const [openWeeks, setOpenWeeks] = React.useState<Set<number>>(() => new Set([1]));
   const [cloningFromWeek, setCloningFromWeek] = React.useState<number | null>(null);
   const [cloneTargetWeek, setCloneTargetWeek] = React.useState<string>("");
@@ -330,6 +333,24 @@ export function ProgramBuilder({
     }
     toast.success("Programa eliminado");
     router.push("/entrenador/programas");
+    router.refresh();
+  }
+
+  async function handleUnassign() {
+    if (!unassignTarget) return;
+    setUnassigning(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("client_assignments")
+      .delete()
+      .eq("id", unassignTarget.id);
+    setUnassigning(false);
+    if (error) {
+      toast.error("No se pudo desasignar al cliente");
+      return;
+    }
+    toast.success(`Se desasignó a ${unassignTarget.client_name}`);
+    setUnassignTarget(null);
     router.refresh();
   }
 
@@ -585,24 +606,38 @@ export function ProgramBuilder({
           ) : (
             <div className="flex flex-col gap-2">
               {assignments.map((assignment) => (
-                <button
+                <div
                   key={assignment.id}
-                  type="button"
-                  onClick={() => setOverridesForAssignment(assignment)}
-                  className="flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-accent"
+                  className="flex items-center gap-1 rounded-lg border pr-1 transition-colors hover:border-primary/40"
                 >
-                  <Avatar className="size-9">
-                    <AvatarFallback className="text-xs">
-                      {initialsOf(assignment.client_name) || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{assignment.client_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Desde el {formatDate(assignment.start_date)}
-                    </p>
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverridesForAssignment(assignment)}
+                    className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left hover:bg-accent"
+                  >
+                    <Avatar className="size-9">
+                      <AvatarFallback className="text-xs">
+                        {initialsOf(assignment.client_name) || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{assignment.client_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Desde el {formatDate(assignment.start_date)}
+                      </p>
+                    </div>
+                  </button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Desasignar a ${assignment.client_name}`}
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => setUnassignTarget(assignment)}
+                  >
+                    <UserMinus className="size-4" />
+                  </Button>
+                </div>
               ))}
             </div>
           )}
@@ -714,6 +749,15 @@ export function ProgramBuilder({
           onChanged={() => router.refresh()}
         />
       )}
+
+      <ConfirmDialog
+        open={unassignTarget !== null}
+        onOpenChange={(open) => !open && setUnassignTarget(null)}
+        title={`¿Desasignar a ${unassignTarget?.client_name ?? ""}?`}
+        description="Deja de ver este programa en su panel y en su calendario. No se borra el programa ni su historial de entrenamiento ya registrado."
+        loading={unassigning}
+        onConfirm={handleUnassign}
+      />
     </div>
   );
 }

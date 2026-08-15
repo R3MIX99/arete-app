@@ -65,11 +65,13 @@ export function ClientNutritionView({
   trainerId,
   plan,
   initialSubstitutions,
+  upcomingStartDate,
 }: {
   clientId: string;
   trainerId: string;
   plan: ClientNutritionPlan | null;
   initialSubstitutions: SubstitutionWithFood[];
+  upcomingStartDate: string | null;
 }) {
   const supabase = React.useMemo(() => createClient(), []);
   const today = React.useMemo(() => todayIso(), []);
@@ -159,10 +161,27 @@ export function ClientNutritionView({
         <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Flame className="size-6" />
         </div>
-        <p className="font-medium">Todavía no tienes un plan nutricional asignado</p>
-        <p className="text-sm text-muted-foreground">
-          En cuanto tu entrenador te asigne uno, lo vas a ver aquí organizado por comida.
-        </p>
+        {upcomingStartDate ? (
+          <>
+            <p className="font-medium">Tu plan nutricional todavía no empieza</p>
+            <p className="text-sm text-muted-foreground">
+              Ya tienes uno asignado — arranca el{" "}
+              {new Date(`${upcomingStartDate}T00:00:00`).toLocaleDateString("es-MX", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+              . Antes de esa fecha no hay nada que mostrar aquí.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-medium">Todavía no tienes un plan nutricional asignado</p>
+            <p className="text-sm text-muted-foreground">
+              En cuanto tu entrenador te asigne uno, lo vas a ver aquí organizado por comida.
+            </p>
+          </>
+        )}
       </div>
     );
   }

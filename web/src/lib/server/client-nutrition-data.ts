@@ -88,6 +88,27 @@ export async function fetchActiveDietAssignment(
   return data as { id: string; diet_plan_id: string; scale_factor: number; trainer_id: string } | null;
 }
 
+/** Si no hay una asignación vigente todavía, busca la próxima que ya
+ * está programada (empieza en el futuro) — para poder avisarle al
+ * cliente "tu plan empieza el X" en vez de sugerir que no tiene nada
+ * asignado. */
+export async function fetchUpcomingDietAssignmentDate(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any>,
+  clientId: string,
+  afterDate: string = todayIso(),
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("diet_plan_assignments")
+    .select("start_date")
+    .eq("client_id", clientId)
+    .gt("start_date", afterDate)
+    .order("start_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return (data?.start_date as string | undefined) ?? null;
+}
+
 /** Arma la estructura completa (bloques → comidas → platillo/alimento,
  * con macros e ids ya listos) de un plan nutricional asignado, con las
  * cantidades ya multiplicadas por el scale_factor del cliente. No

@@ -5,6 +5,7 @@ import {
   fetchActiveDietAssignment,
   fetchClientNutritionPlan,
   fetchSubstitutionsForDate,
+  fetchUpcomingDietAssignmentDate,
 } from "@/lib/server/client-nutrition-data";
 import { ClientNutritionView } from "@/components/client/client-nutrition-view";
 
@@ -20,11 +21,12 @@ export default async function ClientNutritionPage() {
   if (!user) redirect("/login");
 
   const assignment = await fetchActiveDietAssignment(supabase, user.id);
-  const [plan, substitutions] = await Promise.all([
+  const [plan, substitutions, upcomingStartDate] = await Promise.all([
     assignment ? fetchClientNutritionPlan(supabase, assignment) : Promise.resolve(null),
     assignment
       ? fetchSubstitutionsForDate(supabase, user.id, todayIso())
       : Promise.resolve([]),
+    assignment ? Promise.resolve(null) : fetchUpcomingDietAssignmentDate(supabase, user.id),
   ]);
 
   return (
@@ -33,6 +35,7 @@ export default async function ClientNutritionPage() {
       trainerId={assignment?.trainer_id ?? ""}
       plan={plan}
       initialSubstitutions={substitutions}
+      upcomingStartDate={upcomingStartDate}
     />
   );
 }

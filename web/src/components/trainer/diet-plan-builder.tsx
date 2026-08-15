@@ -13,6 +13,7 @@ import {
   Plus,
   Trash,
   Trash2,
+  UserMinus,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -90,6 +91,8 @@ export function DietPlanBuilder({
   const [deleting, setDeleting] = React.useState(false);
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [removingId, setRemovingId] = React.useState<string | null>(null);
+  const [unassignTarget, setUnassignTarget] = React.useState<DietPlanAssignmentSummary | null>(null);
+  const [unassigning, setUnassigning] = React.useState(false);
 
   const [dishPickerBlock, setDishPickerBlock] = React.useState<string | null>(null);
   const [foodPickerBlock, setFoodPickerBlock] = React.useState<string | null>(null);
@@ -210,6 +213,24 @@ export function DietPlanBuilder({
     }
     toast.success("Plan eliminado");
     router.push("/entrenador/nutricion");
+    router.refresh();
+  }
+
+  async function handleUnassign() {
+    if (!unassignTarget) return;
+    setUnassigning(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("diet_plan_assignments")
+      .delete()
+      .eq("id", unassignTarget.id);
+    setUnassigning(false);
+    if (error) {
+      toast.error("No se pudo desasignar al cliente");
+      return;
+    }
+    toast.success(`Se desasignó a ${unassignTarget.client_name}`);
+    setUnassignTarget(null);
     router.refresh();
   }
 
@@ -571,13 +592,30 @@ export function DietPlanBuilder({
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{assignment.client_name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p
+                      className="text-xs text-muted-foreground"
+                      title={
+                        assignment.scale_factor !== 1
+                          ? "Las porciones de este cliente se escalaron para acercarse a su propia meta calórica, distinta a la del plan base."
+                          : undefined
+                      }
+                    >
                       Desde el {formatDate(assignment.start_date)}
                       {assignment.scale_factor !== 1
                         ? ` · ajustado ${Math.round((assignment.scale_factor - 1) * 100)}%`
                         : ""}
                     </p>
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Desasignar a ${assignment.client_name}`}
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => setUnassignTarget(assignment)}
+                  >
+                    <UserMinus className="size-4" />
+                  </Button>
                 </div>
               ))}
             </div>
@@ -656,6 +694,15 @@ export function DietPlanBuilder({
         clients={clients}
         alreadyAssignedClientIds={assignedClientIds}
         onAssigned={() => router.refresh()}
+      />
+
+      <ConfirmDialog
+        open={unassignTarget !== null}
+        onOpenChange={(open) => !open && setUnassignTarget(null)}
+        title={`¿Desasignar a ${unassignTarget?.client_name ?? ""}?`}
+        description="Deja de ver este plan nutricional en su panel. No se borra el plan ni el historial de sustituciones que ya haya hecho."
+        loading={unassigning}
+        onConfirm={handleUnassign}
       />
     </div>
   );
