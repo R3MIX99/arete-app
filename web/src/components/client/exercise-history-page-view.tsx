@@ -32,11 +32,16 @@ export function ExerciseHistoryPageView({
   targetSummary,
   cardio,
   sessions,
+  embedded = false,
 }: {
   exerciseName: string;
   targetSummary?: string;
   cardio: boolean;
   sessions: ExerciseHistorySession[];
+  /** true cuando se muestra dentro de un sheet/modal que ya trae su
+   * propio encabezado (nombre + botón de cerrar) — oculta el
+   * encabezado y el padding de página propios de esta vista. */
+  embedded?: boolean;
 }) {
   const router = useRouter();
 
@@ -94,16 +99,20 @@ export function ExerciseHistoryPageView({
   }, [monthSessions, cardio]);
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4 p-4 pb-24">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="shrink-0" onClick={() => router.back()} aria-label="Regresar">
-          <ChevronLeft className="size-5" />
-        </Button>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{exerciseName}</p>
-          {targetSummary ? <p className="text-xs text-muted-foreground">{targetSummary}</p> : null}
+    <div className={cn("flex flex-col gap-4", embedded ? "" : "mx-auto max-w-md p-4 pb-24")}>
+      {embedded ? (
+        targetSummary ? <p className="text-sm text-muted-foreground">{targetSummary}</p> : null
+      ) : (
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => router.back()} aria-label="Regresar">
+            <ChevronLeft className="size-5" />
+          </Button>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold">{exerciseName}</p>
+            {targetSummary ? <p className="text-xs text-muted-foreground">{targetSummary}</p> : null}
+          </div>
         </div>
-      </div>
+      )}
 
       {sessions.length === 0 ? (
         <Card>

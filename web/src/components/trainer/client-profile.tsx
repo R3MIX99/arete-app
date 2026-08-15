@@ -8,6 +8,8 @@ import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { initialsOf, goalLabel, formatDate } from "@/lib/format";
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
+import { isCardioGroup } from "@/lib/client-exercise-target";
 import { MEASUREMENT_FIELDS, type MeasurementKey } from "@/lib/types/progress";
 import type { ExerciseProgressSummary, ProgressMeasurement } from "@/lib/types/progress";
 import type { CompletedSessionRow } from "@/lib/types/client-panel";
@@ -24,11 +26,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  FloatingSheet,
+  FloatingSheetContent,
+  FloatingSheetHeader,
+  FloatingSheetTitle,
+  FloatingSheetDescription,
+  FloatingSheetBody,
+} from "@/components/ui/floating-sheet";
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { EditClientDialog } from "@/components/trainer/edit-client-dialog";
 import { AddMeasurementDialog } from "@/components/trainer/add-measurement-dialog";
 import { EditMeasurementDialog } from "@/components/trainer/edit-measurement-dialog";
 import { MeasurementEntriesTable } from "@/components/trainer/measurement-entries-table";
+import { TrainerSessionDetailSheetContent } from "@/components/trainer/trainer-session-detail-sheet-content";
+import { TrainerExerciseHistorySheetContent } from "@/components/trainer/trainer-exercise-history-sheet-content";
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return "";
@@ -53,6 +65,7 @@ export function ClientProfile({
   completedSessions: CompletedSessionRow[];
 }) {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [status, setStatus] = React.useState(client.status);
   const [togglingStatus, setTogglingStatus] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
@@ -60,6 +73,26 @@ export function ClientProfile({
   const [editingMeasurement, setEditingMeasurement] =
     React.useState<ProgressMeasurement | null>(null);
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
+  const [openSession, setOpenSession] = React.useState<CompletedSessionRow | null>(null);
+  const [openExercise, setOpenExercise] = React.useState<ExerciseProgressSummary | null>(null);
+
+  function handleSessionClick(session: CompletedSessionRow) {
+    if (isMobile) {
+      router.push(`/entrenador/clientes/${client.id}/sesiones/${session.id}`);
+    } else {
+      setOpenSession(session);
+    }
+  }
+
+  function handleExerciseClick(summary: ExerciseProgressSummary) {
+    if (isMobile) {
+      router.push(
+        `/entrenador/clientes/${client.id}/ejercicio/${summary.exercise_id}?name=${encodeURIComponent(summary.exercise_name)}&muscle=${encodeURIComponent(summary.muscle_group)}`,
+      );
+    } else {
+      setOpenExercise(summary);
+    }
+  }
 
   async function toggleStatus() {
     const next = status === "active" ? "inactive" : "active";
@@ -231,7 +264,7 @@ export function ClientProfile({
                         <tr
                           key={session.id}
                           className="cursor-pointer border-b last:border-0 hover:bg-accent/40"
-                          onClick={() => router.push(`/entrenador/clientes/${client.id}/sesiones/${session.id}`)}
+                          onClick={() => handleSessionClick(session)}
                         >
                           <td className="px-3 py-2 font-medium">{session.routineName}</td>
                           <td className="px-3 py-2 text-muted-foreground">{formatDate(session.sessionDate)}</td>
@@ -272,11 +305,7 @@ export function ClientProfile({
                         <tr
                           key={summary.exercise_id}
                           className="cursor-pointer border-b last:border-0 hover:bg-accent/40"
-                          onClick={() =>
-                            router.push(
-                              `/entrenador/clientes/${client.id}/ejercicio/${summary.exercise_id}?name=${encodeURIComponent(summary.exercise_name)}&muscle=${encodeURIComponent(summary.muscle_group)}`,
-                            )
-                          }
+                          onClick={() => handleExerciseClick(summary)}
                         >
                           <td className="px-3 py-2 font-medium">{summary.exercise_name}</td>
                           <td className="px-3 py-2 tabular-nums text-muted-foreground">
@@ -317,6 +346,40 @@ export function ClientProfile({
         measurement={editingMeasurement}
         onSaved={() => setEditingMeasurement(null)}
       />
+
+      <FloatingSheet open={openSession !== null} onOpenChange={(open) => !open && setOpenSession(null)}>
+        <FloatingSheetContent>
+          <FloatingSheetHeader>
+            <FloatingSheetTitle>{openSession?.routineName}</FloatingSheetTitle>
+            <FloatingSheetDescription>
+              {openSession ? formatDate(openSession.sessionDate) : ""}
+            </FloatingSheetDescription>
+          </FloatingSheetHeader>
+          <FloatingSheetBody>
+            {openSession ? (
+              <TrainerSessionDetailSheetContent clientId={client.id} sessionId={openSession.id} />
+            ) : null}
+          </FloatingSheetBody>
+        </FloatingSheetContent>
+      </FloatingSheet>
+
+      <FloatingSheet open={openExercise !== null} onOpenChange={(open) => !open && setOpenExercise(null)}>
+        <FloatingSheetContent>
+          <FloatingSheetHeader>
+            <FloatingSheetTitle>{openExercise?.exercise_name}</FloatingSheetTitle>
+            <FloatingSheetDescription>Evolución de peso y repeticiones</FloatingSheetDescription>
+          </FloatingSheetHeader>
+          <FloatingSheetBody>
+            {openExercise ? (
+              <TrainerExerciseHistorySheetContent
+                clientId={client.id}
+                exerciseId={openExercise.exercise_id}
+                cardio={isCardioGroup(openExercise.muscle_group)}
+              />
+            ) : null}
+          </FloatingSheetBody>
+        </FloatingSheetContent>
+      </FloatingSheet>
     </div>
   );
 }
