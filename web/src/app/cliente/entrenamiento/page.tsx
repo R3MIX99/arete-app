@@ -62,7 +62,6 @@ export default async function ClientTrainingPage() {
         .select("session_date, actual_weight, exercise_id, exercises(name, muscle_group)")
         .eq("client_id", user.id)
         .eq("is_completed", true)
-        .not("actual_weight", "is", null)
         .order("session_date"),
     ]);
 
@@ -73,10 +72,14 @@ export default async function ClientTrainingPage() {
     durationSeconds: row.duration_seconds,
   }));
 
+  // La lista de "Evolución" solo necesita el nombre y el grupo muscular
+  // de cada ejercicio (el detalle con sus gráficas de peso/reps o
+  // minutos/nivel se calcula aparte, al abrir cada ejercicio) — por eso
+  // se incluye cardio aquí también, aunque no tenga actual_weight.
   const byExercise = new Map<string, ClientExerciseProgress>();
   for (const row of (setLogRows ?? []) as unknown as SetLogRow[]) {
     const exercise = one(row.exercises);
-    if (!exercise || exercise.muscle_group === "cardio" || row.actual_weight === null) continue;
+    if (!exercise) continue;
 
     const existing = byExercise.get(row.exercise_id) ?? {
       exerciseId: row.exercise_id,
@@ -84,11 +87,13 @@ export default async function ClientTrainingPage() {
       muscleGroup: exercise.muscle_group,
       logs: [],
     };
-    const existingForDate = existing.logs.find((l) => l.date === row.session_date);
-    if (existingForDate) {
-      existingForDate.weight = Math.max(existingForDate.weight, row.actual_weight);
-    } else {
-      existing.logs.push({ date: row.session_date, weight: row.actual_weight });
+    if (row.actual_weight !== null) {
+      const existingForDate = existing.logs.find((l) => l.date === row.session_date);
+      if (existingForDate) {
+        existingForDate.weight = Math.max(existingForDate.weight, row.actual_weight);
+      } else {
+        existing.logs.push({ date: row.session_date, weight: row.actual_weight });
+      }
     }
     byExercise.set(row.exercise_id, existing);
   }

@@ -11,6 +11,25 @@ export interface RoutineSummary {
   routine_exercises: { count: number }[];
 }
 
+/** Un comentario que un cliente dejó al terminar una sesión de esta
+ * rutina, con el resto de su reseña para dar contexto. */
+export interface RoutineSessionComment {
+  clientName: string;
+  sessionDate: string;
+  comment: string;
+  difficultyLevel: number | null;
+  ratingStars: number | null;
+  caloriesBurned: number | null;
+  distanceKm: number | null;
+  stepsCount: number | null;
+}
+
+export interface RoutineSummaryWithFeedback extends RoutineSummary {
+  avgRating: number | null;
+  ratingCount: number;
+  comments: RoutineSessionComment[];
+}
+
 export interface ExerciseOption {
   id: string;
   name: string;

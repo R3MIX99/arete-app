@@ -44,3 +44,15 @@ export interface ClientExerciseProgress {
   muscleGroup: string;
   logs: { date: string; weight: number }[];
 }
+
+/** Reseña que el cliente deja al terminar una sesión — campos de cardio
+ * (calorías/distancia/pasos) o de fuerza (estrellas) según corresponda,
+ * más dificultad y comentario libre, comunes a ambas. */
+export interface SessionFeedback {
+  difficultyLevel: number | null;
+  ratingStars: number | null;
+  caloriesBurned: number | null;
+  distanceKm: number | null;
+  stepsCount: number | null;
+  clientComment: string | null;
+}

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Check, ChevronLeft, Clock, History, Minus, Target } from "lucide-react";
+import { Check, ChevronLeft, Clock, Flame, Footprints, History, Minus, Route, Star, Target } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { fetchCompletedSessionView } from "@/lib/server/completed-session-view";
@@ -35,7 +35,25 @@ export default async function SessionReviewPage({
 
   const sessionView = await fetchCompletedSessionView(supabase, id, user.id);
   if (!sessionView) redirect("/cliente/entrenamiento");
-  const { routineName, sessionDate, durationSeconds, exercises } = sessionView;
+  const {
+    routineName,
+    sessionDate,
+    durationSeconds,
+    exercises,
+    difficultyLevel,
+    ratingStars,
+    caloriesBurned,
+    distanceKm,
+    stepsCount,
+    clientComment,
+  } = sessionView;
+  const hasFeedback =
+    difficultyLevel !== null ||
+    ratingStars !== null ||
+    caloriesBurned !== null ||
+    distanceKm !== null ||
+    stepsCount !== null ||
+    Boolean(clientComment);
 
   const totalSets = exercises.reduce((acc, e) => acc + e.sets.length, 0);
   const completedSets = exercises.reduce(
@@ -80,6 +98,52 @@ export default async function SessionReviewPage({
           </div>
         </div>
       </div>
+
+      {hasFeedback ? (
+        <div className="px-4">
+          <div className="glass-card flex flex-col gap-2.5 rounded-xl p-4">
+            {difficultyLevel !== null ? (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Dificultad</span>
+                <span className="font-medium tabular-nums">{difficultyLevel}/10</span>
+              </div>
+            ) : null}
+            {ratingStars !== null ? (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Tu calificación</span>
+                <span className="flex items-center gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={cn("size-3.5", i < ratingStars ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30")}
+                    />
+                  ))}
+                </span>
+              </div>
+            ) : null}
+            {caloriesBurned !== null || distanceKm !== null || stepsCount !== null ? (
+              <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                {caloriesBurned !== null ? (
+                  <span className="flex items-center gap-1">
+                    <Flame className="size-3.5" /> {caloriesBurned} kcal
+                  </span>
+                ) : null}
+                {distanceKm !== null ? (
+                  <span className="flex items-center gap-1">
+                    <Route className="size-3.5" /> {distanceKm} km
+                  </span>
+                ) : null}
+                {stepsCount !== null ? (
+                  <span className="flex items-center gap-1">
+                    <Footprints className="size-3.5" /> {stepsCount} pasos
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+            {clientComment ? <p className="text-sm">{clientComment}</p> : null}
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-3 px-4">
         {exercises.map((exercise) => {

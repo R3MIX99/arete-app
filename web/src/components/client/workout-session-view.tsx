@@ -3,16 +3,33 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, ChevronDown, ChevronLeft, History, Loader2, Timer, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  Clock,
+  Flame,
+  Footprints,
+  History,
+  Loader2,
+  Route,
+  Star,
+  Target,
+  Timer,
+  X,
+} from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { youtubeVideoId } from "@/lib/youtube";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ExerciseHistoryList } from "@/components/client/exercise-history";
 import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
+
+const DIFFICULTY_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
 
 type LogState = Record<
   string,
@@ -27,12 +44,14 @@ function emptyLog(): LogState[string] {
   return { actual_reps: "", actual_weight: "", actual_minutes: "", actual_level: "", is_completed: false };
 }
 
-/** Una serie se da por hecha en cuanto tiene los dos valores que le
- * corresponden (peso+reps, o minutos+nivel si es cardio) — no hace
- * falta tocar el check a mano, y si borras uno se desmarca sola. */
+/** Una serie se da por hecha en cuanto tiene lo que le corresponde: en
+ * fuerza, peso y reps (no hace falta tocar el check a mano, y si borras
+ * uno se desmarca sola); en cardio, con minutos O nivel alcanza — a
+ * veces la máquina no muestra uno de los dos, y no por eso la serie
+ * debe quedar sin marcar. */
 function hasRequiredValues(log: LogState[string], cardio: boolean): boolean {
   return cardio
-    ? Boolean(log.actual_minutes && log.actual_level)
+    ? Boolean(log.actual_minutes || log.actual_level)
     : Boolean(log.actual_weight && log.actual_reps);
 }
 
@@ -187,10 +206,13 @@ export function WorkoutSessionView({
       return { ...prev, [setId]: next };
     });
     scheduleSave(setId);
-    if (justCompleted && restSeconds) setRestSecondsLeft(restSeconds);
+    // El descanso solo aplica a series de fuerza — el cardio no tiene
+    // ese concepto entre valores de minutos/nivel, así que nunca debe
+    // aparecer el cronómetro de descanso ahí.
+    if (justCompleted && restSeconds && !cardio) setRestSecondsLeft(restSeconds);
   }
 
-  function toggleComplete(setId: string, restSeconds: number | null) {
+  function toggleComplete(setId: string, cardio: boolean, restSeconds: number | null) {
     setLogs((prev) => {
       const current = prev[setId] ?? emptyLog();
       const next = { ...current, is_completed: !current.is_completed };
@@ -199,8 +221,23 @@ export function WorkoutSessionView({
     if (saveTimers.current[setId]) clearTimeout(saveTimers.current[setId]);
     setTimeout(() => persistLog(setId), 50);
     const willComplete = !(logs[setId]?.is_completed ?? false);
-    if (willComplete && restSeconds) setRestSecondsLeft(restSeconds);
+    if (willComplete && restSeconds && !cardio) setRestSecondsLeft(restSeconds);
   }
+
+  // La rutina se trata como "de cardio" solo si TODOS sus ejercicios lo
+  // son — así la pantalla de resumen pide lo que corresponde (calorías/
+  // distancia/pasos, o estrellas de fuerza) sin necesitar un campo
+  // aparte al crear la rutina.
+  const cardioRoutine = exercises.length > 0 && exercises.every((e) => isCardio(e.muscle_group));
+
+  const [stage, setStage] = useState<"active" | "summary">("active");
+  const [frozenDuration, setFrozenDuration] = useState<number | null>(null);
+  const [difficulty, setDifficulty] = useState<number | null>(null);
+  const [ratingStars, setRatingStars] = useState<number | null>(null);
+  const [calories, setCalories] = useState("");
+  const [distance, setDistance] = useState("");
+  const [steps, setSteps] = useState("");
+  const [comment, setComment] = useState("");
 
   async function handleFinish() {
     if (!sessionId) return;
@@ -237,10 +274,31 @@ export function WorkoutSessionView({
       );
     }
 
-    const durationSeconds = Math.round((finishedAt - startedAtRef.current) / 1000);
+    // El cronómetro se congela aquí — la sesión todavía no se marca
+    // "completed" en la base, eso pasa hasta que el cliente confirme la
+    // reseña en la pantalla de resumen (o si la abandona, la sesión
+    // sigue "in_progress" y puede retomarla).
+    setFrozenDuration(Math.round((finishedAt - startedAtRef.current) / 1000));
+    setFinishing(false);
+    setStage("summary");
+  }
+
+  async function handleSaveSummary() {
+    if (!sessionId) return;
+    setFinishing(true);
     const { error } = await supabase
       .from("client_sessions")
-      .update({ status: "completed", finished_at: new Date().toISOString(), duration_seconds: durationSeconds })
+      .update({
+        status: "completed",
+        finished_at: new Date().toISOString(),
+        duration_seconds: frozenDuration,
+        difficulty_level: difficulty,
+        rating_stars: cardioRoutine ? null : ratingStars,
+        calories_burned: cardioRoutine && calories ? Number(calories) : null,
+        distance_km: cardioRoutine && distance ? Number(distance) : null,
+        steps_count: cardioRoutine && steps ? Number(steps) : null,
+        client_comment: comment.trim() || null,
+      })
       .eq("id", sessionId);
     setFinishing(false);
     if (error) {
@@ -278,6 +336,132 @@ export function WorkoutSessionView({
             </Button>
           </>
         )}
+      </div>
+    );
+  }
+
+  if (stage === "summary") {
+    return (
+      <div className="mx-auto flex max-w-md flex-col gap-4 pb-28">
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur-sm">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold">{routineName}</p>
+            <p className="text-xs text-muted-foreground">¿Cómo te fue en esta sesión?</p>
+          </div>
+        </div>
+
+        <div className="px-4">
+          <div className="glass-card grid grid-cols-2 divide-x rounded-xl">
+            <div className="flex flex-col items-center gap-1 px-4 py-3">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Clock className="size-3.5" />
+                <span className="text-[11px] font-medium uppercase tracking-wide">Duración</span>
+              </div>
+              <p className="text-lg font-semibold tabular-nums">
+                {frozenDuration ? `${Math.round(frozenDuration / 60)} min` : "—"}
+              </p>
+            </div>
+            <div className="flex flex-col items-center gap-1 px-4 py-3">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Target className="size-3.5" />
+                <span className="text-[11px] font-medium uppercase tracking-wide">Series</span>
+              </div>
+              <p className="text-lg font-semibold tabular-nums">
+                {completedSets}/{totalSets}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 px-4">
+          <div>
+            <p className="mb-2 text-sm font-medium">¿Qué tan difícil te pareció? (1-10)</p>
+            <div className="flex flex-wrap gap-1.5">
+              {DIFFICULTY_OPTIONS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setDifficulty((d) => (d === n ? null : n))}
+                  className={cn(
+                    "flex size-9 items-center justify-center rounded-lg border text-sm font-medium tabular-nums transition-colors",
+                    difficulty === n
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {cardioRoutine ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm font-medium">Datos de la máquina (opcional)</p>
+              <div className="grid grid-cols-3 gap-2">
+                <label className="flex flex-col gap-1">
+                  <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Flame className="size-3.5" /> Kcal
+                  </span>
+                  <Input inputMode="decimal" value={calories} onChange={(e) => setCalories(e.target.value)} className="h-9" />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Route className="size-3.5" /> Km
+                  </span>
+                  <Input inputMode="decimal" value={distance} onChange={(e) => setDistance(e.target.value)} className="h-9" />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Footprints className="size-3.5" /> Pasos
+                  </span>
+                  <Input inputMode="numeric" value={steps} onChange={(e) => setSteps(e.target.value)} className="h-9" />
+                </label>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="mb-2 text-sm font-medium">¿Qué tal te pareció la rutina?</p>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setRatingStars((r) => (r === n ? null : n))}
+                    aria-label={`${n} estrellas`}
+                    className="p-0.5"
+                  >
+                    <Star
+                      className={cn(
+                        "size-7 transition-colors",
+                        ratingStars !== null && n <= ratingStars
+                          ? "fill-amber-400 text-amber-400"
+                          : "text-muted-foreground/30",
+                      )}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <p className="mb-2 text-sm font-medium">Mensaje para tu entrenador (opcional)</p>
+            <Textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Ej. Esta rutina estuvo muy bien, aunque el nivel 8 se me hizo pesado…"
+              rows={4}
+            />
+          </div>
+        </div>
+
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 p-4 backdrop-blur-sm">
+          <Button className="mx-auto w-full max-w-md" size="lg" disabled={finishing} onClick={handleSaveSummary}>
+            {finishing ? <Loader2 className="size-4 animate-spin" /> : null}
+            Finalizar rutina
+          </Button>
+        </div>
       </div>
     );
   }
@@ -427,7 +611,7 @@ export function WorkoutSessionView({
                           )}
                           <button
                             type="button"
-                            onClick={() => toggleComplete(set.id, set.rest_seconds)}
+                            onClick={() => toggleComplete(set.id, cardio, set.rest_seconds)}
                             className={cn(
                               "flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors",
                               log.is_completed

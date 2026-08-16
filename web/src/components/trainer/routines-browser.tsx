@@ -2,10 +2,23 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, ClipboardX, FilterX, Dumbbell, SlidersHorizontal } from "lucide-react";
+import {
+  Search,
+  Plus,
+  ClipboardX,
+  FilterX,
+  Dumbbell,
+  SlidersHorizontal,
+  MessageSquare,
+  Star,
+  Flame,
+  Footprints,
+  Route,
+} from "lucide-react";
 
-import { levelLabel, goalLabel } from "@/lib/format";
-import type { RoutineSummary } from "@/lib/types/routine";
+import { levelLabel, goalLabel, formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import type { RoutineSummaryWithFeedback } from "@/lib/types/routine";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,10 +32,11 @@ const LEVEL_OPTIONS = [
   { value: "advanced", label: "Avanzado" },
 ];
 
-export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
+export function RoutinesBrowser({ routines }: { routines: RoutineSummaryWithFeedback[] }) {
   const [query, setQuery] = React.useState("");
   const [level, setLevel] = React.useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [commentsRoutine, setCommentsRoutine] = React.useState<RoutineSummaryWithFeedback | null>(null);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -108,11 +122,30 @@ export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((routine) => (
-            <Link key={routine.id} href={`/entrenador/rutinas/${routine.id}`}>
+            <Link key={routine.id} href={`/entrenador/rutinas/${routine.id}`} className="relative block">
               <Card className="h-full card-hover-glow transition-colors hover:border-primary/40">
                 <CardContent className="flex h-full flex-col gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary">
-                    <Dumbbell className="size-[18px]" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary">
+                      <Dumbbell className="size-[18px]" />
+                    </div>
+                    {routine.comments.length > 0 ? (
+                      <button
+                        type="button"
+                        aria-label="Ver comentarios de clientes"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setCommentsRoutine(routine);
+                        }}
+                        className="relative -mr-1 -mt-1 flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      >
+                        <MessageSquare className="size-4.5" />
+                        <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                          {routine.comments.length}
+                        </span>
+                      </button>
+                    ) : null}
                   </div>
                   <div className="mt-auto">
                     <p className="truncate text-sm font-semibold">{routine.name}</p>
@@ -125,6 +158,13 @@ export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
                         <Badge variant="secondary">{goalLabel(routine.goal)}</Badge>
                       )}
                     </div>
+                    {routine.avgRating !== null ? (
+                      <div className="mt-1.5 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                        <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                        <span className="tabular-nums text-foreground">{routine.avgRating.toFixed(1)}</span>
+                        <span>({routine.ratingCount})</span>
+                      </div>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
@@ -132,6 +172,55 @@ export function RoutinesBrowser({ routines }: { routines: RoutineSummary[] }) {
           ))}
         </div>
       )}
+
+      <ResponsiveDialog
+        open={commentsRoutine !== null}
+        onOpenChange={(open) => !open && setCommentsRoutine(null)}
+        title={commentsRoutine ? `Comentarios — ${commentsRoutine.name}` : ""}
+      >
+        <div className="flex max-h-[70vh] flex-col gap-3 overflow-y-auto">
+          {commentsRoutine?.comments.map((c, i) => (
+            <div key={i} className="rounded-lg border p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">{c.clientName}</p>
+                <p className="text-xs text-muted-foreground">{formatDate(c.sessionDate)}</p>
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                {c.difficultyLevel !== null ? <span>Dificultad {c.difficultyLevel}/10</span> : null}
+                {c.ratingStars !== null ? (
+                  <span className="flex items-center gap-0.5">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <Star
+                        key={j}
+                        className={cn(
+                          "size-3",
+                          j < c.ratingStars! ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30",
+                        )}
+                      />
+                    ))}
+                  </span>
+                ) : null}
+                {c.caloriesBurned !== null ? (
+                  <span className="flex items-center gap-1">
+                    <Flame className="size-3.5" /> {c.caloriesBurned} kcal
+                  </span>
+                ) : null}
+                {c.distanceKm !== null ? (
+                  <span className="flex items-center gap-1">
+                    <Route className="size-3.5" /> {c.distanceKm} km
+                  </span>
+                ) : null}
+                {c.stepsCount !== null ? (
+                  <span className="flex items-center gap-1">
+                    <Footprints className="size-3.5" /> {c.stepsCount} pasos
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-2 text-sm">{c.comment}</p>
+            </div>
+          ))}
+        </div>
+      </ResponsiveDialog>
     </div>
   );
 }

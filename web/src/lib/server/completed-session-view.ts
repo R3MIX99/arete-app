@@ -22,6 +22,12 @@ export interface CompletedSessionView {
   sessionDate: string;
   durationSeconds: number | null;
   exercises: CompletedSessionExercise[];
+  difficultyLevel: number | null;
+  ratingStars: number | null;
+  caloriesBurned: number | null;
+  distanceKm: number | null;
+  stepsCount: number | null;
+  clientComment: string | null;
 }
 
 interface ExerciseRef {
@@ -65,7 +71,9 @@ export async function fetchCompletedSessionView(
   const [{ data: session }, { data: logRows }] = await Promise.all([
     supabase
       .from("client_sessions")
-      .select("session_date, duration_seconds, routines(name)")
+      .select(
+        "session_date, duration_seconds, difficulty_level, rating_stars, calories_burned, distance_km, steps_count, client_comment, routines(name)",
+      )
       .eq("id", sessionId)
       .eq("client_id", clientId)
       .maybeSingle(),
@@ -111,5 +119,11 @@ export async function fetchCompletedSessionView(
     sessionDate: session.session_date as string,
     durationSeconds: session.duration_seconds as number | null,
     exercises,
+    difficultyLevel: session.difficulty_level as number | null,
+    ratingStars: session.rating_stars as number | null,
+    caloriesBurned: session.calories_burned as number | null,
+    distanceKm: session.distance_km as number | null,
+    stepsCount: session.steps_count as number | null,
+    clientComment: session.client_comment as string | null,
   };
 }
