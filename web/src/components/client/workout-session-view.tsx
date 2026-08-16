@@ -539,7 +539,7 @@ export function WorkoutSessionView({
               {isOpen ? (
                 <div className="border-t px-4 py-3">
                   {videoId ? (
-                    <div className="mx-auto mb-3 aspect-video w-full max-w-56 overflow-hidden rounded-lg border border-border">
+                    <div className="mb-3 aspect-video w-full overflow-hidden rounded-lg border border-border">
                       <iframe
                         className="size-full"
                         src={`https://www.youtube.com/embed/${videoId}`}
