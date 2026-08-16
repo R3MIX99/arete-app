@@ -29,7 +29,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       // encima de la navegación.
       // La nav inferior flotante mide ~64px + su margen, más lo que
       // agregue el "home indicator" del teléfono (safe-area-inset).
-      mobileOffset={{ bottom: "calc(96px + env(safe-area-inset-bottom))", left: "16px", right: "16px" }}
+      mobileOffset={{ bottom: "calc(84px + env(safe-area-inset-bottom))", left: "16px", right: "16px" }}
       // En móvil sonner deja el contenedor con left/right propios pero
       // width:100%, así que se desborda por la derecha y el "centro"
       // del contenedor no coincide con el centro real de la pantalla.

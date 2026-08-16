@@ -39,6 +39,11 @@ interface SubstituteTarget {
   currentFoodId: string;
   currentQuantity: number;
   name: string;
+  /** Categoría del alimento que se está sustituyendo. Los sustitutos
+   * siempre salen de la misma categoría, así que sirve tal cual para el
+   * ícono del reemplazo — el RPC de sustitutos no devuelve la categoría
+   * y sin esto el ícono se caía al genérico al sustituir. */
+  categorySlug: string | null;
 }
 
 function todayIso() {
@@ -99,7 +104,12 @@ export function ClientNutritionView({
     [plan, substitutions],
   );
 
-  const shoppingList = React.useMemo(() => (plan ? buildWeeklyShoppingList(plan, 7) : []), [plan]);
+  // Se arma sobre el plan YA sustituido: si cambiaste un alimento, lo
+  // que tienes que comprar es el nuevo, no el que ya descartaste.
+  const shoppingList = React.useMemo(
+    () => (effectivePlan ? buildWeeklyShoppingList(effectivePlan, 7) : []),
+    [effectivePlan],
+  );
 
   async function handlePick(option: FoodSubstituteOption) {
     if (!target) return;
@@ -116,6 +126,26 @@ export function ClientNutritionView({
       ? deleteQuery.eq("dish_ingredient_id", target.dishIngredientId)
       : deleteQuery.is("dish_ingredient_id", null);
     await deleteQuery;
+
+    // Volver al alimento original no es "sustituir por el original": es
+    // deshacer la sustitución. Se queda solo con el borrado de arriba,
+    // así el plan vuelve a su estado base y no queda marcado como
+    // sustituido.
+    if (option.foodId === target.originalFoodId) {
+      setSubstitutions((prev) =>
+        prev.filter(
+          (s) =>
+            !(
+              s.dietPlanMealId === target.dietPlanMealId &&
+              (s.dishIngredientId ?? null) === target.dishIngredientId
+            ),
+        ),
+      );
+      setApplying(false);
+      toast.success(`Volviste a ${option.name}`);
+      setTarget(null);
+      return;
+    }
 
     const { data, error } = await supabase2
       .from("client_meal_substitutions")
@@ -149,7 +179,7 @@ export function ClientNutritionView({
       substituteFood: {
         foodId: option.foodId,
         name: option.name,
-        categorySlug: null,
+        categorySlug: target.categorySlug,
         caloriesPer100g: option.calories / (option.quantityGrams / 100),
         proteinPer100g: option.protein / (option.quantityGrams / 100),
         carbsPer100g: option.carbs / (option.quantityGrams / 100),
@@ -283,6 +313,7 @@ export function ClientNutritionView({
                               currentFoodId: item.food!.foodId,
                               currentQuantity: item.food!.quantityGrams,
                               name: item.food!.name,
+                              categorySlug: item.food!.categorySlug,
                             })
                           }
                           onOpenDetail={() => setDetailFood(item.food)}
@@ -314,6 +345,7 @@ export function ClientNutritionView({
                                     currentFoodId: ing.foodId,
                                     currentQuantity: ing.quantityGrams,
                                     name: ing.name,
+                                    categorySlug: ing.categorySlug,
                                   })
                                 }
                                 onOpenDetail={() => setDetailFood(ing)}

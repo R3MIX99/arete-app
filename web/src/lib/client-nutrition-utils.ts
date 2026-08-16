@@ -121,6 +121,10 @@ export function applySubstitutions(
     sub: (typeof substitutions)[number] | undefined,
   ): T {
     if (!sub || !sub.substituteFood) return food;
+    // Una "sustitución" que apunta al mismo alimento original no es una
+    // sustitución — se deja el alimento tal cual (sin el chip de
+    // sustituido). Cubre filas viejas que pudieron quedar guardadas así.
+    if (sub.substituteFood.foodId === food.originalFoodId) return food;
     return {
       ...food,
       foodId: sub.substituteFood.foodId,
@@ -164,9 +168,9 @@ export function applySubstitutions(
  * que se suma cuánto de cada alimento hace falta EN UN DÍA (juntando
  * todas las apariciones del mismo alimento, sea suelto o como
  * ingrediente de un platillo) y se multiplica por los días — redondeado
- * siempre hacia arriba, mejor que sobre a que falte. Usa el plan base
- * (sin sustituciones del día), porque una sustitución es un ajuste
- * puntual de un día concreto, no un cambio permanente de la receta.
+ * siempre hacia arriba, mejor que sobre a que falte. Se le pasa el plan
+ * con las sustituciones ya aplicadas: si cambiaste un alimento, lo que
+ * hay que comprar es el nuevo, no el que descartaste.
  */
 export function buildWeeklyShoppingList(plan: ClientNutritionPlan, days = 7): ShoppingListItem[] {
   const totals = new Map<
