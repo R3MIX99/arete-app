@@ -22,7 +22,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={resolvedTheme as ToasterProps["theme"]}
       position={isMobile ? "bottom-center" : "top-right"}
-      offset={isMobile ? { bottom: 88 } : undefined}
+      // La nav inferior flotante mide ~64px + su propio margen, más lo
+      // que agregue el "home indicator" del teléfono (safe-area-inset) —
+      // sin sumar eso, en algunos teléfonos el toast quedaba justo
+      // encima del borde y se veía pegado/tapando la barra.
+      offset={isMobile ? { bottom: "calc(96px + env(safe-area-inset-bottom))" } : undefined}
       className="toaster group"
       icons={{
         success: <CheckCircle2 className="size-[18px] text-success" />,
@@ -31,8 +35,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         unstyled: false,
         classNames: {
-          toast: "!rounded-full !w-fit !px-4 !py-3 !gap-2.5 !shadow-lg",
-          title: "!text-sm !font-medium",
+          toast: "!rounded-full !w-fit !max-w-[92vw] !mx-auto !px-4 !py-3 !gap-2.5 !shadow-lg !justify-center",
+          title: "!text-sm !font-medium !text-center",
           icon: "!m-0",
         },
       }}
