@@ -26,7 +26,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       // que agregue el "home indicator" del teléfono (safe-area-inset) —
       // sin sumar eso, en algunos teléfonos el toast quedaba justo
       // encima del borde y se veía pegado/tapando la barra.
-      offset={isMobile ? { bottom: "calc(96px + env(safe-area-inset-bottom))" } : undefined}
+      offset={isMobile ? { bottom: "calc(108px + env(safe-area-inset-bottom))" } : undefined}
       className="toaster group"
       icons={{
         success: <CheckCircle2 className="size-[18px] text-success" />,
@@ -35,17 +35,31 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         unstyled: false,
         classNames: {
-          // Sonner posiciona cada toast con position:absolute y, en
-          // móvil, left:0 + right:0 + un width ya calculado para quedar
-          // centrado — si aquí se le forzaba un width propio (w-fit),
-          // ese width explícito ganaba sobre el "right", así que la caja
-          // terminaba pegada al borde izquierdo en vez de centrada. Se
-          // deja que sonner controle el ancho (crece parejo hacia los
-          // dos lados) y solo se le da la forma de píldora.
           toast: "!rounded-full !px-4 !py-3 !gap-2.5 !shadow-lg !justify-center",
           title: "!text-sm !font-medium !text-center",
           icon: "!m-0",
         },
+        // Sonner posiciona cada toast en móvil con left:0 + right:0 +
+        // un width ya calculado para que su propio cálculo dé una caja
+        // centrada — pero de ANCHO COMPLETO. Forzarle un ancho propio
+        // por clase (w-fit) no funcionaba: con left, width Y right los
+        // tres fijos a la vez, la caja queda anclada a la izquierda e
+        // ignora el "right" (así lo define la propia especificación de
+        // CSS). Por eso aquí se resuelve por estilo en línea (solo en
+        // móvil — en escritorio sonner ya ancla bien a la derecha) —
+        // que sí gana sobre las reglas de sonner por no llevar
+        // !important — y se centra con `translate` (una propiedad CSS
+        // aparte de `transform`, que sonner ya usa para la animación de
+        // entrada/salida) para no pisarle esa animación.
+        style: isMobile
+          ? ({
+              left: "50%",
+              right: "auto",
+              width: "fit-content",
+              maxWidth: "92vw",
+              translate: "-50% 0",
+            } as CSSProperties)
+          : undefined,
       }}
       style={
         {
