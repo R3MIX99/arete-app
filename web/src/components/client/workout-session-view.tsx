@@ -25,11 +25,10 @@ import { youtubeVideoId } from "@/lib/youtube";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ExerciseHistoryList } from "@/components/client/exercise-history";
 import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
-
-const DIFFICULTY_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
 
 type LogState = Record<
   string,
@@ -375,23 +374,19 @@ export function WorkoutSessionView({
 
         <div className="flex flex-col gap-4 px-4">
           <div>
-            <p className="mb-2 text-sm font-medium">¿Qué tan difícil te pareció? (1-10)</p>
-            <div className="flex flex-wrap gap-1.5">
-              {DIFFICULTY_OPTIONS.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setDifficulty((d) => (d === n ? null : n))}
-                  className={cn(
-                    "flex size-9 items-center justify-center rounded-lg border text-sm font-medium tabular-nums transition-colors",
-                    difficulty === n
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-input text-muted-foreground hover:bg-accent",
-                  )}
-                >
-                  {n}
-                </button>
-              ))}
+            <p className="mb-1 text-sm font-medium">¿Qué tan difícil te pareció?</p>
+            <p className="text-center text-3xl font-bold tabular-nums text-primary">{difficulty ?? 5}</p>
+            <Slider
+              min={1}
+              max={10}
+              step={1}
+              value={[difficulty ?? 5]}
+              onValueChange={([v]) => setDifficulty(v)}
+              className="my-3"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Fácil</span>
+              <span>Difícil</span>
             </div>
           </div>
 
