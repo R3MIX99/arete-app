@@ -35,7 +35,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         unstyled: false,
         classNames: {
-          toast: "!rounded-full !w-fit !max-w-[92vw] !mx-auto !px-4 !py-3 !gap-2.5 !shadow-lg !justify-center",
+          // Sonner posiciona cada toast con position:absolute y, en
+          // móvil, left:0 + right:0 + un width ya calculado para quedar
+          // centrado — si aquí se le forzaba un width propio (w-fit),
+          // ese width explícito ganaba sobre el "right", así que la caja
+          // terminaba pegada al borde izquierdo en vez de centrada. Se
+          // deja que sonner controle el ancho (crece parejo hacia los
+          // dos lados) y solo se le da la forma de píldora.
+          toast: "!rounded-full !px-4 !py-3 !gap-2.5 !shadow-lg !justify-center",
           title: "!text-sm !font-medium !text-center",
           icon: "!m-0",
         },
