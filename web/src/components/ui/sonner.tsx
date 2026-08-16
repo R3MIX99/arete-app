@@ -22,12 +22,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={resolvedTheme as ToasterProps["theme"]}
       position={isMobile ? "bottom-center" : "top-right"}
-      // La nav inferior flotante mide ~64px + su propio margen, más lo
-      // que agregue el "home indicator" del teléfono (safe-area-inset) —
-      // sin sumar eso, en algunos teléfonos el toast quedaba justo
-      // encima del borde y se veía pegado/tapando la barra.
-      offset={isMobile ? { bottom: "calc(108px + env(safe-area-inset-bottom))" } : undefined}
-      className="toaster group"
+      // OJO: en móvil sonner NO usa `offset` — su CSS para pantallas
+      // angostas lee otra variable distinta, la que alimenta esta prop
+      // `mobileOffset`. Por eso los intentos anteriores de separarlo de
+      // la barra vía `offset` no movían nada y el toast seguía saliendo
+      // encima de la navegación.
+      // La nav inferior flotante mide ~64px + su margen, más lo que
+      // agregue el "home indicator" del teléfono (safe-area-inset).
+      mobileOffset={{ bottom: "calc(96px + env(safe-area-inset-bottom))", left: "16px", right: "16px" }}
+      // En móvil sonner deja el contenedor con left/right propios pero
+      // width:100%, así que se desborda por la derecha y el "centro"
+      // del contenedor no coincide con el centro real de la pantalla.
+      // Se neutraliza para que el centrado del toast sí quede parejo.
+      className="toaster group max-md:!left-0 max-md:!right-0 max-md:!w-auto"
       icons={{
         success: <CheckCircle2 className="size-[18px] text-success" />,
         error: <XCircle className="size-[18px] text-destructive" />,
@@ -55,8 +62,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
           ? ({
               left: "50%",
               right: "auto",
-              width: "fit-content",
-              maxWidth: "92vw",
+              // max-content = el ancho natural del texto sin partirlo;
+              // con fit-content el toast se comprimía y el mensaje
+              // salía envuelto en varias líneas. El maxWidth lo vuelve
+              // a envolver solo si de verdad no cabe en la pantalla.
+              width: "max-content",
+              maxWidth: "calc(100vw - 32px)",
               translate: "-50% 0",
             } as CSSProperties)
           : undefined,
