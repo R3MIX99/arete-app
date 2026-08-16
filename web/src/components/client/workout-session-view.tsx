@@ -159,14 +159,14 @@ export function WorkoutSessionView({
 
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  // Recibe el log ya calculado (no lo relee de `logs` al disparar) — el
-  // closure de este componente que capturó `scheduleSave` está fijo al
-  // render donde se llamó, es decir ANTES de que el setLogs de ese mismo
-  // tecleo se aplique. Si se dejaba que persistLog leyera `logs[setId]`
-  // por su cuenta, el valor que se guardaba siempre era el de un paso
-  // atrás: si el campo editado no volvía a tocarse (típicamente el
-  // último campo que llenas, p. ej. el nivel de cardio), ese valor
-  // nunca llegaba a guardarse y el registro quedaba incompleto.
+  // Recibe el log ya calculado por el llamador — no lo relee de `logs`
+  // al disparar, porque ese state solo se actualiza hasta el siguiente
+  // render (la función que se le pasa a setLogs corre durante ese
+  // render, no en el momento en que se llama a setLogs), así que
+  // cualquier variable que dependiera de ese callback para "avisar" el
+  // valor nuevo podía seguir vacía cuando se programaba el guardado.
+  // Por eso aquí el valor a guardar se calcula ANTES de llamar a
+  // setLogs, a partir del `logs` del render actual — no dentro de él.
   function scheduleSave(setId: string, nextLog: LogState[string]) {
     if (!sessionId) return;
     if (saveTimers.current[setId]) clearTimeout(saveTimers.current[setId]);
@@ -203,18 +203,19 @@ export function WorkoutSessionView({
     cardio: boolean,
     restSeconds: number | null,
   ) {
-    let justCompleted = false;
-    let nextLog: LogState[string] = emptyLog();
-    setLogs((prev) => {
-      const current = prev[setId] ?? emptyLog();
-      const wasCompleted = current.is_completed;
-      const next = { ...current, [field]: value };
-      next.is_completed = hasRequiredValues(next, cardio);
-      justCompleted = next.is_completed && !wasCompleted;
-      nextLog = next;
-      return { ...prev, [setId]: next };
-    });
-    scheduleSave(setId, nextLog);
+    // `next` se calcula aquí, a partir del `logs` de este render — NO
+    // dentro del callback de setLogs, porque ese callback corre en el
+    // siguiente render (no de inmediato), así que cualquier variable
+    // que dependiera de él para "avisar" el valor nuevo seguía vacía
+    // en este punto del código.
+    const current = logs[setId] ?? emptyLog();
+    const wasCompleted = current.is_completed;
+    const next = { ...current, [field]: value };
+    next.is_completed = hasRequiredValues(next, cardio);
+    const justCompleted = next.is_completed && !wasCompleted;
+
+    setLogs((prev) => ({ ...prev, [setId]: next }));
+    scheduleSave(setId, next);
     // El descanso solo aplica a series de fuerza — el cardio no tiene
     // ese concepto entre valores de minutos/nivel, así que nunca debe
     // aparecer el cronómetro de descanso ahí.
@@ -222,16 +223,13 @@ export function WorkoutSessionView({
   }
 
   function toggleComplete(setId: string, cardio: boolean, restSeconds: number | null) {
-    let nextLog: LogState[string] = emptyLog();
-    setLogs((prev) => {
-      const current = prev[setId] ?? emptyLog();
-      const next = { ...current, is_completed: !current.is_completed };
-      nextLog = next;
-      return { ...prev, [setId]: next };
-    });
+    const current = logs[setId] ?? emptyLog();
+    const next = { ...current, is_completed: !current.is_completed };
+
+    setLogs((prev) => ({ ...prev, [setId]: next }));
     if (saveTimers.current[setId]) clearTimeout(saveTimers.current[setId]);
-    setTimeout(() => persistLog(setId, nextLog), 50);
-    if (nextLog.is_completed && restSeconds && !cardio) setRestSecondsLeft(restSeconds);
+    setTimeout(() => persistLog(setId, next), 50);
+    if (next.is_completed && restSeconds && !cardio) setRestSecondsLeft(restSeconds);
   }
 
   // La rutina se trata como "de cardio" solo si TODOS sus ejercicios lo
