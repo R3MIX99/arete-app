@@ -159,10 +159,18 @@ export function WorkoutSessionView({
 
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  function scheduleSave(setId: string) {
+  // Recibe el log ya calculado (no lo relee de `logs` al disparar) — el
+  // closure de este componente que capturó `scheduleSave` está fijo al
+  // render donde se llamó, es decir ANTES de que el setLogs de ese mismo
+  // tecleo se aplique. Si se dejaba que persistLog leyera `logs[setId]`
+  // por su cuenta, el valor que se guardaba siempre era el de un paso
+  // atrás: si el campo editado no volvía a tocarse (típicamente el
+  // último campo que llenas, p. ej. el nivel de cardio), ese valor
+  // nunca llegaba a guardarse y el registro quedaba incompleto.
+  function scheduleSave(setId: string, nextLog: LogState[string]) {
     if (!sessionId) return;
     if (saveTimers.current[setId]) clearTimeout(saveTimers.current[setId]);
-    saveTimers.current[setId] = setTimeout(() => persistLog(setId), 600);
+    saveTimers.current[setId] = setTimeout(() => persistLog(setId, nextLog), 600);
   }
 
   async function persistLog(setId: string, overrideLog?: LogState[string]) {
@@ -196,15 +204,17 @@ export function WorkoutSessionView({
     restSeconds: number | null,
   ) {
     let justCompleted = false;
+    let nextLog: LogState[string] = emptyLog();
     setLogs((prev) => {
       const current = prev[setId] ?? emptyLog();
       const wasCompleted = current.is_completed;
       const next = { ...current, [field]: value };
       next.is_completed = hasRequiredValues(next, cardio);
       justCompleted = next.is_completed && !wasCompleted;
+      nextLog = next;
       return { ...prev, [setId]: next };
     });
-    scheduleSave(setId);
+    scheduleSave(setId, nextLog);
     // El descanso solo aplica a series de fuerza — el cardio no tiene
     // ese concepto entre valores de minutos/nivel, así que nunca debe
     // aparecer el cronómetro de descanso ahí.
@@ -212,15 +222,16 @@ export function WorkoutSessionView({
   }
 
   function toggleComplete(setId: string, cardio: boolean, restSeconds: number | null) {
+    let nextLog: LogState[string] = emptyLog();
     setLogs((prev) => {
       const current = prev[setId] ?? emptyLog();
       const next = { ...current, is_completed: !current.is_completed };
+      nextLog = next;
       return { ...prev, [setId]: next };
     });
     if (saveTimers.current[setId]) clearTimeout(saveTimers.current[setId]);
-    setTimeout(() => persistLog(setId), 50);
-    const willComplete = !(logs[setId]?.is_completed ?? false);
-    if (willComplete && restSeconds && !cardio) setRestSecondsLeft(restSeconds);
+    setTimeout(() => persistLog(setId, nextLog), 50);
+    if (nextLog.is_completed && restSeconds && !cardio) setRestSecondsLeft(restSeconds);
   }
 
   // La rutina se trata como "de cardio" solo si TODOS sus ejercicios lo
