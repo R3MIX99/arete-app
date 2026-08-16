@@ -50,12 +50,16 @@ export interface ClientNutritionPlan {
 
 export interface MealSubstitutionRow {
   id: string;
-  substitutionDate: string;
+  /** null en las permanentes — ahí la fecha no filtra nada. */
+  substitutionDate: string | null;
   dietPlanMealId: string;
   dishIngredientId: string | null;
   originalFoodId: string;
   substituteFoodId: string;
   quantityGrams: number;
+  /** true = el cambio vale para todos los días del plan del cliente;
+   * false = solo para su substitutionDate. */
+  isPermanent: boolean;
 }
 
 export interface FoodSubstituteOption {

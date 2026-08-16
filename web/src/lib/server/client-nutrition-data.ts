@@ -252,14 +252,17 @@ export async function fetchSubstitutionsForDate(
   const { data } = await supabase
     .from("client_meal_substitutions")
     .select(
-      `id, substitution_date, diet_plan_meal_id, dish_ingredient_id, original_food_id, substitute_food_id, quantity_grams, foods!client_meal_substitutions_substitute_food_id_fkey(${foodSelect})`,
+      `id, substitution_date, is_permanent, diet_plan_meal_id, dish_ingredient_id, original_food_id, substitute_food_id, quantity_grams, foods!client_meal_substitutions_substitute_food_id_fkey(${foodSelect})`,
     )
     .eq("client_id", clientId)
-    .eq("substitution_date", date);
+    // Las de ese día MÁS las permanentes, que valen todos los días del
+    // plan de este cliente.
+    .or(`substitution_date.eq.${date},is_permanent.is.true`);
 
   return ((data ?? []) as Array<{
     id: string;
-    substitution_date: string;
+    substitution_date: string | null;
+    is_permanent: boolean;
     diet_plan_meal_id: string;
     dish_ingredient_id: string | null;
     original_food_id: string;
@@ -271,6 +274,7 @@ export async function fetchSubstitutionsForDate(
     return {
       id: r.id,
       substitutionDate: r.substitution_date,
+      isPermanent: r.is_permanent,
       dietPlanMealId: r.diet_plan_meal_id,
       dishIngredientId: r.dish_ingredient_id,
       originalFoodId: r.original_food_id,

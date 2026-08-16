@@ -99,29 +99,40 @@ export function ClientNutritionView({
   const [expandedDays, setExpandedDays] = React.useState<Set<string>>(new Set());
   const [shoppingListOpen, setShoppingListOpen] = React.useState(false);
 
+  // Plan de un día cualquiera de la semana: solo con las sustituciones
+  // permanentes, que son las que valen todos los días.
+  const weekPlan = React.useMemo(
+    () => (plan ? applySubstitutions(plan, substitutions.filter((s) => s.isPermanent)) : null),
+    [plan, substitutions],
+  );
+
+  // Plan de hoy: permanentes + las puntuales de hoy.
   const effectivePlan = React.useMemo(
     () => (plan ? applySubstitutions(plan, substitutions) : null),
     [plan, substitutions],
   );
 
-  // Se arma sobre el plan YA sustituido: si cambiaste un alimento, lo
-  // que tienes que comprar es el nuevo, no el que ya descartaste.
+  // Una sustitución de hoy cambia UN día, no la semana: por eso se le
+  // pasan los dos planes y adentro cuenta 6 días normales + el de hoy.
   const shoppingList = React.useMemo(
-    () => (effectivePlan ? buildWeeklyShoppingList(effectivePlan, 7) : []),
-    [effectivePlan],
+    () => (weekPlan && effectivePlan ? buildWeeklyShoppingList(weekPlan, effectivePlan, 7) : []),
+    [weekPlan, effectivePlan],
   );
 
-  async function handlePick(option: FoodSubstituteOption) {
+  async function handlePick(option: FoodSubstituteOption, permanent: boolean) {
     if (!target) return;
     setApplying(true);
     const supabase2 = supabase;
 
+    // Se limpia cualquier sustitución vigente sobre este mismo alimento
+    // —la de hoy y la permanente— antes de guardar la nueva, para que no
+    // queden dos peleándose por el mismo lugar del plan.
     let deleteQuery = supabase2
       .from("client_meal_substitutions")
       .delete()
       .eq("client_id", clientId)
-      .eq("substitution_date", today)
-      .eq("diet_plan_meal_id", target.dietPlanMealId);
+      .eq("diet_plan_meal_id", target.dietPlanMealId)
+      .or(`substitution_date.eq.${today},is_permanent.is.true`);
     deleteQuery = target.dishIngredientId
       ? deleteQuery.eq("dish_ingredient_id", target.dishIngredientId)
       : deleteQuery.is("dish_ingredient_id", null);
@@ -152,7 +163,10 @@ export function ClientNutritionView({
       .insert({
         client_id: clientId,
         trainer_id: trainerId,
+        // En las permanentes la fecha queda solo como referencia de
+        // cuándo se hizo el cambio; no filtra nada.
         substitution_date: today,
+        is_permanent: permanent,
         diet_plan_meal_id: target.dietPlanMealId,
         dish_ingredient_id: target.dishIngredientId,
         original_food_id: target.originalFoodId,
@@ -171,6 +185,7 @@ export function ClientNutritionView({
     const newRow: SubstitutionWithFood = {
       id: data.id,
       substitutionDate: today,
+      isPermanent: permanent,
       dietPlanMealId: target.dietPlanMealId,
       dishIngredientId: target.dishIngredientId,
       originalFoodId: target.originalFoodId,
@@ -198,11 +213,15 @@ export function ClientNutritionView({
       ),
       newRow,
     ]);
-    toast.success(`Sustituido por ${option.name}`);
+    toast.success(
+      permanent
+        ? `${option.name} queda en todo tu plan`
+        : `Sustituido por ${option.name} solo hoy`,
+    );
     setTarget(null);
   }
 
-  if (!plan || !effectivePlan) {
+  if (!plan || !effectivePlan || !weekPlan) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-10 text-center">
         <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -364,11 +383,10 @@ export function ClientNutritionView({
 
         <TabsContent value="semana" className="flex flex-col gap-3 pt-4">
           {weekDates().map((date, index) => {
-            // Solo "hoy" refleja las sustituciones ya aplicadas — los
-            // demás días muestran el plan base, ya que es el mismo plan
-            // que se repite todos los días hasta que el entrenador
-            // asigne uno nuevo.
-            const dayPlan = index === 0 ? effectivePlan : plan;
+            // Hoy lleva además las sustituciones puntuales de hoy; los
+            // demás días muestran el plan con las permanentes aplicadas,
+            // que es lo que de verdad vas a comer esos días.
+            const dayPlan = index === 0 ? effectivePlan : weekPlan;
             const totals = roundTotals(planTotals(dayPlan));
             const isOpen = expandedDays.has(date);
             return (

@@ -111,7 +111,10 @@ export function applySubstitutions(
 
   const byDirectMeal = new Map<string, (typeof substitutions)[number]>();
   const byIngredient = new Map<string, (typeof substitutions)[number]>();
-  for (const sub of substitutions) {
+  // Las permanentes se cargan primero para que una sustitución puntual
+  // de hoy sobre el mismo alimento las pise: el cambio de hoy es más
+  // específico que el que dejaste fijo para todos los días.
+  for (const sub of [...substitutions].sort((a, b) => Number(b.isPermanent) - Number(a.isPermanent))) {
     if (sub.dishIngredientId) byIngredient.set(sub.dishIngredientId, sub);
     else byDirectMeal.set(sub.dietPlanMealId, sub);
   }
@@ -164,15 +167,25 @@ export function applySubstitutions(
 }
 
 /**
- * Lista de compras de la semana: el plan se repite todos los días, así
+ * Lista de compras de la semana. El plan se repite todos los días, así
  * que se suma cuánto de cada alimento hace falta EN UN DÍA (juntando
- * todas las apariciones del mismo alimento, sea suelto o como
- * ingrediente de un platillo) y se multiplica por los días — redondeado
- * siempre hacia arriba, mejor que sobre a que falte. Se le pasa el plan
- * con las sustituciones ya aplicadas: si cambiaste un alimento, lo que
- * hay que comprar es el nuevo, no el que descartaste.
+ * todas sus apariciones, sea suelto o como ingrediente de un platillo).
+ *
+ * Se reciben DOS planes porque una sustitución puntual cambia un solo
+ * día, no la semana entera: `weekPlan` es el plan de un día normal (con
+ * las sustituciones permanentes ya aplicadas, que sí valen todos los
+ * días) y `todayPlan` es el de hoy (además con las de hoy). El total
+ * queda entonces en weekPlan × (días − 1) + todayPlan × 1 — o sea, al
+ * alimento original se le resta solo ese día y al nuevo se le suma solo
+ * ese día, en vez de cambiar la compra de toda la semana.
+ *
+ * Todo se redondea hacia arriba al final: mejor que sobre a que falte.
  */
-export function buildWeeklyShoppingList(plan: ClientNutritionPlan, days = 7): ShoppingListItem[] {
+export function buildWeeklyShoppingList(
+  weekPlan: ClientNutritionPlan,
+  todayPlan: ClientNutritionPlan,
+  days = 7,
+): ShoppingListItem[] {
   const totals = new Map<
     string,
     {
@@ -184,7 +197,7 @@ export function buildWeeklyShoppingList(plan: ClientNutritionPlan, days = 7): Sh
     }
   >();
 
-  function addFood(food: ClientNutritionFoodRef & { quantityGrams: number }) {
+  function addFood(food: ClientNutritionFoodRef & { quantityGrams: number }, multiplier: number) {
     if (!food.foodId) return;
     const prev = totals.get(food.foodId) ?? {
       name: food.name,
@@ -193,22 +206,33 @@ export function buildWeeklyShoppingList(plan: ClientNutritionPlan, days = 7): Sh
       householdUnitName: food.householdUnitName,
       householdUnitGrams: food.householdUnitGrams,
     };
-    prev.dailyGrams += food.quantityGrams;
+    prev.dailyGrams += food.quantityGrams * multiplier;
     totals.set(food.foodId, prev);
   }
 
-  for (const block of plan.blocks) {
-    for (const item of block.items) {
-      if (item.kind === "food" && item.food) addFood(item.food);
-      if (item.kind === "dish" && item.ingredients) {
-        for (const ing of item.ingredients) addFood(ing);
+  function addPlan(plan: ClientNutritionPlan, multiplier: number) {
+    if (multiplier <= 0) return;
+    for (const block of plan.blocks) {
+      for (const item of block.items) {
+        if (item.kind === "food" && item.food) addFood(item.food, multiplier);
+        if (item.kind === "dish" && item.ingredients) {
+          for (const ing of item.ingredients) addFood(ing, multiplier);
+        }
       }
     }
   }
 
+  addPlan(weekPlan, days - 1);
+  addPlan(todayPlan, 1);
+
   return Array.from(totals.entries())
+    // Un alimento puede quedar en 0 si solo aparecía hoy y hoy lo
+    // sustituiste (days - 1 = 0 en un plan de un día, por ejemplo).
+    .filter(([, t]) => t.dailyGrams > 0)
     .map(([foodId, t]) => {
-      const totalGrams = Math.ceil(t.dailyGrams * days);
+      // Ya viene acumulado por día (weekPlan × días-1 + todayPlan × 1),
+      // así que aquí solo se redondea — NO se vuelve a multiplicar.
+      const totalGrams = Math.ceil(t.dailyGrams);
       const householdUnitQuantity =
         t.householdUnitGrams && t.householdUnitGrams > 0
           ? Math.ceil(totalGrams / t.householdUnitGrams)

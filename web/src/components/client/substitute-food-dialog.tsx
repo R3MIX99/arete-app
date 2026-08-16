@@ -4,6 +4,7 @@ import * as React from "react";
 import { Loader2, Repeat, Check } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { formatHouseholdEquivalence } from "@/lib/client-nutrition-utils";
 import type { FoodSubstituteOption } from "@/lib/types/client-nutrition";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
@@ -42,11 +43,22 @@ export function SubstituteFoodDialog({
   foodName: string;
   quantityGrams: number;
   applying: boolean;
-  onPick: (option: FoodSubstituteOption) => void;
+  onPick: (option: FoodSubstituteOption, permanent: boolean) => void;
 }) {
   const [loading, setLoading] = React.useState(true);
   const [options, setOptions] = React.useState<FoodSubstituteOption[]>([]);
   const [error, setError] = React.useState<string | null>(null);
+  // Alcance del cambio: solo hoy (lo más común, por eso es el default) o
+  // fijo en todo el plan de este cliente. Se reinicia a "solo hoy" cada
+  // vez que se abre el diálogo, ajustando el estado durante el render
+  // (sin efecto), que es el patrón que recomienda React para resetear
+  // estado derivado de una prop.
+  const [permanent, setPermanent] = React.useState(false);
+  const [wasOpen, setWasOpen] = React.useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setPermanent(false);
+  }
 
   React.useEffect(() => {
     if (!open) return;
@@ -90,6 +102,28 @@ export function SubstituteFoodDialog({
           Alternativas de la misma categoría con calorías y proteína equivalentes.
         </p>
 
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { value: false, label: "Solo hoy", hint: "Cambia únicamente el día de hoy" },
+            { value: true, label: "Todo el plan", hint: "Queda así todos los días" },
+          ].map((scope) => (
+            <button
+              key={String(scope.value)}
+              type="button"
+              onClick={() => setPermanent(scope.value)}
+              className={cn(
+                "rounded-lg border px-3 py-2 text-left transition-colors",
+                permanent === scope.value
+                  ? "border-primary bg-primary/10"
+                  : "hover:bg-accent",
+              )}
+            >
+              <span className="block text-sm font-medium">{scope.label}</span>
+              <span className="block text-xs text-muted-foreground">{scope.hint}</span>
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
@@ -117,7 +151,7 @@ export function SubstituteFoodDialog({
                   key={option.foodId}
                   type="button"
                   disabled={applying}
-                  onClick={() => onPick(option)}
+                  onClick={() => onPick(option, permanent)}
                   className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent disabled:opacity-50"
                 >
                   <div className="min-w-0 flex-1">
