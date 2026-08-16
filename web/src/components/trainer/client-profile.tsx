@@ -360,7 +360,7 @@ export function ClientProfile({
                   <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
                     <Dumbbell className="size-6" />
                     <p className="text-sm">
-                      Todavía no hay registros de peso en los ejercicios de este cliente.
+                      Este cliente todavía no tiene ejercicios registrados.
                     </p>
                   </CardContent>
                 </Card>
@@ -368,10 +368,12 @@ export function ClientProfile({
                 <div className="overflow-x-auto rounded-lg border">
                   <table className="w-full text-sm">
                     <thead>
+                      {/* "Inicial"/"Actual" en vez de "Peso ...": la misma
+                          tabla lista fuerza (kg) y cardio (min). */}
                       <tr className="border-b bg-foreground/[0.02] text-left text-xs text-muted-foreground uppercase">
                         <th className="px-3 py-2 font-medium">Ejercicio</th>
-                        <th className="px-3 py-2 font-medium">Peso inicial</th>
-                        <th className="px-3 py-2 font-medium">Peso actual</th>
+                        <th className="px-3 py-2 font-medium">Inicial</th>
+                        <th className="px-3 py-2 font-medium">Actual</th>
                         <th className="w-10 px-3 py-2" />
                       </tr>
                     </thead>
@@ -384,10 +386,10 @@ export function ClientProfile({
                         >
                           <td className="px-3 py-2 font-medium">{summary.exercise_name}</td>
                           <td className="px-3 py-2 tabular-nums text-muted-foreground">
-                            {summary.starting_weight} kg
+                            {summary.starting_weight} {summary.unit}
                           </td>
                           <td className="px-3 py-2 tabular-nums font-medium">
-                            {summary.current_weight} kg
+                            {summary.current_weight} {summary.unit}
                           </td>
                           <td className="px-3 py-2">
                             <Button type="button" variant="ghost" size="icon" aria-label={`Ver evolución de ${summary.exercise_name}`} tabIndex={-1}>
@@ -442,7 +444,11 @@ export function ClientProfile({
         <FloatingSheetContent>
           <FloatingSheetHeader>
             <FloatingSheetTitle>{openExercise?.exercise_name}</FloatingSheetTitle>
-            <FloatingSheetDescription>Evolución de peso y repeticiones</FloatingSheetDescription>
+            <FloatingSheetDescription>
+              {openExercise && isCardioGroup(openExercise.muscle_group)
+                ? "Evolución de minutos y nivel"
+                : "Evolución de peso y repeticiones"}
+            </FloatingSheetDescription>
           </FloatingSheetHeader>
           <FloatingSheetBody>
             {openExercise ? (

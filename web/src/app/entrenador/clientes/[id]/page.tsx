@@ -17,7 +17,8 @@ interface ExerciseRef {
 
 interface SetLogRow {
   session_date: string;
-  actual_weight: number;
+  actual_weight: number | null;
+  actual_minutes: number | null;
   exercise_id: string;
   exercises: ExerciseRef | ExerciseRef[] | null;
 }
@@ -59,10 +60,14 @@ export default async function ClientDetailPage({
       .order("entry_date"),
     supabase
       .from("client_set_logs")
-      .select("session_date, actual_weight, exercise_id, exercises(name, muscle_group)")
+      // Sin filtrar por actual_weight: el cardio no tiene peso (se
+      // registra con minutos y nivel), así que ese filtro lo dejaba
+      // fuera por completo de la pestaña Evolución.
+      .select(
+        "session_date, actual_weight, actual_minutes, exercise_id, exercises(name, muscle_group)",
+      )
       .eq("client_id", id)
       .eq("is_completed", true)
-      .not("actual_weight", "is", null)
       .order("session_date"),
     supabase
       .from("client_sessions")
@@ -94,19 +99,26 @@ export default async function ClientDetailPage({
   >();
   for (const row of (setLogs ?? []) as SetLogRow[]) {
     const exercise = one(row.exercises);
+    const muscleGroup = exercise?.muscle_group ?? "";
+    // En cardio la métrica que progresa son los minutos; en fuerza, el
+    // peso. Se guarda en el mismo campo y la unidad se marca aparte.
+    const cardio = muscleGroup === "cardio";
+    const value = cardio ? row.actual_minutes : row.actual_weight;
+    if (value === null) continue;
+
     const entry = byExercise.get(row.exercise_id) ?? {
       name: exercise?.name ?? "Ejercicio",
-      muscleGroup: exercise?.muscle_group ?? "",
+      muscleGroup,
       logs: [],
     };
     // Varias series del mismo día cuentan como un solo registro (el
-    // más pesado) — si no, un ejercicio con 3 series en una sesión
-    // aparecía como 3 puntos separados en la misma fecha en la gráfica.
+    // más pesado / más largo) — si no, un ejercicio con 3 series en una
+    // sesión aparecía como 3 puntos separados en la misma fecha.
     const existingForDate = entry.logs.find((l) => l.date === row.session_date);
     if (existingForDate) {
-      existingForDate.weight = Math.max(existingForDate.weight, row.actual_weight);
+      existingForDate.weight = Math.max(existingForDate.weight, value);
     } else {
-      entry.logs.push({ date: row.session_date, weight: row.actual_weight });
+      entry.logs.push({ date: row.session_date, weight: value });
     }
     byExercise.set(row.exercise_id, entry);
   }
@@ -120,6 +132,7 @@ export default async function ClientDetailPage({
         muscle_group: muscleGroup,
         starting_weight: sorted[0].weight,
         current_weight: sorted[sorted.length - 1].weight,
+        unit: muscleGroup === "cardio" ? ("min" as const) : ("kg" as const),
         logs: sorted,
       };
     })
