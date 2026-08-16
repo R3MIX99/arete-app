@@ -43,7 +43,11 @@ export default async function ClientLayout({
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <ClientTopBar brandName={brandName} brandLogoUrl={brandLogoUrl} />
+      <ClientTopBar
+        userName={profile?.full_name || user.email || "Mi cuenta"}
+        brandName={brandName}
+        brandLogoUrl={brandLogoUrl}
+      />
       <main className="flex-1 pb-20">{children}</main>
       <ClientBottomNavGate />
     </div>

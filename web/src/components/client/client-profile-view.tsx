@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   Building2,
+  ChevronLeft,
   Loader2,
-  LogOut,
   Mail,
   Phone,
   Sparkles,
@@ -149,20 +149,30 @@ export function ClientProfileView({
     router.refresh();
   }
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.replace("/login");
-    router.refresh();
-  }
-
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4 p-4 pb-28">
+      {/* Ya no es una pestaña de la nav, se llega desde el avatar — por
+          eso lleva su propio botón de regreso. */}
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="shrink-0"
+          aria-label="Regresar"
+          onClick={() => router.back()}
+        >
+          <ChevronLeft className="size-5" />
+        </Button>
+        <h1 className="text-xl font-semibold">Configuración</h1>
+      </div>
+
       <div className="flex items-center gap-3">
         <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <User className="size-5" />
         </div>
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold">{profile.full_name}</h1>
+          <p className="truncate font-medium">{profile.full_name}</p>
           <p className="truncate text-sm text-muted-foreground">{profile.email}</p>
         </div>
       </div>
@@ -385,11 +395,9 @@ export function ClientProfileView({
         <CardHeader>
           <CardTitle className="text-sm">Cuenta</CardTitle>
         </CardHeader>
+        {/* Cerrar sesión ya no está aquí: vive en el menú del avatar,
+            arriba, para no tener la misma acción en dos lugares. */}
         <CardContent className="flex flex-col gap-3">
-          <Button type="button" variant="outline" className="w-full" onClick={handleLogout}>
-            <LogOut /> Cerrar sesión
-          </Button>
-
           {profile.deletion_requested_at ? (
             <div className="flex flex-col gap-1 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
               <p className="flex items-center gap-2 text-sm font-medium text-destructive">

@@ -9,7 +9,6 @@ import {
   LineChart,
   Settings,
   Home,
-  User,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,11 +31,12 @@ export const trainerNavItems: NavItem[] = [
   { href: "/entrenador/configuracion", label: "Configuración", icon: Settings },
 ];
 
-/** Las 5 pestañas del panel de cliente (Fase 9/10/11). */
+/** Las 4 pestañas del panel de cliente. El perfil ya no vive aquí: se
+ * abre desde el avatar de la barra superior, y así la nav queda más
+ * compacta y centrada. */
 export const clientNavItems: NavItem[] = [
   { href: "/cliente", label: "Inicio", icon: Home },
   { href: "/cliente/agenda", label: "Agenda", icon: Calendar },
   { href: "/cliente/entrenamiento", label: "Historial", icon: Dumbbell },
   { href: "/cliente/nutricion", label: "Nutrición", icon: Apple },
-  { href: "/cliente/perfil", label: "Perfil", icon: User },
 ];

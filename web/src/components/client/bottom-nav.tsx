@@ -35,8 +35,10 @@ export function BottomNav() {
   const activePath = pending ?? pathname;
 
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-40 mx-auto max-w-md">
-      <ul className="flex items-center justify-between gap-1 rounded-full border bg-card/95 p-1.5 shadow-lg backdrop-blur-md">
+    // w-fit + inset-x-0: la píldora se encoge a lo que miden sus
+    // pestañas y queda centrada, en vez de estirarse de borde a borde.
+    <nav className="fixed inset-x-0 bottom-3 z-40 mx-auto w-fit max-w-[calc(100vw-1.5rem)] px-3">
+      <ul className="flex items-center gap-1 rounded-full border bg-card/95 p-1.5 shadow-lg backdrop-blur-md">
         {clientNavItems.map((item) => {
           const active =
             item.href === "/cliente" ? activePath === "/cliente" : activePath.startsWith(item.href);
