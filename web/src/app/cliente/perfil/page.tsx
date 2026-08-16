@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
-import { User } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { ClientProfileView } from "@/components/client/client-profile-view";
+import type { AssignedTrainer, ClientProfileSettings } from "@/lib/types/client-profile";
+import type { ProgressMeasurement } from "@/lib/types/progress";
 
 export default async function ClientProfilePage() {
   const supabase = await createClient();
@@ -12,20 +14,37 @@ export default async function ClientProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email")
+    .select(
+      "id, full_name, email, phone, goal, health_notes, trainer_id, notify_workout_reminders, notify_meal_reminders, subscription_plan, subscription_status, deletion_requested_at",
+    )
     .eq("id", user.id)
     .single();
 
+  if (!profile) redirect("/login");
+
+  // El entrenador solo se pide si de verdad hay uno asignado — un
+  // cliente puede quedarse sin entrenador (trainer_id se pone en null
+  // si su entrenador se elimina).
+  const [{ data: trainer }, { data: measurements }] = await Promise.all([
+    profile.trainer_id
+      ? supabase
+          .from("profiles")
+          .select("full_name, email, phone, business_name, business_logo_path")
+          .eq("id", profile.trainer_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("progress_measurements")
+      .select("id, entry_date, metric_key, value, notes")
+      .eq("client_id", user.id)
+      .order("entry_date"),
+  ]);
+
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-10 text-center">
-      <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-        <User className="size-6" />
-      </div>
-      <p className="font-medium">{profile?.full_name || user.email}</p>
-      <p className="text-sm text-muted-foreground">{profile?.email || user.email}</p>
-      <p className="mt-4 text-sm text-muted-foreground">
-        Perfil, medidas y fotos de progreso — Próximamente.
-      </p>
-    </div>
+    <ClientProfileView
+      profile={profile as unknown as ClientProfileSettings}
+      trainer={(trainer as AssignedTrainer | null) ?? null}
+      measurements={(measurements ?? []) as ProgressMeasurement[]}
+    />
   );
 }
