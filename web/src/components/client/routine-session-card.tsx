@@ -52,7 +52,10 @@ export function RoutineSessionCard({
   return (
     <Link href={href} className="block">
       <div className="relative flex min-h-24 overflow-hidden rounded-2xl bg-card transition-colors hover:bg-accent/40">
-        <div className="absolute inset-y-0 left-0 w-[34%]">
+        {/* La foto va de fondo, ocupando tres cuartos del ancho: una
+            imagen cuadrada se recorta con object-cover en vez de
+            estirarse a toda la tarjeta. */}
+        <div className="absolute inset-y-0 left-0 w-3/4">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt="" className="h-full w-full object-cover" />
@@ -61,10 +64,15 @@ export function RoutineSessionCard({
               <Dumbbell className="size-6" />
             </div>
           )}
-          {/* Difuminado hacia el fondo de la tarjeta: usa el token
-              --card, así funciona igual en claro y en oscuro. */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-card/40 to-card" />
         </div>
+
+        {/* El degradado cubre la tarjeta COMPLETA, no solo la foto: así
+            el borde derecho de la imagen queda debajo de la parte ya
+            opaca y no se ve la línea del corte. Va de derecha a
+            izquierda — sólido donde está el texto, y solo se abre a la
+            foto en el último tramo de la izquierda. Usa el token --card,
+            así que funciona igual en claro y en oscuro. */}
+        <div className="absolute inset-0 bg-gradient-to-l from-card from-68% to-transparent" />
 
         <div className="relative flex min-w-0 flex-1 flex-col justify-center gap-1 py-3 pr-3 pl-[36%]">
           <p className="line-clamp-2 text-sm leading-snug font-bold">{routineName}</p>
