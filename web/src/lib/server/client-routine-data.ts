@@ -66,7 +66,7 @@ export async function fetchRoutineSessionData(supabase: SupabaseClient<any>, rou
       // ícono genérico, y casi todos los ejercicios traen video.
       image_url: ex?.image_path
         ? supabase.storage.from("exercise-images").getPublicUrl(ex.image_path).data.publicUrl
-        : youtubeThumbnailUrl(ex?.video_url ?? null, "square"),
+        : youtubeThumbnailUrl(ex?.video_url ?? null),
       notes: row.notes,
       order_index: row.order_index,
       sets: (row.routine_exercise_sets ?? [])

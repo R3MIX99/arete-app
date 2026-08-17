@@ -39,22 +39,25 @@ export function isYoutubeUrl(url: string): boolean {
  * Miniatura del video (lo que se ve antes de darle play), para usarla
  * como imagen cuando el ejercicio o la rutina no tiene foto propia.
  *
- * - `wide`: hqdefault, 480x360. Es 4:3 con barras negras arriba y abajo
- *   si el video es 16:9, pero en una tarjeta ancha el recorte vertical
- *   se las come, y da mejor resolución.
- * - `square`: mqdefault, 320x180. Sin barras — en un recorte cuadrado
- *   las de hqdefault sí se quedarían visibles.
+ * Se usa `frame0` y no las miniaturas "normales" porque es la única que
+ * devuelve el fotograma en su relación de aspecto ORIGINAL, sin relleno:
  *
- * Ambas existen siempre; maxresdefault no (depende de en qué calidad se
- * subió el video), por eso no se usa.
+ * - `hqdefault` (480x360) y `sddefault` siempre entregan 4:3, así que a
+ *   un video 16:9 le ponen barras negras arriba y abajo, y a un Short
+ *   (vertical) le rellenan los lados con una copia ampliada del mismo
+ *   fotograma. Eso último se ve como un cuadro con el video dentro y la
+ *   misma imagen en grande detrás — feo justo en la tarjeta de rutina.
+ * - `mqdefault` y `maxresdefault` siempre son 16:9, con el mismo relleno
+ *   lateral en los Shorts.
+ * - `oardefault` sí respeta el original pero no existe para todos los
+ *   videos (varios devuelven 404).
+ *
+ * `frame0` se comprobó contra videos verticales, 16:9 y hasta uno viejo
+ * en 4:3, y en todos respondió con la relación real del video.
  */
-export function youtubeThumbnailUrl(
-  url: string | null,
-  variant: "wide" | "square" = "wide",
-): string | null {
+export function youtubeThumbnailUrl(url: string | null): string | null {
   if (!url) return null;
   const id = youtubeVideoId(url);
   if (!id) return null;
-  const file = variant === "square" ? "mqdefault" : "hqdefault";
-  return `https://img.youtube.com/vi/${id}/${file}.jpg`;
+  return `https://i.ytimg.com/vi/${id}/frame0.jpg`;
 }

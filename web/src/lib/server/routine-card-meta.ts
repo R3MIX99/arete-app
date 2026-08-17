@@ -71,7 +71,7 @@ export async function fetchRoutineCardMeta(
       const exercise = one(row.exercises);
       entry.imageUrl = exercise?.image_path
         ? supabase.storage.from("exercise-images").getPublicUrl(exercise.image_path).data.publicUrl
-        : youtubeThumbnailUrl(exercise?.video_url ?? null, "wide");
+        : youtubeThumbnailUrl(exercise?.video_url ?? null);
     }
   }
 
