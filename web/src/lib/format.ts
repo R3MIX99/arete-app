@@ -1,3 +1,9 @@
+/** `49900, "MXN"` → "$499.00". Los precios de los planes se guardan en
+ * centavos para no arrastrar errores de redondeo. */
+export function formatMoney(cents: number, currency = "MXN"): string {
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(cents / 100);
+}
+
 export function initialsOf(name: string) {
   return name
     .trim()
@@ -122,6 +128,18 @@ export function formatDate(value: string): string {
     day: "numeric",
     month: "short",
     year: "numeric",
+  });
+}
+
+/** Para timestamps completos (con hora), a diferencia de formatDate que
+ * espera un 'YYYY-MM-DD' suelto. */
+export function formatDateTime(value: string): string {
+  return new Date(value).toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
 }
 

@@ -11,8 +11,10 @@ import {
   type SubscriptionPlan,
   type SubscriptionStatus,
 } from "@/lib/types/settings";
+import type { PlanCatalogEntry, PlanChangeLogEntry, PlanSource } from "@/lib/types/plans";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlanManager } from "@/components/superadmin/plan-manager";
 
 interface TrainerRow {
   id: string;
@@ -23,7 +25,27 @@ interface TrainerRow {
   business_name: string | null;
   subscription_plan: SubscriptionPlan;
   subscription_status: SubscriptionStatus;
+  plan_source: PlanSource;
+  plan_override_expires_at: string | null;
   created_at: string;
+}
+
+interface ChangeLogRow {
+  id: string;
+  previous_plan: string | null;
+  new_plan: string;
+  previous_status: string | null;
+  new_status: string;
+  is_free_grant: boolean;
+  expires_at: string | null;
+  note: string | null;
+  changed_by: string;
+  changed_at: string;
+  changed_by_profile: { full_name: string } | { full_name: string }[] | null;
+}
+
+function one<T>(value: T | T[] | null): T | null {
+  return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
 interface ClientRow {
@@ -48,11 +70,13 @@ export default async function SuperadminTrainerDetailPage({
     { count: routineCount },
     { count: programCount },
     { count: dietPlanCount },
+    { data: planRows },
+    { data: changeLogRows },
   ] = await Promise.all([
     supabase
       .from("profiles")
       .select(
-        "id, full_name, email, phone, status, business_name, subscription_plan, subscription_status, created_at",
+        "id, full_name, email, phone, status, business_name, subscription_plan, subscription_status, plan_source, plan_override_expires_at, created_at",
       )
       .eq("id", id)
       .eq("role", "trainer")
@@ -66,11 +90,24 @@ export default async function SuperadminTrainerDetailPage({
     supabase.from("routines").select("id", { count: "exact", head: true }).eq("trainer_id", id),
     supabase.from("programs").select("id", { count: "exact", head: true }).eq("trainer_id", id),
     supabase.from("diet_plans").select("id", { count: "exact", head: true }).eq("trainer_id", id),
+    supabase.from("plans").select("id, key, name, price_cents, currency, client_limit, features, is_active, sort_order").eq("is_active", true).order("sort_order"),
+    supabase
+      .from("plan_change_log")
+      .select(
+        "id, previous_plan, new_plan, previous_status, new_status, is_free_grant, expires_at, note, changed_by, changed_at, changed_by_profile:changed_by(full_name)",
+      )
+      .eq("profile_id", id)
+      .order("changed_at", { ascending: false }),
   ]);
 
   if (!trainer) notFound();
   const t = trainer as TrainerRow;
   const clients = (clientRows ?? []) as ClientRow[];
+  const plans = (planRows ?? []) as PlanCatalogEntry[];
+  const changeLog: PlanChangeLogEntry[] = ((changeLogRows ?? []) as ChangeLogRow[]).map((row) => ({
+    ...row,
+    changed_by_name: one(row.changed_by_profile)?.full_name ?? null,
+  }));
 
   const stats = [
     { label: "Clientes", value: clients.length, icon: UserRound },
@@ -126,6 +163,16 @@ export default async function SuperadminTrainerDetailPage({
           </Card>
         ))}
       </div>
+
+      <PlanManager
+        profileId={t.id}
+        currentPlan={t.subscription_plan}
+        currentStatus={t.subscription_status}
+        planSource={t.plan_source}
+        planOverrideExpiresAt={t.plan_override_expires_at}
+        plans={plans}
+        changeLog={changeLog}
+      />
 
       <Card>
         <CardHeader>
