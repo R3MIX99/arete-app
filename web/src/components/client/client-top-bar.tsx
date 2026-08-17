@@ -81,16 +81,16 @@ export function ClientTopBar({
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
-          {/* El título y los tres íconos comparten renglón para que esta
-              sección ocupe una sola línea. Los botones son círculos del
-              ancho de su ícono (nada de flex-1, que los estiraba a todo
-              lo ancho) y el elegido se pinta con el color de acento, así
-              se ve de un vistazo cuál está activo. Son botones normales
-              y no DropdownMenuItem a propósito: así tocarlos no cierra
-              el menú y se pueden comparar los temas al momento. */}
-          <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+          {/* El título va arriba y los tres íconos debajo. Los botones
+              son círculos del ancho de su ícono (nada de flex-1, que los
+              estiraba a todo lo ancho) y el elegido se pinta con el
+              color de acento, así se ve de un vistazo cuál está activo.
+              Son botones normales y no DropdownMenuItem a propósito: así
+              tocarlos no cierra el menú y se pueden comparar los temas
+              al momento. */}
+          <div className="flex flex-col gap-1.5 px-2 py-1.5">
             <span className="text-xs text-muted-foreground">Apariencia</span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {THEME_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const active = theme === option.value;
