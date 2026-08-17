@@ -53,33 +53,30 @@ export function RoutineSessionCard({
     <Link href={href} className="block">
       <div className="relative flex min-h-24 overflow-hidden rounded-2xl bg-card transition-colors hover:bg-accent/40">
         {imageUrl ? (
-          <>
-            {/* La foto va de fondo, ocupando tres cuartos del ancho: una
-                imagen cuadrada se recorta con object-cover en vez de
-                estirarse a toda la tarjeta. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt=""
-              className="absolute inset-y-0 left-0 h-full w-3/4 object-cover"
-            />
-            {/* El degradado cubre la tarjeta COMPLETA, no solo la foto:
-                así el borde derecho de la imagen queda debajo de la
-                parte ya opaca y no se ve el corte. Va de derecha a
-                izquierda: totalmente opaco donde está el texto, luego
-                baja muy poco (85% a media rampa) y solo al final se abre
-                para dejar ver la foto. Se escribe como linear-gradient
-                explícito en vez de utilidades de Tailwind porque las
-                paradas de porcentaje sueltas (58%, 78%) no están en la
-                escala por defecto y quedaban ignoradas. */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(to left, var(--card) 0%, var(--card) 58%, color-mix(in oklab, var(--card) 85%, transparent) 78%, color-mix(in oklab, var(--card) 20%, transparent) 100%)",
-              }}
-            />
-          </>
+          /* La foto va de fondo, ocupando tres cuartos del ancho: una
+             imagen cuadrada se recorta con object-cover en vez de
+             estirarse a toda la tarjeta.
+
+             El desvanecido se hace con una MÁSCARA sobre la propia foto,
+             no tapándola con un degradado del color de la tarjeta. En
+             modo oscuro `--card` es un vidrio translúcido
+             (oklch(... / 0.8)), así que un degradado hecho con ese token
+             nunca llega a tapar del todo: la foto se transparentaba por
+             toda la tarjeta y se veía "doble". Con máscara desaparece de
+             verdad, y de paso funciona igual en claro y en oscuro sin
+             tener que igualar ningún color. */
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl}
+            alt=""
+            className="absolute inset-y-0 left-0 h-full w-3/4 object-cover"
+            style={{
+              maskImage:
+                "linear-gradient(to right, black 0%, black 19%, transparent 48%)",
+              WebkitMaskImage:
+                "linear-gradient(to right, black 0%, black 19%, transparent 48%)",
+            }}
+          />
         ) : (
           /* Sin foto NO se pinta ningún bloque de color de fondo. Antes
              había un rectángulo bg-primary/12 de tres cuartos de ancho y
