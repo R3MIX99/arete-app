@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Dumbbell, PlayCircle } from "lucide-react";
+import { ChevronLeft, PlayCircle } from "lucide-react";
 
 import { ExerciseDetailDialog } from "@/components/client/exercise-detail-dialog";
+import { RoutineExerciseCard } from "@/components/client/routine-exercise-card";
 import { Button } from "@/components/ui/button";
 import type { SessionExerciseInfo } from "@/lib/types/client-panel";
 
@@ -40,20 +41,13 @@ export function RoutinePreviewView({
       <div className="flex flex-col gap-3 px-4">
         {routineDescription ? <p className="text-sm text-muted-foreground">{routineDescription}</p> : null}
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {exercises.map((exercise) => (
-            <button key={exercise.id} type="button" onClick={() => setSelected(exercise)} className="text-left">
-              <div className="glass-card flex items-center gap-3 rounded-xl p-4 transition-colors hover:bg-accent/40">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Dumbbell className="size-4.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{exercise.exercise_name}</p>
-                  <p className="text-xs text-muted-foreground">{exercise.sets.length} series</p>
-                </div>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-              </div>
-            </button>
+            <RoutineExerciseCard
+              key={exercise.id}
+              exercise={exercise}
+              onSelect={() => setSelected(exercise)}
+            />
           ))}
         </div>
       </div>

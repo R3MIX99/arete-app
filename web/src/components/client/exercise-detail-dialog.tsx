@@ -34,6 +34,17 @@ export function ExerciseDetailDialog({
                 allowFullScreen
               />
             </div>
+          ) : exercise.image_url ? (
+            // Sin video, la foto del ejercicio al menos deja ver de qué
+            // movimiento se trata.
+            <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={exercise.image_url}
+                alt={exercise.exercise_name}
+                className="h-full w-full object-cover"
+              />
+            </div>
           ) : null}
 
           <div className="flex flex-col gap-1.5">

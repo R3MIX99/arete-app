@@ -70,6 +70,9 @@ export interface RoutineDetail {
   description: string | null;
   level: RoutineLevel;
   goal: RoutineGoal | null;
+  /** Foto de portada (bucket routine-images) — la que ve el cliente en
+   * su tarjeta de rutina. */
+  image_path: string | null;
   ai_score: number | null;
   ai_score_summary: string | null;
   ai_analyzed_at: string | null;

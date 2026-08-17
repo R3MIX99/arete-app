@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { CalendarDays, CalendarX, Check, ChevronLeft, ChevronRight, Dumbbell } from "lucide-react";
+import { CalendarDays, CalendarX, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { formatDayHeading, formatMonthYear } from "@/lib/format";
 import {
@@ -13,13 +12,15 @@ import {
   todayKey,
   type CalendarAssignment,
 } from "@/lib/calendar-logic";
-import { cn } from "@/lib/utils";
 import { useSwipeNavigation } from "@/lib/use-swipe-navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { MonthCalendarGrid } from "@/components/trainer/month-calendar-grid";
 import { WeekdayStrip } from "@/components/weekday-strip";
+import {
+  RoutineSessionCard,
+  type RoutineCardMeta,
+} from "@/components/client/routine-session-card";
 
 function monthGridRange(year: number, month: number) {
   const firstOfMonth = `${year}-${String(month).padStart(2, "0")}-01`;
@@ -32,10 +33,12 @@ export function ClientAgenda({
   assignments,
   inProgressByKey,
   completedByKey,
+  routineMeta,
 }: {
   assignments: CalendarAssignment[];
   inProgressByKey: Record<string, string>;
   completedByKey: Record<string, string>;
+  routineMeta: Record<string, RoutineCardMeta>;
 }) {
   const today = React.useMemo(() => todayKey(), []);
   const [selectedDate, setSelectedDate] = React.useState(today);
@@ -154,7 +157,7 @@ export function ClientAgenda({
           <p className="text-sm">No tienes entrenamiento programado este día.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-3">
           {daySessions.map((session) => {
             const key = `${session.assignmentId}:${session.routineId}:${session.date}`;
             const inProgressId = inProgressByKey[key];
@@ -163,31 +166,16 @@ export function ClientAgenda({
               ? `/cliente/entrenamiento/sesion/${completedSessionId}`
               : `/cliente/entrenamiento/sesion/preview?assignment=${session.assignmentId}&routine=${session.routineId}&date=${session.date}`;
             return (
-              <Link key={key} href={href}>
-                <Card className="overflow-hidden transition-colors hover:bg-accent/40">
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <div
-                      className={cn(
-                        "flex size-10 shrink-0 items-center justify-center rounded-xl",
-                        completedSessionId ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary",
-                      )}
-                    >
-                      {completedSessionId ? <Check className="size-4.5" /> : <Dumbbell className="size-4.5" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{session.routineName}</p>
-                      {completedSessionId ? (
-                        <p className="truncate text-xs text-primary">Completada</p>
-                      ) : inProgressId ? (
-                        <p className="truncate text-xs text-primary">En curso</p>
-                      ) : session.isProgram && session.programName ? (
-                        <p className="truncate text-xs text-muted-foreground">{session.programName}</p>
-                      ) : null}
-                    </div>
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                  </CardContent>
-                </Card>
-              </Link>
+              <RoutineSessionCard
+                key={key}
+                href={href}
+                routineName={session.routineName}
+                subtitle={session.isProgram ? (session.programName ?? null) : null}
+                meta={routineMeta[session.routineId]}
+                status={
+                  completedSessionId ? "completed" : inProgressId ? "in_progress" : "not_started"
+                }
+              />
             );
           })}
         </div>

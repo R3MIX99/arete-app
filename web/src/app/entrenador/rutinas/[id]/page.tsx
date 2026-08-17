@@ -44,7 +44,9 @@ export default async function RoutineDetailPage({
     await Promise.all([
       supabase
         .from("routines")
-        .select("id, name, description, level, goal, ai_score, ai_score_summary, ai_analyzed_at")
+        .select(
+          "id, name, description, level, goal, image_path, ai_score, ai_score_summary, ai_analyzed_at",
+        )
         .eq("id", id)
         .single(),
       supabase

@@ -8,6 +8,7 @@ import {
   fetchSubstitutionsForDate,
 } from "@/lib/server/client-nutrition-data";
 import { ClientHomeToday } from "@/components/client/client-home-today";
+import { fetchRoutineCardMeta } from "@/lib/server/routine-card-meta";
 import type { PersonalRecord, WeightPoint } from "@/components/client/client-highlights";
 import type {
   ClientNutritionFoodRef,
@@ -93,6 +94,7 @@ export default async function ClientHomePage() {
     { data: setLogRows },
     { data: weightSetLogRows },
     { data: weightRows },
+    routineMeta,
   ] = await Promise.all([
       supabase.from("profiles").select("full_name").eq("id", user.id).single(),
       supabase
@@ -142,6 +144,7 @@ export default async function ClientHomePage() {
         .eq("client_id", user.id)
         .eq("metric_key", "weight_kg")
         .order("entry_date"),
+      fetchRoutineCardMeta(supabase),
     ]);
 
   const assignments: CalendarAssignment[] = ((assignmentRows ?? []) as AssignmentRow[]).map((row) => {
@@ -257,6 +260,7 @@ export default async function ClientHomePage() {
       nutritionPlan={nutritionPlan}
       nutritionSubstitutions={nutritionSubstitutions}
       calorieTarget={calorieTarget}
+      routineMeta={routineMeta}
     />
   );
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchRoutineCardMeta } from "@/lib/server/routine-card-meta";
 import { ClientAgenda } from "@/components/client/client-agenda";
 import type { CalendarAssignment } from "@/lib/calendar-logic";
 
@@ -39,8 +40,12 @@ export default async function ClientAgendaPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: assignmentRows }, { data: inProgressSessions }, { data: completedSessions }] =
-    await Promise.all([
+  const [
+    { data: assignmentRows },
+    { data: inProgressSessions },
+    { data: completedSessions },
+    routineMeta,
+  ] = await Promise.all([
       supabase
         .from("client_assignments")
         .select(
@@ -57,6 +62,7 @@ export default async function ClientAgendaPage() {
         .select("id, assignment_id, routine_id, session_date")
         .eq("client_id", user.id)
         .eq("status", "completed"),
+      fetchRoutineCardMeta(supabase),
     ]);
 
   const assignments: CalendarAssignment[] = ((assignmentRows ?? []) as AssignmentRow[]).map((row) => {
@@ -112,6 +118,7 @@ export default async function ClientAgendaPage() {
         assignments={assignments}
         inProgressByKey={inProgressByKey}
         completedByKey={completedByKey}
+        routineMeta={routineMeta}
       />
     </div>
   );

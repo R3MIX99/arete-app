@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { CalendarDays, Check, ChevronRight, Dumbbell } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 import {
   addDays,
@@ -24,6 +24,10 @@ import {
   type WeightPoint,
 } from "@/components/client/client-highlights";
 import { ClientNutritionSummary } from "@/components/client/client-nutrition-summary";
+import {
+  RoutineSessionCard,
+  type RoutineCardMeta,
+} from "@/components/client/routine-session-card";
 import { applySubstitutions, planTotals, roundTotals } from "@/lib/client-nutrition-utils";
 import type {
   ClientNutritionFoodRef,
@@ -63,9 +67,11 @@ export function ClientHomeToday({
   nutritionPlan,
   nutritionSubstitutions,
   calorieTarget,
+  routineMeta,
 }: {
   firstName: string;
   assignments: CalendarAssignment[];
+  routineMeta: Record<string, RoutineCardMeta>;
   inProgressSessions: SessionRef[];
   recentCompletedSessions: SessionRef[];
   monthCompletedSessions: CompletedSessionDay[];
@@ -153,32 +159,16 @@ export function ClientHomeToday({
               ? `/cliente/entrenamiento/sesion/${completedSessionId}`
               : `/cliente/entrenamiento/sesion/preview?assignment=${session.assignmentId}&routine=${session.routineId}&date=${session.date}`;
             return (
-              <Link key={key} href={href}>
-                <Card className="overflow-hidden transition-colors hover:bg-accent/40">
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <div
-                      className={
-                        completedSessionId
-                          ? "flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary"
-                          : "flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
-                      }
-                    >
-                      {completedSessionId ? <Check className="size-5" /> : <Dumbbell className="size-5" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{session.routineName}</p>
-                      {completedSessionId ? (
-                        <p className="truncate text-xs text-primary">Completada</p>
-                      ) : inProgressId ? (
-                        <p className="truncate text-xs text-primary">En curso</p>
-                      ) : session.isProgram && session.programName ? (
-                        <p className="truncate text-xs text-muted-foreground">{session.programName}</p>
-                      ) : null}
-                    </div>
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                  </CardContent>
-                </Card>
-              </Link>
+              <RoutineSessionCard
+                key={key}
+                href={href}
+                routineName={session.routineName}
+                subtitle={session.isProgram ? (session.programName ?? null) : null}
+                meta={routineMeta[session.routineId]}
+                status={
+                  completedSessionId ? "completed" : inProgressId ? "in_progress" : "not_started"
+                }
+              />
             );
           })}
         </div>

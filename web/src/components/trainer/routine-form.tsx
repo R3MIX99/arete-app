@@ -11,13 +11,16 @@ import {
   Plus,
   Trash2,
   Dumbbell,
+  ImagePlus,
   Trash,
   Sparkles,
   PlayCircle,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/image-compress";
 import { youtubeVideoId } from "@/lib/youtube";
 import type {
   ExerciseOption,
@@ -104,6 +107,9 @@ export function RoutineForm({
   const [description, setDescription] = React.useState(routine?.description ?? "");
   const [level, setLevel] = React.useState(routine?.level ?? "beginner");
   const [goal, setGoal] = React.useState(routine?.goal ?? "");
+  const [imagePath, setImagePath] = React.useState<string | null>(routine?.image_path ?? null);
+  const [uploadingImage, setUploadingImage] = React.useState(false);
+  const imageInputRef = React.useRef<HTMLInputElement>(null);
   const [exercises, setExercises] = React.useState<RoutineExerciseInput[]>(
     initialExercises ?? [],
   );
@@ -113,6 +119,32 @@ export function RoutineForm({
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  const imageUrl = imagePath
+    ? createClient().storage.from("routine-images").getPublicUrl(imagePath).data.publicUrl
+    : null;
+
+  async function handleImageSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setUploadingImage(true);
+    const supabase = createClient();
+    // Más ancha que las de alimentos: la tarjeta del cliente la usa
+    // como foto de portada, no como miniatura.
+    const compressed = await compressImage(file, { maxDimension: 900 });
+    const path = `${trainerId}/routine-${Date.now()}.jpg`;
+    const { error: uploadError } = await supabase.storage
+      .from("routine-images")
+      .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
+    setUploadingImage(false);
+    if (uploadError) {
+      toast.error("No se pudo subir la imagen");
+      return;
+    }
+    setImagePath(path);
+  }
 
   function handleAiGenerated(result: AiRoutineResult) {
     if (name.trim() === "") setName(result.name);
@@ -263,6 +295,7 @@ export function RoutineForm({
       description: description || null,
       level,
       goal: goal || null,
+      image_path: imagePath,
     };
 
     let routineId = routine?.id;
@@ -393,6 +426,52 @@ export function RoutineForm({
             <CardTitle>{mode === "create" ? "Nueva rutina" : "Editar rutina"}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label>Foto de portada (opcional)</Label>
+              <div className="flex items-center gap-3">
+                <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg bg-primary/12">
+                  {imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-primary">
+                      <Dumbbell className="size-7" />
+                    </div>
+                  )}
+                  {imagePath && (
+                    <button
+                      type="button"
+                      aria-label="Quitar imagen"
+                      onClick={() => setImagePath(null)}
+                      className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageSelected}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploadingImage}
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  {uploadingImage ? <Loader2 className="animate-spin" /> : <ImagePlus />}
+                  {imageUrl ? "Cambiar foto" : "Subir foto"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Es la foto que ve tu cliente en la tarjeta de esta rutina.
+              </p>
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="name">Nombre</Label>
               <Input

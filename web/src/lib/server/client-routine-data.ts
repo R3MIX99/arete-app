@@ -2,15 +2,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { SessionExerciseInfo } from "@/lib/types/client-panel";
 
+interface ExerciseJoin {
+  name: string;
+  description: string | null;
+  muscle_group: string;
+  equipment: string;
+  video_url: string | null;
+  image_path: string | null;
+}
+
 interface RoutineExerciseRow {
   id: string;
   exercise_id: string;
   order_index: number;
   notes: string | null;
-  exercises:
-    | { name: string; description: string | null; muscle_group: string; equipment: string; video_url: string | null }
-    | { name: string; description: string | null; muscle_group: string; equipment: string; video_url: string | null }[]
-    | null;
+  exercises: ExerciseJoin | ExerciseJoin[] | null;
   routine_exercise_sets: {
     id: string;
     set_number: number;
@@ -37,7 +43,7 @@ export async function fetchRoutineSessionData(supabase: SupabaseClient<any>, rou
     supabase
       .from("routine_exercises")
       .select(
-        "id, exercise_id, order_index, notes, exercises(name, description, muscle_group, equipment, video_url), routine_exercise_sets(id, set_number, target_reps_min, target_reps_max, suggested_weight, rest_seconds, target_minutes, target_level)",
+        "id, exercise_id, order_index, notes, exercises(name, description, muscle_group, equipment, video_url, image_path), routine_exercise_sets(id, set_number, target_reps_min, target_reps_max, suggested_weight, rest_seconds, target_minutes, target_level)",
       )
       .eq("routine_id", routineId)
       .order("order_index"),
@@ -55,6 +61,9 @@ export async function fetchRoutineSessionData(supabase: SupabaseClient<any>, rou
       muscle_group: ex?.muscle_group ?? "",
       equipment: ex?.equipment ?? "",
       video_url: ex?.video_url ?? null,
+      image_url: ex?.image_path
+        ? supabase.storage.from("exercise-images").getPublicUrl(ex.image_path).data.publicUrl
+        : null,
       notes: row.notes,
       order_index: row.order_index,
       sets: (row.routine_exercise_sets ?? [])

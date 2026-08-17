@@ -17,6 +17,9 @@ export interface SessionExerciseInfo {
   muscle_group: string;
   equipment: string;
   video_url: string | null;
+  /** URL pública de la foto del ejercicio (bucket exercise-images), ya
+   * resuelta en el servidor. Null si no tiene foto. */
+  image_url: string | null;
   notes: string | null;
   order_index: number;
   sets: SessionSetInfo[];
