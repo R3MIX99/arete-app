@@ -91,7 +91,13 @@ export function ClientNutritionView({
 }) {
   const supabase = React.useMemo(() => createClient(), []);
   const today = React.useMemo(() => todayIso(), []);
-  const [substitutions, setSubstitutions] = React.useState(initialSubstitutions);
+  // El servidor manda una ventana de días alrededor de SU fecha (corre
+  // en UTC), así que aquí se filtra a las de HOY según el navegador —
+  // que es la misma fecha con la que se guardan las nuevas. Sin esto,
+  // de noche se mostraban las sustituciones del día siguiente.
+  const [substitutions, setSubstitutions] = React.useState(() =>
+    initialSubstitutions.filter((s) => s.isPermanent || s.substitutionDate === today),
+  );
   const [target, setTarget] = React.useState<SubstituteTarget | null>(null);
   const [applying, setApplying] = React.useState(false);
   const [detailFood, setDetailFood] = React.useState<DetailFood | null>(null);

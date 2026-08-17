@@ -7,10 +7,17 @@ import {
   fetchClientNutritionPlan,
   fetchSubstitutionsForDate,
 } from "@/lib/server/client-nutrition-data";
-import { applySubstitutions, planTotals, roundTotals } from "@/lib/client-nutrition-utils";
 import { ClientHomeToday } from "@/components/client/client-home-today";
 import type { PersonalRecord, WeightPoint } from "@/components/client/client-highlights";
-import type { NutritionTotals } from "@/lib/types/client-nutrition";
+import type {
+  ClientNutritionFoodRef,
+  ClientNutritionPlan,
+  MealSubstitutionRow,
+} from "@/lib/types/client-nutrition";
+
+type SubstitutionWithFood = MealSubstitutionRow & {
+  substituteFood: ClientNutritionFoodRef | null;
+};
 
 interface ProgramRoutineRow {
   id: string;
@@ -209,10 +216,13 @@ export default async function ClientHomePage() {
     value: r.value,
   }));
 
-  // Objetivo nutricional de hoy, con las sustituciones del día ya
-  // aplicadas para que coincida con lo que ve en su pestaña de Nutrición.
+  // Plan nutricional y sus sustituciones. Los totales NO se calculan
+  // aquí: dependen de qué día es para el cliente, y eso solo lo sabe su
+  // navegador (el servidor corre en UTC). Se mandan los datos crudos y
+  // ClientHomeToday los combina con su fecha real.
   const dietAssignment = await fetchActiveDietAssignment(supabase, user.id, serverToday);
-  let nutritionTotals: NutritionTotals | null = null;
+  let nutritionPlan: ClientNutritionPlan | null = null;
+  let nutritionSubstitutions: SubstitutionWithFood[] = [];
   let calorieTarget: number | null = null;
   if (dietAssignment) {
     const [plan, substitutions, { data: dietPlan }] = await Promise.all([
@@ -224,10 +234,9 @@ export default async function ClientHomePage() {
         .eq("id", dietAssignment.diet_plan_id)
         .maybeSingle(),
     ]);
-    if (plan) {
-      nutritionTotals = roundTotals(planTotals(applySubstitutions(plan, substitutions)));
-      calorieTarget = (dietPlan?.daily_calorie_target as number | null) ?? null;
-    }
+    nutritionPlan = plan;
+    nutritionSubstitutions = substitutions;
+    calorieTarget = (dietPlan?.daily_calorie_target as number | null) ?? null;
   }
 
   return (
@@ -245,7 +254,8 @@ export default async function ClientHomePage() {
       )}
       records={records}
       weightPoints={weightPoints}
-      nutritionTotals={nutritionTotals}
+      nutritionPlan={nutritionPlan}
+      nutritionSubstitutions={nutritionSubstitutions}
       calorieTarget={calorieTarget}
     />
   );

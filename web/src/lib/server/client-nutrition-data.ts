@@ -55,6 +55,15 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Suma días a una fecha 'YYYY-MM-DD' sin depender de la zona horaria
+ * del proceso (todo en UTC, que para una fecha suelta es aritmética
+ * pura). */
+function shiftIsoDate(date: string, days: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const shifted = new Date(Date.UTC(y, m - 1, d + days));
+  return shifted.toISOString().slice(0, 10);
+}
+
 function toFoodRef(row: FoodRow) {
   return {
     foodId: row.id,
@@ -241,6 +250,13 @@ export async function fetchClientNutritionPlan(
   };
 }
 
+/**
+ * Sustituciones vigentes alrededor de una fecha. Se trae una ventana de
+ * un día antes y uno después —no solo `date`— porque el día real del
+ * cliente lo decide su navegador, no el servidor (que corre en UTC): de
+ * noche, el servidor ya puede estar en el día siguiente. Quien consume
+ * esto se queda con las de SU día y con todas las permanentes.
+ */
 export async function fetchSubstitutionsForDate(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: SupabaseClient<any>,
@@ -249,15 +265,19 @@ export async function fetchSubstitutionsForDate(
 ): Promise<(MealSubstitutionRow & { substituteFood: ReturnType<typeof toFoodRef> | null })[]> {
   const foodSelect =
     "id, name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, food_categories(slug)";
+  const dayBefore = shiftIsoDate(date, -1);
+  const dayAfter = shiftIsoDate(date, 1);
   const { data } = await supabase
     .from("client_meal_substitutions")
     .select(
       `id, substitution_date, is_permanent, diet_plan_meal_id, dish_ingredient_id, original_food_id, substitute_food_id, quantity_grams, foods!client_meal_substitutions_substitute_food_id_fkey(${foodSelect})`,
     )
     .eq("client_id", clientId)
-    // Las de ese día MÁS las permanentes, que valen todos los días del
-    // plan de este cliente.
-    .or(`substitution_date.eq.${date},is_permanent.is.true`);
+    // La ventana de días MÁS las permanentes, que valen todos los días
+    // del plan de este cliente.
+    .or(
+      `and(substitution_date.gte.${dayBefore},substitution_date.lte.${dayAfter}),is_permanent.is.true`,
+    );
 
   return ((data ?? []) as Array<{
     id: string;

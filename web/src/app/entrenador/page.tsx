@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { todayKey, sessionsInRange, type CalendarAssignment } from "@/lib/calendar-logic";
+import { type CalendarAssignment } from "@/lib/calendar-logic";
 import { DashboardView } from "@/components/trainer/dashboard-view";
 
 interface ProgramRoutineRow {
@@ -125,9 +125,10 @@ export default async function DashboardPage() {
     },
   );
 
-  const today = todayKey();
-  const todaySessions = sessionsInRange(assignments, today, today);
-
+  // Las sesiones "de hoy" se calculan en el navegador (ver
+  // DashboardView): el servidor corre en UTC y no coincide con el día
+  // real del entrenador — un domingo por la noche en México aquí ya es
+  // lunes, y se listaban las sesiones del día siguiente.
   return (
     <DashboardView
       activeClientsCount={activeClients.length}
@@ -137,7 +138,7 @@ export default async function DashboardPage() {
         email: c.email,
       }))}
       routineCount={routineCount ?? 0}
-      todaySessions={todaySessions}
+      assignments={assignments}
       clientOptions={allClients.map((c) => ({ id: c.id, full_name: c.full_name }))}
       weightMeasurements={(weightRows ?? []) as MeasurementRow[]}
     />

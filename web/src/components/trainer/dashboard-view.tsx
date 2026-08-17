@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Users, UserX, Dumbbell, CalendarDays, Plus, Apple, UserPlus, ChevronDown } from "lucide-react";
 
 import { initialsOf, formatDate } from "@/lib/format";
-import type { CalendarSession } from "@/lib/calendar-logic";
+import { sessionsInRange, todayKey, type CalendarAssignment } from "@/lib/calendar-logic";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,21 +38,34 @@ const quickActions = [
   { label: "Agregar cliente", href: "/entrenador/clientes/nuevo", icon: UserPlus },
 ];
 
+/**
+ * El día de "hoy" se calcula aquí, en el navegador — no en el servidor.
+ * En el servidor (Vercel corre en UTC) un domingo por la noche en
+ * México ya es lunes en UTC, así que el dashboard mostraba como
+ * "sesiones de hoy" las del día siguiente. Mismo patrón que ya usaban
+ * ClientHomeToday y ClientAgenda.
+ */
 export function DashboardView({
   activeClientsCount,
   inactiveClients,
   routineCount,
-  todaySessions,
+  assignments,
   clientOptions,
   weightMeasurements,
 }: {
   activeClientsCount: number;
   inactiveClients: InactiveClient[];
   routineCount: number;
-  todaySessions: CalendarSession[];
+  assignments: CalendarAssignment[];
   clientOptions: ClientOption[];
   weightMeasurements: WeightRow[];
 }) {
+  const today = React.useMemo(() => todayKey(), []);
+  const todaySessions = React.useMemo(
+    () => sessionsInRange(assignments, today, today),
+    [assignments, today],
+  );
+
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [selectedClient, setSelectedClient] = React.useState<ClientOption | null>(
     clientOptions[0] ?? null,

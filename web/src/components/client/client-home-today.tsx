@@ -24,7 +24,16 @@ import {
   type WeightPoint,
 } from "@/components/client/client-highlights";
 import { ClientNutritionSummary } from "@/components/client/client-nutrition-summary";
-import type { NutritionTotals } from "@/lib/types/client-nutrition";
+import { applySubstitutions, planTotals, roundTotals } from "@/lib/client-nutrition-utils";
+import type {
+  ClientNutritionFoodRef,
+  ClientNutritionPlan,
+  MealSubstitutionRow,
+} from "@/lib/types/client-nutrition";
+
+type SubstitutionWithFood = MealSubstitutionRow & {
+  substituteFood: ClientNutritionFoodRef | null;
+};
 
 interface SessionRef {
   id: string;
@@ -51,7 +60,8 @@ export function ClientHomeToday({
   completedSetDates,
   records,
   weightPoints,
-  nutritionTotals,
+  nutritionPlan,
+  nutritionSubstitutions,
   calorieTarget,
 }: {
   firstName: string;
@@ -62,7 +72,8 @@ export function ClientHomeToday({
   completedSetDates: string[];
   records: PersonalRecord[];
   weightPoints: WeightPoint[];
-  nutritionTotals: NutritionTotals | null;
+  nutritionPlan: ClientNutritionPlan | null;
+  nutritionSubstitutions: SubstitutionWithFood[];
   calorieTarget: number | null;
 }) {
   const today = useMemo(() => todayKey(), []);
@@ -70,6 +81,18 @@ export function ClientHomeToday({
     () => sessionsInRange(assignments, today, today),
     [assignments, today],
   );
+
+  // Los totales del plan se calculan aquí y no en el servidor: el
+  // servidor manda una ventana de días alrededor de SU fecha (corre en
+  // UTC), y hay que quedarse con las sustituciones del día real del
+  // cliente — las permanentes valen siempre.
+  const nutritionTotals = useMemo(() => {
+    if (!nutritionPlan) return null;
+    const forToday = nutritionSubstitutions.filter(
+      (s) => s.isPermanent || s.substitutionDate === today,
+    );
+    return roundTotals(planTotals(applySubstitutions(nutritionPlan, forToday)));
+  }, [nutritionPlan, nutritionSubstitutions, today]);
 
   // La siguiente sesión programada, para que un día de descanso no sea
   // un callejón sin salida. Se mira un mes hacia adelante: si en 30 días
