@@ -37,6 +37,8 @@ export const trainerNavItems: NavItem[] = [
 export const clientNavItems: NavItem[] = [
   { href: "/cliente", label: "Inicio", icon: Home },
   { href: "/cliente/agenda", label: "Agenda", icon: Calendar },
-  { href: "/cliente/entrenamiento", label: "Historial", icon: Dumbbell },
+  // Gráfica y no pesa: la pesa daba a entender que ahí se entrena,
+  // cuando lo que hay es el historial y la evolución.
+  { href: "/cliente/entrenamiento", label: "Historial", icon: LineChart },
   { href: "/cliente/nutricion", label: "Nutrición", icon: Apple },
 ];
