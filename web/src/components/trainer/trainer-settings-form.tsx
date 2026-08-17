@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { ThemePicker } from "@/components/theme-picker";
 
 export function TrainerSettingsForm({ settings }: { settings: TrainerSettings }) {
   const router = useRouter();
@@ -247,6 +248,18 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
       </form>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:items-start">
+        <Card>
+          <CardHeader>
+            <CardTitle>Apariencia</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <ThemePicker />
+            <p className="text-sm text-muted-foreground">
+              Elige el tema de la app o deja que siga la configuración de tu dispositivo.
+            </p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle>Notificaciones</CardTitle>

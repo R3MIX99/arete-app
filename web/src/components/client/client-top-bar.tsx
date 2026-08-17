@@ -2,11 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useTheme } from "next-themes";
-import { ChevronDown, Dumbbell, LogOut, Monitor, Moon, Settings, Sun } from "lucide-react";
+import { ChevronDown, Dumbbell, LogOut, Settings } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,12 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const THEME_OPTIONS = [
-  { value: "light", label: "Modo claro", icon: Sun },
-  { value: "dark", label: "Modo oscuro", icon: Moon },
-  { value: "system", label: "Según el sistema", icon: Monitor },
-] as const;
+import { ThemePicker } from "@/components/theme-picker";
 
 /** Iniciales para el círculo del avatar — dos como mucho, que es lo que
  * se alcanza a leer ("Cliente de Prueba" → "CP"). */
@@ -42,10 +35,6 @@ export function ClientTopBar({
   brandLogoUrl: string | null;
 }) {
   const router = useRouter();
-  // `theme` es lo que el usuario eligió, "system" incluido. resolvedTheme
-  // daría el color que acabó aplicándose, que no sirve para marcar cuál
-  // de las tres opciones está seleccionada.
-  const { theme, setTheme } = useTheme();
 
   async function handleLogout() {
     const supabase = createClient();
@@ -79,40 +68,12 @@ export function ClientTopBar({
           className="w-auto min-w-0 max-w-[calc(100vw-2rem)] whitespace-nowrap"
         >
           {/* El nombre no se repite aquí: ya se lee en el botón que abre
-              este menú, justo arriba. */}
-          {/* El título va arriba y los tres íconos debajo. Los botones
-              son círculos del ancho de su ícono (nada de flex-1, que los
-              estiraba a todo lo ancho) y el elegido se pinta con el
-              color de acento, así se ve de un vistazo cuál está activo.
-              Son botones normales y no DropdownMenuItem a propósito: así
-              tocarlos no cierra el menú y se pueden comparar los temas
-              al momento. */}
+              este menú, justo arriba. Los íconos de tema son botones
+              normales y no DropdownMenuItem a propósito: así tocarlos no
+              cierra el menú y se pueden comparar los temas al momento. */}
           <div className="flex flex-col gap-1.5 px-2 py-1.5">
             <span className="text-xs text-muted-foreground">Apariencia</span>
-            <div className="flex items-center gap-1.5">
-              {THEME_OPTIONS.map((option) => {
-                const Icon = option.icon;
-                const active = theme === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setTheme(option.value)}
-                    aria-label={option.label}
-                    aria-pressed={active}
-                    title={option.label}
-                    className={cn(
-                      "flex size-7 items-center justify-center rounded-full transition-colors",
-                      active
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                    )}
-                  >
-                    <Icon className="size-4" />
-                  </button>
-                );
-              })}
-            </div>
+            <ThemePicker />
           </div>
 
           <DropdownMenuSeparator />

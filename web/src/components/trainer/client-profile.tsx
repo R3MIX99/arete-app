@@ -9,7 +9,6 @@ import {
   CalendarClock,
   CalendarRange,
   Dumbbell,
-  Eye,
   Pencil,
   Plus,
   UserCheck,
@@ -374,7 +373,6 @@ export function ClientProfile({
                         <th className="px-3 py-2 font-medium">Ejercicio</th>
                         <th className="px-3 py-2 font-medium">Inicial</th>
                         <th className="px-3 py-2 font-medium">Actual</th>
-                        <th className="w-10 px-3 py-2" />
                       </tr>
                     </thead>
                     <tbody>
@@ -388,13 +386,10 @@ export function ClientProfile({
                           <td className="px-3 py-2 tabular-nums text-muted-foreground">
                             {summary.starting_weight} {summary.unit}
                           </td>
+                          {/* Sin columna de ojo: la fila entera ya abre la
+                              evolución del ejercicio. */}
                           <td className="px-3 py-2 tabular-nums font-medium">
                             {summary.current_weight} {summary.unit}
-                          </td>
-                          <td className="px-3 py-2">
-                            <Button type="button" variant="ghost" size="icon" aria-label={`Ver evolución de ${summary.exercise_name}`} tabIndex={-1}>
-                              <Eye className="size-4" />
-                            </Button>
                           </td>
                         </tr>
                       ))}

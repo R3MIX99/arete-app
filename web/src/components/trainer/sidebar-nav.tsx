@@ -11,8 +11,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { SidebarProfileFooter } from "@/components/trainer/sidebar-profile-footer";
 
 /**
- * Barra lateral de escritorio: siempre oscura (ver `.sidebar-dark` en
- * globals.css), colapsable a solo íconos cuadrados. El ítem activo se
+ * Barra lateral de escritorio: sigue el tema claro/oscuro (ver
+ * `.sidebar-panel` en globals.css), colapsable a solo íconos
+ * cuadrados. El ítem activo se
  * marca con una franja de luz pegada al borde derecho (expandida) o un
  * degradé diagonal (colapsada); el perfil y cerrar sesión viven abajo.
  */
@@ -32,7 +33,7 @@ export function SidebarNav({
 
   return (
     <aside
-      className="sidebar-dark hidden md:flex h-screen flex-col shrink-0 border-r"
+      className="sidebar-panel hidden md:flex h-screen flex-col shrink-0 border-r"
       style={{
         borderColor: "var(--sb-border-dim)",
         width: collapsed ? 76 : 256,
@@ -123,9 +124,13 @@ export function SidebarNav({
                 style={
                   collapsed
                     ? {
+                        // El degradé va de acento a acento (antes
+                        // terminaba en var(--sb-bg)): en modo claro ese
+                        // extremo era casi blanco y el texto blanco de
+                        // encima quedaba ilegible.
                         color: active ? "#fff" : "var(--sb-text-secondary)",
                         background: active
-                          ? "linear-gradient(135deg, var(--sb-accent-start), var(--sb-bg))"
+                          ? "linear-gradient(135deg, var(--sb-accent-start), var(--sb-accent-end))"
                           : "transparent",
                       }
                     : {

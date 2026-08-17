@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/drawer";
 import { MonthCalendarGrid } from "@/components/trainer/month-calendar-grid";
 import { CalendarSessionList } from "@/components/trainer/calendar-session-list";
+import { WeekdayStrip } from "@/components/weekday-strip";
 
 /** Rejilla de 6 semanas (Lun-Dom) que contiene el mes dado. */
 function monthGridRange(year: number, month: number) {
@@ -55,6 +56,15 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
     () => sessionsInRange(assignments, selectedDate, selectedDate),
     [assignments, selectedDate],
   );
+
+  // Las sesiones de la semana se consultan aparte de las del mes porque
+  // una semana puede cruzar dos meses y la rejilla mensual no las cubre.
+  const weekSessionKeys = React.useMemo(() => {
+    const monday = mondayOfWeek(selectedDate);
+    return new Set(
+      groupSessionsByDate(sessionsInRange(assignments, monday, addDays(monday, 6))).keys(),
+    );
+  }, [assignments, selectedDate]);
 
   const monthSummary = React.useMemo(() => {
     const daysInMonth = new Date(Date.UTC(cursor.year, cursor.month, 0)).getUTCDate();
@@ -134,6 +144,13 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
             </Button>
           )}
         </div>
+
+        <WeekdayStrip
+          selectedDate={selectedDate}
+          today={today}
+          sessionDateKeys={weekSessionKeys}
+          onSelectDate={selectDate}
+        />
 
         <div className="flex items-center justify-between">
           <Button

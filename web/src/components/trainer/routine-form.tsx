@@ -447,18 +447,28 @@ export function RoutineForm({
           </CardContent>
         </Card>
 
-        <div className="flex items-center justify-between">
+        {/* En teléfono el título y los dos botones no caben en un mismo
+            renglón, así que los botones bajan debajo del título y se
+            reparten el ancho. Desde sm vuelven a su derecha. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Ejercicios
           </h2>
           <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => setAiOpen(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              onClick={() => setAiOpen(true)}
+            >
               <Sparkles /> Generar con IA
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="flex-1 sm:flex-none"
               onClick={() => setPickerOpen(true)}
             >
               <Plus /> Agregar ejercicio

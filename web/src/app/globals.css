@@ -193,11 +193,44 @@
 }
 
 /* ---------------------------------------------------------------------
- * Barra lateral: fija en oscuro sin importar el tema del contenido —
- * mismo patrón que ya se usó en la app de Flutter (Linear/Vercel/Notion
- * usan lo mismo). Vidrio con borde en degradé, brillante arriba.
+ * Barra lateral. Antes estaba fija en oscuro sin importar el tema, y en
+ * modo claro quedaba como un bloque negro pegado a una app clara. Ahora
+ * sigue al tema con el mismo patrón de tres estados que el resto de los
+ * tokens: :root = claro, y las dos variantes oscuras (preferencia del
+ * sistema sin elección explícita, y clase .dark del toggle).
  * ------------------------------------------------------------------- */
-.sidebar-dark {
+.sidebar-panel {
+  --sb-bg: oklch(98% 0.002 264);
+  --sb-surface: #ffffff;
+  --sb-border-bright: rgba(0, 0, 0, 0.12);
+  --sb-border-dim: rgba(0, 0, 0, 0.06);
+  --sb-text: oklch(20% 0.004 264);
+  --sb-text-secondary: oklch(45% 0.006 264);
+  --sb-text-muted: oklch(60% 0.006 264);
+  --sb-hover: rgba(0, 0, 0, 0.04);
+  --sb-active: rgba(0, 0, 0, 0.06);
+  --sb-accent-start: oklch(51% 0.22 273);
+  --sb-accent-end: #7c3aed;
+
+  background: var(--sb-bg);
+  color: var(--sb-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) .sidebar-panel {
+    --sb-bg: #18181c;
+    --sb-surface: #1f1f24;
+    --sb-border-bright: rgba(255, 255, 255, 0.15);
+    --sb-border-dim: rgba(255, 255, 255, 0.05);
+    --sb-text: #f4f4f5;
+    --sb-text-secondary: #9a9aa5;
+    --sb-text-muted: #6b6b74;
+    --sb-hover: rgba(255, 255, 255, 0.06);
+    --sb-active: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.dark .sidebar-panel {
   --sb-bg: #18181c;
   --sb-surface: #1f1f24;
   --sb-border-bright: rgba(255, 255, 255, 0.15);
@@ -207,11 +240,6 @@
   --sb-text-muted: #6b6b74;
   --sb-hover: rgba(255, 255, 255, 0.06);
   --sb-active: rgba(255, 255, 255, 0.08);
-  --sb-accent-start: oklch(51% 0.22 273);
-  --sb-accent-end: #7c3aed;
-
-  background: var(--sb-bg);
-  color: var(--sb-text);
 }
 
 @layer utilities {

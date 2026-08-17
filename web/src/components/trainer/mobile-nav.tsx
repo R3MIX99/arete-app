@@ -38,7 +38,7 @@ export function MobileNav({
           <span className="sr-only">Abrir menú</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="sidebar-dark w-72 p-0 border-r-0 flex flex-col">
+      <SheetContent side="left" className="sidebar-panel w-72 p-0 border-r-0 flex flex-col">
         <SheetHeader className="border-b" style={{ borderColor: "var(--sb-border-dim)" }}>
           <SheetTitle asChild>
             <div className="flex items-center gap-2.5" style={{ color: "var(--sb-text)" }}>
