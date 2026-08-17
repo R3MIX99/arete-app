@@ -1,20 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Activity, ChevronLeft, Ruler, Target } from "lucide-react";
+import { Activity, ChevronLeft, Ruler, Sparkles, Target } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, goalLabel } from "@/lib/format";
-import {
-  subscriptionPlanLabels,
-  subscriptionStatusLabels,
-  subscriptionStatusVariants,
-  type SubscriptionPlan,
-  type SubscriptionStatus,
-} from "@/lib/types/settings";
-import type { PlanCatalogEntry, PlanChangeLogEntry, PlanSource } from "@/lib/types/plans";
+import { subscriptionPlanLabels, type SubscriptionPlan } from "@/lib/types/settings";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlanManager } from "@/components/superadmin/plan-manager";
 
 interface ClientRow {
   id: string;
@@ -25,11 +17,13 @@ interface ClientRow {
   goal: string | null;
   health_notes: string | null;
   trainer_id: string | null;
-  subscription_plan: SubscriptionPlan;
-  subscription_status: SubscriptionStatus;
-  plan_source: PlanSource;
-  plan_override_expires_at: string | null;
   created_at: string;
+}
+
+interface TrainerRow {
+  id: string;
+  full_name: string;
+  subscription_plan: SubscriptionPlan;
 }
 
 interface SessionRow {
@@ -37,20 +31,6 @@ interface SessionRow {
   session_date: string;
   duration_seconds: number | null;
   routines: { name: string } | { name: string }[] | null;
-}
-
-interface ChangeLogRow {
-  id: string;
-  previous_plan: string | null;
-  new_plan: string;
-  previous_status: string | null;
-  new_status: string;
-  is_free_grant: boolean;
-  expires_at: string | null;
-  note: string | null;
-  changed_by: string;
-  changed_at: string;
-  changed_by_profile: { full_name: string } | { full_name: string }[] | null;
 }
 
 function one<T>(value: T | T[] | null): T | null {
@@ -65,57 +45,40 @@ export default async function SuperadminClientDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: client }, { data: sessionRows }, { count: measurementCount }, { data: planRows }, { data: changeLogRows }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select(
-          "id, full_name, email, phone, status, goal, health_notes, trainer_id, subscription_plan, subscription_status, plan_source, plan_override_expires_at, created_at",
-        )
-        .eq("id", id)
-        .eq("role", "client")
-        .maybeSingle(),
-      supabase
-        .from("client_sessions")
-        .select("id, session_date, duration_seconds, routines(name)")
-        .eq("client_id", id)
-        .eq("status", "completed")
-        .order("session_date", { ascending: false })
-        .limit(10),
-      supabase
-        .from("progress_measurements")
-        .select("id", { count: "exact", head: true })
-        .eq("client_id", id),
-      supabase
-        .from("plans")
-        .select("id, key, name, price_cents, currency, client_limit, features, is_active, sort_order")
-        .eq("is_active", true)
-        .order("sort_order"),
-      supabase
-        .from("plan_change_log")
-        .select(
-          "id, previous_plan, new_plan, previous_status, new_status, is_free_grant, expires_at, note, changed_by, changed_at, changed_by_profile:changed_by(full_name)",
-        )
-        .eq("profile_id", id)
-        .order("changed_at", { ascending: false }),
-    ]);
+  const [{ data: client }, { data: sessionRows }, { count: measurementCount }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name, email, phone, status, goal, health_notes, trainer_id, created_at")
+      .eq("id", id)
+      .eq("role", "client")
+      .maybeSingle(),
+    supabase
+      .from("client_sessions")
+      .select("id, session_date, duration_seconds, routines(name)")
+      .eq("client_id", id)
+      .eq("status", "completed")
+      .order("session_date", { ascending: false })
+      .limit(10),
+    supabase
+      .from("progress_measurements")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", id),
+  ]);
 
   if (!client) notFound();
   const c = client as ClientRow;
   const sessions = (sessionRows ?? []) as unknown as SessionRow[];
-  const plans = (planRows ?? []) as PlanCatalogEntry[];
-  const changeLog: PlanChangeLogEntry[] = ((changeLogRows ?? []) as ChangeLogRow[]).map((row) => ({
-    ...row,
-    changed_by_name: one(row.changed_by_profile)?.full_name ?? null,
-  }));
 
+  // El cliente no tiene plan propio — lo que ve depende del plan que
+  // tenga contratado su entrenador.
   const { data: trainer } = c.trainer_id
     ? await supabase
         .from("profiles")
-        .select("id, full_name")
+        .select("id, full_name, subscription_plan")
         .eq("id", c.trainer_id)
         .maybeSingle()
     : { data: null };
+  const t = trainer as TrainerRow | null;
 
   const stats = [
     { label: "Entrenamientos", value: sessions.length, icon: Activity },
@@ -143,13 +106,8 @@ export default async function SuperadminClientDetailPage({
               <Target className="size-3" /> {goalLabel(c.goal)}
             </Badge>
           ) : null}
-          <Badge variant="secondary">{subscriptionPlanLabels[c.subscription_plan]}</Badge>
-          <Badge
-            variant={
-              c.status === "active" ? subscriptionStatusVariants[c.subscription_status] : "destructive"
-            }
-          >
-            {c.status === "active" ? subscriptionStatusLabels[c.subscription_status] : "Inactivo"}
+          <Badge variant={c.status === "active" ? "success" : "destructive"}>
+            {c.status === "active" ? "Activo" : "Inactivo"}
           </Badge>
         </div>
       </div>
@@ -160,13 +118,18 @@ export default async function SuperadminClientDetailPage({
             <CardTitle className="text-sm">Entrenador</CardTitle>
           </CardHeader>
           <CardContent>
-            {trainer ? (
-              <Link
-                href={`/superadmin/entrenadores/${trainer.id}`}
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                {trainer.full_name}
-              </Link>
+            {t ? (
+              <div className="flex flex-col gap-1.5">
+                <Link
+                  href={`/superadmin/entrenadores/${t.id}`}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  {t.full_name}
+                </Link>
+                <Badge variant="secondary" className="w-fit">
+                  <Sparkles className="size-3" /> Plan {subscriptionPlanLabels[t.subscription_plan]}
+                </Badge>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">Sin entrenador asignado.</p>
             )}
@@ -187,16 +150,6 @@ export default async function SuperadminClientDetailPage({
           </Card>
         ))}
       </div>
-
-      <PlanManager
-        profileId={c.id}
-        currentPlan={c.subscription_plan}
-        currentStatus={c.subscription_status}
-        planSource={c.plan_source}
-        planOverrideExpiresAt={c.plan_override_expires_at}
-        plans={plans}
-        changeLog={changeLog}
-      />
 
       {c.health_notes ? (
         <Card>

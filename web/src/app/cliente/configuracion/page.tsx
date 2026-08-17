@@ -15,7 +15,7 @@ export default async function ClientProfilePage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, email, phone, goal, health_notes, trainer_id, notify_workout_reminders, notify_meal_reminders, subscription_plan, subscription_status, deletion_requested_at",
+      "id, full_name, email, phone, goal, health_notes, trainer_id, notify_workout_reminders, notify_meal_reminders, deletion_requested_at",
     )
     .eq("id", user.id)
     .single();
@@ -24,12 +24,13 @@ export default async function ClientProfilePage() {
 
   // El entrenador solo se pide si de verdad hay uno asignado — un
   // cliente puede quedarse sin entrenador (trainer_id se pone en null
-  // si su entrenador se elimina).
+  // si su entrenador se elimina). El plan también se pide aquí: el
+  // cliente no tiene uno propio, hereda el de su entrenador.
   const [{ data: trainer }, { data: measurements }] = await Promise.all([
     profile.trainer_id
       ? supabase
           .from("profiles")
-          .select("full_name, email, phone, business_name, business_logo_path")
+          .select("full_name, email, phone, business_name, business_logo_path, subscription_plan")
           .eq("id", profile.trainer_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),

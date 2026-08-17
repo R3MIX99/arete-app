@@ -22,17 +22,12 @@ import {
   type MeasurementKey,
   type ProgressMeasurement,
 } from "@/lib/types/progress";
-import {
-  subscriptionPlanLabels,
-  subscriptionStatusLabels,
-  subscriptionStatusVariants,
-} from "@/lib/types/settings";
+import { subscriptionPlanLabels } from "@/lib/types/settings";
 import type { AssignedTrainer, ClientProfileSettings } from "@/lib/types/client-profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -367,29 +362,27 @@ export function ClientProfileView({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Mi plan</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-              <Sparkles className="size-[18px]" />
-            </div>
-            <div className="min-w-0">
+      {trainer ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Plan de tu entrenador</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+                <Sparkles className="size-[18px]" />
+              </div>
               <p className="text-sm font-semibold">
-                Plan {subscriptionPlanLabels[profile.subscription_plan]}
+                Plan {subscriptionPlanLabels[trainer.subscription_plan]}
               </p>
-              <Badge variant={subscriptionStatusVariants[profile.subscription_status]}>
-                {subscriptionStatusLabels[profile.subscription_status]}
-              </Badge>
             </div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Tu plan lo administra tu entrenador. Los pagos todavía no están conectados en la app.
-          </p>
-        </CardContent>
-      </Card>
+            <p className="text-sm text-muted-foreground">
+              Tú no tienes un plan propio — las funciones disponibles dependen del plan que
+              tenga contratado tu entrenador.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
