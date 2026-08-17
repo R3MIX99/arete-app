@@ -81,37 +81,39 @@ export function ClientTopBar({
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-            Apariencia
-          </DropdownMenuLabel>
-          {/* Tres íconos en fila en vez de tres renglones: el elegido se
-              pinta con el color de acento, así se ve de un vistazo cuál
-              está activo sin necesidad de una palomita. Son botones
-              normales (no DropdownMenuItem) justamente para que tocarlos
-              no cierre el menú y se puedan comparar los temas al momento. */}
-          <div className="flex gap-1 px-1 pb-1">
-            {THEME_OPTIONS.map((option) => {
-              const Icon = option.icon;
-              const active = theme === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setTheme(option.value)}
-                  aria-label={option.label}
-                  aria-pressed={active}
-                  title={option.label}
-                  className={cn(
-                    "flex flex-1 items-center justify-center rounded-md py-2 transition-colors",
-                    active
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  )}
-                >
-                  <Icon className="size-4" />
-                </button>
-              );
-            })}
+          {/* El título y los tres íconos comparten renglón para que esta
+              sección ocupe una sola línea. Los botones son círculos del
+              ancho de su ícono (nada de flex-1, que los estiraba a todo
+              lo ancho) y el elegido se pinta con el color de acento, así
+              se ve de un vistazo cuál está activo. Son botones normales
+              y no DropdownMenuItem a propósito: así tocarlos no cierra
+              el menú y se pueden comparar los temas al momento. */}
+          <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+            <span className="text-xs text-muted-foreground">Apariencia</span>
+            <div className="flex items-center gap-1">
+              {THEME_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                const active = theme === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setTheme(option.value)}
+                    aria-label={option.label}
+                    aria-pressed={active}
+                    title={option.label}
+                    className={cn(
+                      "flex size-7 items-center justify-center rounded-full transition-colors",
+                      active
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <DropdownMenuSeparator />
