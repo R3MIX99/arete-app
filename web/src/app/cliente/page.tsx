@@ -28,6 +28,11 @@ interface AssignmentRow {
   assignment_overrides: OverrideRow[] | null;
 }
 
+interface ActivitySessionRow {
+  session_date: string;
+  duration_seconds: number | null;
+}
+
 function one<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
@@ -46,9 +51,20 @@ export default async function ClientHomePage() {
   const serverToday = todayKey();
   const windowStart = addDays(serverToday, -1);
   const windowEnd = addDays(serverToday, 1);
+  // Ventana amplia para la cuadrícula del mes: el mes que se pinta lo
+  // decide el navegador, así que se traen ~70 días hacia atrás para que
+  // el mes en curso quepa completo sin importar la zona horaria (y de
+  // paso alcanza para la racha, que puede venir del mes anterior).
+  const activityStart = addDays(serverToday, -70);
 
-  const [{ data: profile }, { data: assignmentRows }, { data: inProgressSessions }, { data: completedSessions }] =
-    await Promise.all([
+  const [
+    { data: profile },
+    { data: assignmentRows },
+    { data: inProgressSessions },
+    { data: completedSessions },
+    { data: activitySessionRows },
+    { data: setLogRows },
+  ] = await Promise.all([
       supabase.from("profiles").select("full_name").eq("id", user.id).single(),
       supabase
         .from("client_assignments")
@@ -68,6 +84,20 @@ export default async function ClientHomePage() {
         .eq("status", "completed")
         .gte("session_date", windowStart)
         .lte("session_date", windowEnd),
+      supabase
+        .from("client_sessions")
+        .select("session_date, duration_seconds")
+        .eq("client_id", user.id)
+        .eq("status", "completed")
+        .gte("session_date", activityStart),
+      // Solo la fecha: el conteo de series del mes se hace contando
+      // filas, no hace falta traerse los valores de cada serie.
+      supabase
+        .from("client_set_logs")
+        .select("session_date")
+        .eq("client_id", user.id)
+        .eq("is_completed", true)
+        .gte("session_date", activityStart),
     ]);
 
   const assignments: CalendarAssignment[] = ((assignmentRows ?? []) as AssignmentRow[]).map((row) => {
@@ -114,6 +144,13 @@ export default async function ClientHomePage() {
       assignments={assignments}
       inProgressSessions={inProgressSessions ?? []}
       recentCompletedSessions={completedSessions ?? []}
+      monthCompletedSessions={((activitySessionRows ?? []) as ActivitySessionRow[]).map((r) => ({
+        date: r.session_date,
+        durationSeconds: r.duration_seconds,
+      }))}
+      completedSetDates={((setLogRows ?? []) as { session_date: string }[]).map(
+        (r) => r.session_date,
+      )}
     />
   );
 }

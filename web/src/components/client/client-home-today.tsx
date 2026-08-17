@@ -6,6 +6,10 @@ import { CalendarDays, Check, ChevronRight, Dumbbell } from "lucide-react";
 
 import { todayKey, sessionsInRange, type CalendarAssignment } from "@/lib/calendar-logic";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  ClientMonthActivity,
+  type CompletedSessionDay,
+} from "@/components/client/client-month-activity";
 
 interface SessionRef {
   id: string;
@@ -28,11 +32,15 @@ export function ClientHomeToday({
   assignments,
   inProgressSessions,
   recentCompletedSessions,
+  monthCompletedSessions,
+  completedSetDates,
 }: {
   firstName: string;
   assignments: CalendarAssignment[];
   inProgressSessions: SessionRef[];
   recentCompletedSessions: SessionRef[];
+  monthCompletedSessions: CompletedSessionDay[];
+  completedSetDates: string[];
 }) {
   const today = useMemo(() => todayKey(), []);
   const todaySessions = useMemo(
@@ -118,6 +126,13 @@ export function ClientHomeToday({
       >
         Ver agenda de entrenamiento
       </Link>
+
+      <ClientMonthActivity
+        today={today}
+        assignments={assignments}
+        completedSessions={monthCompletedSessions}
+        completedSetDates={completedSetDates}
+      />
     </div>
   );
 }
