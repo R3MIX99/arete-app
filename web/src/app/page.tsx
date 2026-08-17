@@ -16,5 +16,7 @@ export default async function RootPage() {
     .eq("id", user.id)
     .single();
 
-  redirect(profile?.role === "client" ? "/cliente" : "/entrenador");
+  if (profile?.role === "client") redirect("/cliente");
+  if (profile?.role === "superadmin") redirect("/superadmin");
+  redirect("/entrenador");
 }

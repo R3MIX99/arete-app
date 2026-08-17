@@ -9,6 +9,7 @@ import {
   LineChart,
   Settings,
   Home,
+  UserRound,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +30,14 @@ export const trainerNavItems: NavItem[] = [
   { href: "/entrenador/calendario", label: "Calendario", icon: Calendar },
   { href: "/entrenador/progreso", label: "Seguimiento de Progreso", icon: LineChart },
   { href: "/entrenador/configuracion", label: "Configuración", icon: Settings },
+];
+
+/** Panel de superadministrador (Fase 12): vista global de la
+ * plataforma, en solo lectura por ahora. */
+export const superadminNavItems: NavItem[] = [
+  { href: "/superadmin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/superadmin/entrenadores", label: "Entrenadores", icon: Users },
+  { href: "/superadmin/clientes", label: "Clientes", icon: UserRound },
 ];
 
 /** Las 4 pestañas del panel de cliente. El perfil ya no vive aquí: se
