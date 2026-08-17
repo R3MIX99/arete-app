@@ -18,11 +18,12 @@ export default async function TrainerLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email, role, business_name, business_logo_path")
+    .select("full_name, email, role, business_name, business_logo_path, onboarding_completed_at")
     .eq("id", user.id)
     .single();
 
   if (profile?.role === "client") redirect("/cliente");
+  if (profile && !profile.onboarding_completed_at) redirect("/onboarding/entrenador");
 
   const userName = profile?.full_name || user.email || "Entrenador";
   const userEmail = profile?.email || user.email || "";

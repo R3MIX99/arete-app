@@ -18,13 +18,14 @@ export default async function ClientLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, role, trainer_id")
+    .select("full_name, role, trainer_id, onboarding_completed_at")
     .eq("id", user.id)
     .single();
 
   if (profile?.role === "trainer" || profile?.role === "superadmin") {
     redirect("/entrenador");
   }
+  if (profile && !profile.onboarding_completed_at) redirect("/onboarding/cliente");
 
   let brandName = "Areté";
   let brandLogoUrl: string | null = null;

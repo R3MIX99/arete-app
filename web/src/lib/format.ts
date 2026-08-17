@@ -20,6 +20,17 @@ export function goalLabel(goal: string | null): string | null {
   return clientGoalLabels[goal] ?? goal;
 }
 
+export const genderLabels: Record<string, string> = {
+  male: "Masculino",
+  female: "Femenino",
+  unspecified: "Sin especificar",
+};
+
+export function genderLabel(gender: string | null): string {
+  if (!gender) return genderLabels.unspecified;
+  return genderLabels[gender] ?? genderLabels.unspecified;
+}
+
 export const routineLevelLabels: Record<string, string> = {
   beginner: "Principiante",
   intermediate: "Intermedio",

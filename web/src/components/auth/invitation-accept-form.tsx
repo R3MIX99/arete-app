@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Dumbbell, Loader2, CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Dumbbell, Loader2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { isAlreadyRegisteredSignUp } from "@/lib/auth-errors";
 import { goalLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,13 +37,13 @@ export function InvitationAcceptForm({
   token: string;
   invitation: InvitationPreview;
 }) {
+  const router = useRouter();
   const [checkingSession, setCheckingSession] = React.useState(true);
   const [hasSession, setHasSession] = React.useState(false);
   const [fullName, setFullName] = React.useState(invitation.full_name ?? "");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [done, setDone] = React.useState(false);
 
   React.useEffect(() => {
     async function load() {
@@ -66,8 +68,10 @@ export function InvitationAcceptForm({
       setLoading(false);
       return;
     }
-    setDone(true);
-    setLoading(false);
+    // Ya quedó asignado a su entrenador — le faltan género, estatura y
+    // frecuencia de entrenamiento antes de entrar a su panel.
+    router.replace("/onboarding/cliente");
+    router.refresh();
   }
 
   async function handleAcceptWithSession() {
@@ -90,12 +94,14 @@ export function InvitationAcceptForm({
       },
     });
 
+    if (isAlreadyRegisteredSignUp(signUpError, signUpData?.user)) {
+      setError("Ya existe una cuenta con este correo. Inicia sesión y vuelve a abrir este enlace.");
+      setLoading(false);
+      return;
+    }
+
     if (signUpError) {
-      setError(
-        signUpError.message.toLowerCase().includes("registered")
-          ? "Ya existe una cuenta con este correo. Inicia sesión y vuelve a abrir este enlace."
-          : "No se pudo crear tu cuenta. Intenta de nuevo.",
-      );
+      setError("No se pudo crear tu cuenta. Intenta de nuevo.");
       setLoading(false);
       return;
     }
@@ -129,20 +135,7 @@ export function InvitationAcceptForm({
           </div>
         </div>
 
-        {done ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-              <CheckCircle2 className="size-10 text-success" />
-              <div>
-                <p className="font-semibold">¡Listo!</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Ya eres cliente de {brandName}. Espera a que tu entrenador te contacte para
-                  darte tu rutina y tu plan.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : alreadyUsed ? (
+        {alreadyUsed ? (
           <Card>
             <CardContent className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
               <p className="text-sm">
