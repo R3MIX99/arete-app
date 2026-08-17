@@ -40,8 +40,14 @@ export function RoutineExerciseCard({
 
   return (
     <button type="button" onClick={onSelect} className="w-full text-left">
-      <div className="flex gap-3 rounded-2xl bg-card p-2.5 transition-colors hover:bg-accent/40">
-        <div className="size-[72px] shrink-0 overflow-hidden rounded-xl bg-primary/12">
+      {/* Padding chico a la izquierda, arriba y abajo (y el normal a la
+          derecha, donde va el texto) para dejarle todo el espacio
+          posible a la foto. */}
+      <div className="flex gap-3 rounded-2xl bg-card p-1.5 pr-3 transition-colors hover:bg-accent/40">
+        {/* self-stretch: la foto crece hasta el alto de la tarjeta, así
+            que en un ejercicio con nombre de dos líneas ya no queda
+            hueco vacío arriba y abajo como cuando era cuadrada fija. */}
+        <div className="w-22 min-h-22 shrink-0 self-stretch overflow-hidden rounded-xl bg-primary/12">
           {exercise.image_url ? (
             <ThumbnailImage
               src={exercise.image_url}
@@ -55,7 +61,7 @@ export function RoutineExerciseCard({
           )}
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 py-1">
           <p className="text-sm leading-snug font-semibold">{exercise.exercise_name}</p>
           <span className="w-fit rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold text-primary-foreground">
             {targetLabel(exercise)}
