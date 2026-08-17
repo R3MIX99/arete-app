@@ -11,6 +11,7 @@ interface ExerciseRow {
   equipment: ExerciseSummary["equipment"];
   description: string | null;
   video_url: string | null;
+  image_path: string | null;
   trainer_id: string | null;
   forked_from: string | null;
   created_at: string;
@@ -32,7 +33,7 @@ export default async function ExercisesPage() {
     supabase
       .from("exercises")
       .select(
-        "id, name, muscle_group, equipment, description, video_url, trainer_id, forked_from, created_at, profiles!exercises_trainer_id_fkey(full_name)",
+        "id, name, muscle_group, equipment, description, video_url, image_path, trainer_id, forked_from, created_at, profiles!exercises_trainer_id_fkey(full_name)",
       )
       .order("name"),
     supabase.from("trainer_hidden_exercises").select("exercise_id").eq("trainer_id", user.id),
@@ -55,6 +56,7 @@ export default async function ExercisesPage() {
       muscle_group: r.muscle_group,
       equipment: r.equipment,
       video_url: r.video_url,
+      image_path: r.image_path,
       trainer_id: r.trainer_id,
       forked_from: r.forked_from,
     }));
@@ -72,6 +74,7 @@ export default async function ExercisesPage() {
       equipment: r.equipment,
       description: r.description,
       video_url: r.video_url,
+      image_path: r.image_path,
       trainer_id: r.trainer_id,
       forked_from: r.forked_from,
       creator_name: r.trainer_id ? (one(r.profiles)?.full_name ?? "Entrenador") : "Areté",

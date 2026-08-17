@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ImagePlus, Loader2, Trash, Dumbbell, X } from "lucide-react";
+import { ArrowLeft, Dumbbell, ImagePlus, Loader2, Trash, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -47,14 +47,18 @@ const EQUIPMENT_OPTIONS = [
   { value: "other", label: "Otro" },
 ];
 
-export function ExerciseForm({
+/**
+ * Crear/editar un ejercicio de la biblioteca de Areté (trainer_id
+ * null). A diferencia del formulario del entrenador, aquí no hay
+ * lógica de "copiar" — el superadmin edita el original directamente, y
+ * ese cambio lo ve cualquier entrenador que lo tenga en su biblioteca.
+ */
+export function LibraryExerciseForm({
   mode,
   exercise,
-  trainerId,
 }: {
   mode: "create" | "edit";
   exercise?: ExerciseDetail;
-  trainerId: string;
 }) {
   const router = useRouter();
   const [name, setName] = React.useState(exercise?.name ?? "");
@@ -65,16 +69,10 @@ export function ExerciseForm({
   const [imagePath, setImagePath] = React.useState<string | null>(exercise?.image_path ?? null);
   const [uploadingImage, setUploadingImage] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
-  const imageInputRef = React.useRef<HTMLInputElement>(null);
   const [deleting, setDeleting] = React.useState(false);
-  const [hiding, setHiding] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const [hideConfirmOpen, setHideConfirmOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const isOwned = !exercise || exercise.trainer_id === trainerId;
-  // Esencial de Areté: no es mío, pero sí lo puedo quitar de mi propia
-  // biblioteca sin afectar a nadie más.
-  const isEssential = mode === "edit" && !!exercise && exercise.trainer_id === null;
+  const imageInputRef = React.useRef<HTMLInputElement>(null);
 
   const previewId = videoUrl ? youtubeVideoId(videoUrl) : null;
   const imageUrl = imagePath
@@ -89,7 +87,7 @@ export function ExerciseForm({
     setUploadingImage(true);
     const supabase = createClient();
     const compressed = await compressImage(file);
-    const path = `${trainerId}/exercise-${Date.now()}.jpg`;
+    const path = `global/exercise-${Date.now()}.jpg`;
     const { error: uploadError } = await supabase.storage
       .from("exercise-images")
       .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
@@ -107,7 +105,6 @@ export function ExerciseForm({
     setError(null);
 
     const supabase = createClient();
-
     const payload = {
       name,
       muscle_group: muscleGroup,
@@ -118,81 +115,25 @@ export function ExerciseForm({
     };
 
     if (mode === "edit" && exercise) {
-      if (isOwned) {
-        const { error: updateError } = await supabase
-          .from("exercises")
-          .update(payload)
-          .eq("id", exercise.id);
-        setSaving(false);
-        if (updateError) {
-          setError("No se pudieron guardar los cambios. Intenta de nuevo.");
-          toast.error("No se pudieron guardar los cambios");
-          return;
-        }
-        toast.success("Cambios guardados");
-        router.push("/entrenador/ejercicios");
-        router.refresh();
-        return;
-      }
-
-      // No es tuyo (esencial de Areté, o de otro entrenador): guardar
-      // crea tu propia copia personalizada en vez de tocar el
-      // compartido — a los demás no les cambia nada. Pero esa copia no
-      // se queda huérfana: se reemplaza el original por la copia en
-      // TODO lo tuyo (tus rutinas, y el historial/evolución de tus
-      // clientes para ese ejercicio) para que no queden dos versiones
-      // sueltas del mismo ejercicio.
-      const { data: forkRow, error: forkError } = await supabase
+      const { error: updateError } = await supabase
         .from("exercises")
-        .insert({ ...payload, trainer_id: trainerId, forked_from: exercise.id })
-        .select("id")
-        .single();
-      if (forkError || !forkRow) {
-        setSaving(false);
-        setError("No se pudo guardar tu copia personalizada. Intenta de nuevo.");
-        toast.error("No se pudo guardar tu copia personalizada");
+        .update(payload)
+        .eq("id", exercise.id);
+      setSaving(false);
+      if (updateError) {
+        setError("No se pudieron guardar los cambios. Intenta de nuevo.");
+        toast.error("No se pudieron guardar los cambios");
         return;
       }
-
-      const { error: replaceError } = await supabase.rpc("replace_exercise_everywhere", {
-        p_original_exercise_id: exercise.id,
-        p_new_exercise_id: forkRow.id,
-      });
-      if (replaceError) {
-        // La copia ya se creó y se puede usar; solo avisamos que el
-        // reemplazo automático en rutinas/historial no se pudo hacer.
-        console.error(replaceError);
-        toast.error(
-          "Se creó tu copia, pero no se pudo reemplazar automáticamente en tus rutinas e historial.",
-        );
-      }
-
-      // Si el original era esencial de Areté, se quita de tu biblioteca
-      // para que ya no aparezcan dos versiones del mismo ejercicio — tu
-      // copia editada la reemplaza. No afecta a otros entrenadores.
-      if (!exercise.trainer_id) {
-        await supabase
-          .from("trainer_hidden_exercises")
-          .upsert(
-            { trainer_id: trainerId, exercise_id: exercise.id },
-            { onConflict: "trainer_id,exercise_id", ignoreDuplicates: true },
-          );
-      }
-
-      setSaving(false);
-      toast.success(
-        replaceError
-          ? "Se creó tu copia personalizada de este ejercicio"
-          : "Se reemplazó este ejercicio por tu copia personalizada en tus rutinas e historial",
-      );
-      router.push("/entrenador/ejercicios");
+      toast.success("Cambios guardados");
+      router.push("/superadmin/biblioteca");
       router.refresh();
       return;
     }
 
     const { error: insertError } = await supabase
       .from("exercises")
-      .insert({ ...payload, trainer_id: trainerId });
+      .insert({ ...payload, trainer_id: null });
     setSaving(false);
     if (insertError) {
       setError("No se pudo crear el ejercicio. Intenta de nuevo.");
@@ -200,7 +141,7 @@ export function ExerciseForm({
       return;
     }
     toast.success("Ejercicio creado");
-    router.push("/entrenador/ejercicios");
+    router.push("/superadmin/biblioteca");
     router.refresh();
   }
 
@@ -208,41 +149,17 @@ export function ExerciseForm({
     if (!exercise) return;
     setDeleting(true);
     const supabase = createClient();
-    const { error: deleteError } = await supabase
-      .from("exercises")
-      .delete()
-      .eq("id", exercise.id);
+    const { error: deleteError } = await supabase.from("exercises").delete().eq("id", exercise.id);
     if (deleteError) {
-      setError(
-        "No se pudo eliminar — puede estar usado en alguna rutina existente.",
-      );
       toast.error("No se pudo eliminar", {
-        description: "Puede estar usado en alguna rutina existente.",
+        description: "Puede estar usado en la biblioteca de algún entrenador.",
       });
       setDeleting(false);
       setConfirmOpen(false);
       return;
     }
     toast.success("Ejercicio eliminado");
-    router.push("/entrenador/ejercicios");
-    router.refresh();
-  }
-
-  async function handleHide() {
-    if (!exercise) return;
-    setHiding(true);
-    const supabase = createClient();
-    const { error: hideError } = await supabase
-      .from("trainer_hidden_exercises")
-      .insert({ trainer_id: trainerId, exercise_id: exercise.id });
-    setHiding(false);
-    setHideConfirmOpen(false);
-    if (hideError) {
-      toast.error("No se pudo quitar de tu biblioteca");
-      return;
-    }
-    toast.success("Se quitó de tu biblioteca");
-    router.push("/entrenador/ejercicios");
+    router.push("/superadmin/biblioteca");
     router.refresh();
   }
 
@@ -250,11 +167,11 @@ export function ExerciseForm({
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-8">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" className="w-fit" asChild>
-          <Link href="/entrenador/ejercicios">
+          <Link href="/superadmin/biblioteca">
             <ArrowLeft /> Volver a la biblioteca
           </Link>
         </Button>
-        {mode === "edit" && isOwned && (
+        {mode === "edit" && (
           <Button
             variant="ghost"
             size="sm"
@@ -266,26 +183,12 @@ export function ExerciseForm({
             <span className="hidden md:inline">Eliminar</span>
           </Button>
         )}
-        {mode === "edit" && isEssential && (
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Quitar de mi biblioteca"
-            className="text-destructive hover:text-destructive"
-            onClick={() => setHideConfirmOpen(true)}
-          >
-            <Trash />
-            <span className="hidden md:inline">Quitar de mi biblioteca</span>
-          </Button>
-        )}
       </div>
 
-      {mode === "edit" && !isOwned && (
-        <p className="rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
-          Este ejercicio es de {exercise?.trainer_id ? "otro entrenador" : "Areté"}. Al guardar se
-          creará tu propia copia personalizada — el original no cambia para nadie más.
-        </p>
-      )}
+      <p className="rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
+        Esto edita el catálogo global de Areté — lo ve cualquier entrenador que lo tenga en su
+        biblioteca.
+      </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="flex items-center gap-3">
@@ -413,8 +316,8 @@ export function ExerciseForm({
               />
               {videoUrl && !previewId && (
                 <p className="text-xs text-muted-foreground">
-                  Ese enlace no parece ser de YouTube — se guarda igual, pero no se
-                  puede mostrar la previsualización.
+                  Ese enlace no parece ser de YouTube — se guarda igual, pero no se puede mostrar
+                  la previsualización.
                 </p>
               )}
               {previewId ? (
@@ -452,20 +355,9 @@ export function ExerciseForm({
           open={confirmOpen}
           onOpenChange={setConfirmOpen}
           title={`¿Eliminar "${exercise.name}"?`}
-          description="Esta acción no se puede deshacer. Si está usado en alguna rutina, no se podrá eliminar hasta quitarlo de ahí."
+          description="Esta acción no se puede deshacer. Si algún entrenador lo tiene usado en una rutina, no se podrá eliminar hasta que lo quite de ahí."
           loading={deleting}
           onConfirm={handleDelete}
-        />
-      )}
-
-      {exercise && (
-        <ConfirmDialog
-          open={hideConfirmOpen}
-          onOpenChange={setHideConfirmOpen}
-          title={`¿Quitar "${exercise.name}" de tu biblioteca?`}
-          description="Deja de aparecer en tu biblioteca, pero sigue disponible en Comunidad para el resto de entrenadores y lo puedes volver a agregar cuando quieras."
-          loading={hiding}
-          onConfirm={handleHide}
         />
       )}
     </div>

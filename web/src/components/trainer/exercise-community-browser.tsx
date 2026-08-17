@@ -159,6 +159,7 @@ export function ExerciseCommunityBrowser({
       equipment: exercise.equipment,
       description: exercise.description,
       video_url: exercise.video_url,
+      image_path: exercise.image_path,
     });
     setAddingId(null);
     if (error) {
@@ -340,12 +341,25 @@ export function ExerciseCommunityBrowser({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((exercise) => (
-            <Card key={exercise.id} className="h-full">
-              <CardContent className="flex h-full flex-col gap-3">
-                <div className="flex size-10 items-center justify-center rounded-full bg-foreground/[0.06] text-muted-foreground">
-                  <Dumbbell className="size-[18px]" />
+          {filtered.map((exercise) => {
+            const imageUrl = exercise.image_path
+              ? createClient().storage.from("exercise-images").getPublicUrl(exercise.image_path)
+                  .data.publicUrl
+              : null;
+            return (
+            <Card key={exercise.id} className="h-full overflow-hidden gap-0 py-0">
+              {imageUrl ? (
+                <div className="h-28 w-full overflow-hidden bg-primary/12">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={imageUrl} alt="" className="h-full w-full object-cover" />
                 </div>
+              ) : null}
+              <CardContent className="flex h-full flex-col gap-3 py-4">
+                {!imageUrl && (
+                  <div className="flex size-10 items-center justify-center rounded-full bg-foreground/[0.06] text-muted-foreground">
+                    <Dumbbell className="size-[18px]" />
+                  </div>
+                )}
                 <div className="mt-auto flex flex-col gap-1">
                   <p className="truncate text-sm font-semibold">{exercise.name}</p>
                   <p className="truncate text-[11px] text-muted-foreground">Por {exercise.creator_name}</p>
@@ -375,7 +389,8 @@ export function ExerciseCommunityBrowser({
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -10,6 +10,7 @@ import {
   Settings,
   Home,
   UserRound,
+  Library,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,6 +39,7 @@ export const superadminNavItems: NavItem[] = [
   { href: "/superadmin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/superadmin/entrenadores", label: "Entrenadores", icon: Users },
   { href: "/superadmin/clientes", label: "Clientes", icon: UserRound },
+  { href: "/superadmin/biblioteca", label: "Biblioteca de Areté", icon: Library },
 ];
 
 /** Las 4 pestañas del panel de cliente. El perfil ya no vive aquí: se

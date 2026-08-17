@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Search, Plus, Dumbbell, PlayCircle, SlidersHorizontal, FilterX } from "lucide-react";
 
+import { createClient } from "@/lib/supabase/client";
 import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
 import type { ExerciseSummary, MuscleGroup, Equipment } from "@/lib/types/exercise";
 import { Input } from "@/components/ui/input";
@@ -276,23 +277,35 @@ export function ExercisesBrowser({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((exercise) => {
             const hasVideo = Boolean(exercise.video_url);
+            const imageUrl = exercise.image_path
+              ? createClient().storage.from("exercise-images").getPublicUrl(exercise.image_path)
+                  .data.publicUrl
+              : null;
             return (
               <Link key={exercise.id} href={`/entrenador/ejercicios/${exercise.id}`}>
-                <Card className="h-full card-hover-glow transition-colors hover:border-primary/40">
-                  <CardContent className="flex h-full flex-col gap-3">
-                    <div
-                      className={
-                        hasVideo
-                          ? "flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary"
-                          : "flex size-10 items-center justify-center rounded-full bg-foreground/[0.06] text-muted-foreground"
-                      }
-                    >
-                      {hasVideo ? (
-                        <PlayCircle className="size-[18px]" />
-                      ) : (
-                        <Dumbbell className="size-[18px]" />
-                      )}
+                <Card className="h-full overflow-hidden card-hover-glow transition-colors hover:border-primary/40 gap-0 py-0">
+                  {imageUrl ? (
+                    <div className="h-28 w-full overflow-hidden bg-primary/12">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={imageUrl} alt="" className="h-full w-full object-cover" />
                     </div>
+                  ) : null}
+                  <CardContent className="flex h-full flex-col gap-3 py-4">
+                    {!imageUrl && (
+                      <div
+                        className={
+                          hasVideo
+                            ? "flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary"
+                            : "flex size-10 items-center justify-center rounded-full bg-foreground/[0.06] text-muted-foreground"
+                        }
+                      >
+                        {hasVideo ? (
+                          <PlayCircle className="size-[18px]" />
+                        ) : (
+                          <Dumbbell className="size-[18px]" />
+                        )}
+                      </div>
+                    )}
                     <div className="mt-auto">
                       <p className="truncate text-sm font-semibold">{exercise.name}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
