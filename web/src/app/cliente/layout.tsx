@@ -22,9 +22,8 @@ export default async function ClientLayout({
     .eq("id", user.id)
     .single();
 
-  if (profile?.role === "trainer" || profile?.role === "superadmin") {
-    redirect("/entrenador");
-  }
+  if (profile?.role === "trainer") redirect("/entrenador");
+  if (profile?.role === "superadmin") redirect("/superadmin");
   if (profile && !profile.onboarding_completed_at) redirect("/onboarding/cliente");
 
   let brandName = "Areté";

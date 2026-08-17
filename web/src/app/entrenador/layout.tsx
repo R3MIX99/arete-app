@@ -22,7 +22,13 @@ export default async function TrainerLayout({
     .eq("id", user.id)
     .single();
 
+  // El superadmin ve la actividad de TODOS los entrenadores por las
+  // policies de RLS que le dan lectura amplia — si entrara aquí vería
+  // mezclados los clientes/rutinas/planes de cualquier entrenador, no
+  // los suyos (porque no es dueño de nada). Este panel es solo para
+  // quien de verdad tiene role = 'trainer'.
   if (profile?.role === "client") redirect("/cliente");
+  if (profile?.role === "superadmin") redirect("/superadmin");
   if (profile && !profile.onboarding_completed_at) redirect("/onboarding/entrenador");
 
   const userName = profile?.full_name || user.email || "Entrenador";
