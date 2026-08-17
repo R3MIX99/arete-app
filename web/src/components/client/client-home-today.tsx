@@ -168,16 +168,16 @@ export function ClientHomeToday({
         Ver agenda de entrenamiento
       </Link>
 
+      {nutritionTotals ? (
+        <ClientNutritionSummary totals={nutritionTotals} calorieTarget={calorieTarget} />
+      ) : null}
+
       <ClientMonthActivity
         today={today}
         assignments={assignments}
         completedSessions={monthCompletedSessions}
         completedSetDates={completedSetDates}
       />
-
-      {nutritionTotals ? (
-        <ClientNutritionSummary totals={nutritionTotals} calorieTarget={calorieTarget} />
-      ) : null}
 
       <ClientRecords records={records} />
 
