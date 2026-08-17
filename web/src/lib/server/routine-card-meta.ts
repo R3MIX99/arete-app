@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { youtubeThumbnailUrl } from "@/lib/youtube";
+import { youtubeThumbnails } from "@/lib/youtube";
 import type { RoutineCardMeta } from "@/components/client/routine-session-card";
 
 interface RoutineRow {
@@ -51,6 +51,7 @@ export async function fetchRoutineCardMeta(
       imageUrl: row.image_path
         ? supabase.storage.from("routine-images").getPublicUrl(row.image_path).data.publicUrl
         : null,
+      imageFallbackUrl: null,
       exerciseCount: 0,
       setCount: 0,
     };
@@ -69,9 +70,15 @@ export async function fetchRoutineCardMeta(
 
     if (!entry.imageUrl) {
       const exercise = one(row.exercises);
-      entry.imageUrl = exercise?.image_path
-        ? supabase.storage.from("exercise-images").getPublicUrl(exercise.image_path).data.publicUrl
-        : youtubeThumbnailUrl(exercise?.video_url ?? null);
+      if (exercise?.image_path) {
+        entry.imageUrl = supabase.storage
+          .from("exercise-images")
+          .getPublicUrl(exercise.image_path).data.publicUrl;
+      } else {
+        const thumbs = youtubeThumbnails(exercise?.video_url ?? null);
+        entry.imageUrl = thumbs?.primary ?? null;
+        entry.imageFallbackUrl = thumbs?.fallback ?? null;
+      }
     }
   }
 

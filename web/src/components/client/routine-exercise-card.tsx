@@ -2,6 +2,7 @@
 
 import { ChevronRight, Dumbbell } from "lucide-react";
 
+import { ThumbnailImage } from "@/components/client/thumbnail-image";
 import type { SessionExerciseInfo } from "@/lib/types/client-panel";
 
 /** "2 series | 6 - 8 repeticiones", o su equivalente de cardio
@@ -42,8 +43,11 @@ export function RoutineExerciseCard({
       <div className="flex gap-3 rounded-2xl bg-card p-2.5 transition-colors hover:bg-accent/40">
         <div className="size-[72px] shrink-0 overflow-hidden rounded-xl bg-primary/12">
           {exercise.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={exercise.image_url} alt="" className="h-full w-full object-cover" />
+            <ThumbnailImage
+              src={exercise.image_url}
+              fallbackSrc={exercise.image_fallback_url}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-primary">
               <Dumbbell className="size-6" />

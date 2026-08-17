@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Check, ChevronRight, Dumbbell, RefreshCw } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { ThumbnailImage } from "@/components/client/thumbnail-image";
 
 export type RoutineSessionStatus = "completed" | "in_progress" | "not_started";
 
@@ -10,6 +11,9 @@ export type RoutineSessionStatus = "completed" | "in_progress" | "not_started";
  * servidor con una consulta aparte, indexada por routine_id. */
 export interface RoutineCardMeta {
   imageUrl: string | null;
+  /** Segunda URL por si `imageUrl` es una miniatura de YouTube que no
+   * existe para ese video. Null cuando es una foto subida. */
+  imageFallbackUrl: string | null;
   exerciseCount: number;
   setCount: number;
 }
@@ -90,10 +94,9 @@ export function RoutineSessionCard({
              toda la tarjeta y se veía "doble". Con máscara desaparece de
              verdad, y de paso funciona igual en claro y en oscuro sin
              tener que igualar ningún color. */
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <ThumbnailImage
             src={imageUrl}
-            alt=""
+            fallbackSrc={meta?.imageFallbackUrl}
             className="absolute inset-y-0 left-0 h-full w-1/2 object-cover"
             style={{ maskImage: IMAGE_FADE_MASK, WebkitMaskImage: IMAGE_FADE_MASK }}
           />

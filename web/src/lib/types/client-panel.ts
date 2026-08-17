@@ -18,8 +18,12 @@ export interface SessionExerciseInfo {
   equipment: string;
   video_url: string | null;
   /** URL pública de la foto del ejercicio (bucket exercise-images), ya
-   * resuelta en el servidor. Null si no tiene foto. */
+   * resuelta en el servidor. Si no tiene foto, la miniatura de su
+   * video. Null si no tiene ninguna de las dos. */
   image_url: string | null;
+  /** Segunda URL por si `image_url` es una miniatura de YouTube que no
+   * existe para ese video. Null cuando es una foto subida. */
+  image_fallback_url: string | null;
   notes: string | null;
   order_index: number;
   sets: SessionSetInfo[];

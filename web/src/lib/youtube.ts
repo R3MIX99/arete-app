@@ -35,29 +35,55 @@ export function isYoutubeUrl(url: string): boolean {
   return youtubeVideoId(url) !== null;
 }
 
+export interface YoutubeThumbnails {
+  /** Fotograma de la mitad del video: ya pasó cualquier carátula o
+   * texto de intro, que es lo que arruinaba usar el fotograma 0. */
+  primary: string;
+  /** Por si `primary` no existe para ese video (algunos devuelven 404).
+   * Se usa desde el cliente con onError. */
+  fallback: string;
+}
+
 /**
- * Miniatura del video (lo que se ve antes de darle play), para usarla
- * como imagen cuando el ejercicio o la rutina no tiene foto propia.
+ * Miniaturas del video para usarlas como imagen cuando el ejercicio o
+ * la rutina no tiene foto propia. Elegir cuál pedir no es trivial:
  *
- * Se usa `frame0` y no las miniaturas "normales" porque es la única que
- * devuelve el fotograma en su relación de aspecto ORIGINAL, sin relleno:
+ * - Todas las miniaturas de tamaño fijo (`mq*`, `hq*`, `sd*`, `maxres*`)
+ *   entregan siempre 16:9 o 4:3 pase lo que pase con el video. A un
+ *   Short (vertical) le rellenan los lados con una copia ampliada y
+ *   oscurecida del mismo cuadro — se ve como un recuadro con el video
+ *   dentro y la misma imagen en grande detrás. Se verificó midiendo el
+ *   brillo de los bordes contra el centro: en un Short los laterales
+ *   quedan ~15 contra ~78 del centro, en las cuatro resoluciones.
+ * - `oar*` ("original aspect ratio") sí respeta la forma real del
+ *   video, y resulta que existe justo cuando el video NO es 16:9 — o
+ *   sea, en los Shorts, que es donde hace falta. En videos 16:9 suele
+ *   devolver 404 o un sello de 120x90 inservible.
  *
- * - `hqdefault` (480x360) y `sddefault` siempre entregan 4:3, así que a
- *   un video 16:9 le ponen barras negras arriba y abajo, y a un Short
- *   (vertical) le rellenan los lados con una copia ampliada del mismo
- *   fotograma. Eso último se ve como un cuadro con el video dentro y la
- *   misma imagen en grande detrás — feo justo en la tarjeta de rutina.
- * - `mqdefault` y `maxresdefault` siempre son 16:9, con el mismo relleno
- *   lateral en los Shorts.
- * - `oardefault` sí respeta el original pero no existe para todos los
- *   videos (varios devuelven 404).
+ * De ahí la regla: para un enlace de Shorts se pide `oar2`, y para
+ * cualquier otro `maxres2`, que en un video 16:9 es un recorte real y
+ * en buena resolución (1280x720).
  *
- * `frame0` se comprobó contra videos verticales, 16:9 y hasta uno viejo
- * en 4:3, y en todos respondió con la relación real del video.
+ * El índice 2 es el fotograma de la mitad del video. Se usaba `frame0`
+ * antes, pero muchos videos abren con una carátula con el nombre del
+ * ejercicio y eso era justo lo que se veía en la tarjeta.
  */
-export function youtubeThumbnailUrl(url: string | null): string | null {
+export function youtubeThumbnails(url: string | null): YoutubeThumbnails | null {
   if (!url) return null;
   const id = youtubeVideoId(url);
   if (!id) return null;
-  return `https://i.ytimg.com/vi/${id}/frame0.jpg`;
+
+  const isShort = url.includes("/shorts/");
+  return isShort
+    ? {
+        primary: `https://i.ytimg.com/vi/${id}/oar2.jpg`,
+        // frame0 también respeta el original y existe siempre; trae la
+        // carátula si el video la tiene, pero es mejor que el recuadro.
+        fallback: `https://i.ytimg.com/vi/${id}/frame0.jpg`,
+      }
+    : {
+        primary: `https://i.ytimg.com/vi/${id}/maxres2.jpg`,
+        // Videos viejos no tienen maxres; mq2 existe siempre.
+        fallback: `https://i.ytimg.com/vi/${id}/mq2.jpg`,
+      };
 }
