@@ -14,6 +14,27 @@ export interface RoutineCardMeta {
   setCount: number;
 }
 
+/**
+ * Desvanecido de la foto, en coordenadas del <img> (que mide la mitad
+ * de la tarjeta, así que cada valor de aquí es la mitad en la tarjeta).
+ *
+ * Son muchas paradas a propósito: con solo dos, el arranque y el final
+ * de la rampa son quiebres de pendiente y el ojo los lee como una línea
+ * vertical — se veía "cortado". Con esta curva en S baja apenas al
+ * principio (97%, 85%), cae en la parte media y vuelve a aplanarse al
+ * final (10%, 0%), así que ni el inicio ni el final del difuminado se
+ * notan. Termina justo antes del texto para que no quede foto detrás.
+ */
+const IMAGE_FADE_MASK =
+  "linear-gradient(to right," +
+  " rgb(0 0 0 / 1) 0%," +
+  " rgb(0 0 0 / 0.97) 14%," +
+  " rgb(0 0 0 / 0.85) 28%," +
+  " rgb(0 0 0 / 0.6) 42%," +
+  " rgb(0 0 0 / 0.32) 54%," +
+  " rgb(0 0 0 / 0.1) 64%," +
+  " transparent 72%)";
+
 const STATUS_CHIP: Record<RoutineSessionStatus, { label: string; className: string }> = {
   completed: { label: "Completada", className: "bg-success text-white" },
   // Índigo más profundo que el primary del botón "Comenzar", para que
@@ -51,11 +72,15 @@ export function RoutineSessionCard({
 
   return (
     <Link href={href} className="block">
-      <div className="relative flex min-h-24 overflow-hidden rounded-2xl bg-card transition-colors hover:bg-accent/40">
+      <div className="relative flex min-h-32 overflow-hidden rounded-2xl bg-card transition-colors hover:bg-accent/40">
         {imageUrl ? (
-          /* La foto va de fondo, ocupando tres cuartos del ancho: una
-             imagen cuadrada se recorta con object-cover en vez de
-             estirarse a toda la tarjeta.
+          /* La foto va de fondo, ocupando la mitad del ancho. Con
+             object-cover, mientras más ancha y baja sea la caja más
+             brutal es el recorte: a tres cuartos de ancho y 96px de
+             alto, de un video vertical se alcanzaba a ver apenas un 8%
+             de su altura, o sea un pedacito enormemente ampliado. Con la
+             caja más angosta y la tarjeta más alta la proporción se
+             acerca a la de la foto y se aprecia mucho mejor.
 
              El desvanecido se hace con una MÁSCARA sobre la propia foto,
              no tapándola con un degradado del color de la tarjeta. En
@@ -69,13 +94,8 @@ export function RoutineSessionCard({
           <img
             src={imageUrl}
             alt=""
-            className="absolute inset-y-0 left-0 h-full w-3/4 object-cover"
-            style={{
-              maskImage:
-                "linear-gradient(to right, black 0%, black 19%, transparent 48%)",
-              WebkitMaskImage:
-                "linear-gradient(to right, black 0%, black 19%, transparent 48%)",
-            }}
+            className="absolute inset-y-0 left-0 h-full w-1/2 object-cover"
+            style={{ maskImage: IMAGE_FADE_MASK, WebkitMaskImage: IMAGE_FADE_MASK }}
           />
         ) : (
           /* Sin foto NO se pinta ningún bloque de color de fondo. Antes
