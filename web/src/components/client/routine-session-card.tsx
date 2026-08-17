@@ -29,6 +29,9 @@ const STATUS_CHIP: Record<RoutineSessionStatus, { label: string; className: stri
  * y un chip de estado. Se usa igual en Inicio ("tu entrenamiento de
  * hoy") y en la Agenda — en el Historial se sigue usando el ícono,
  * porque ahí la foto no aporta nada.
+ *
+ * El chip va en la misma fila que los contadores, no flotando en la
+ * esquina: en un teléfono la tarjeta es angosta y encimaba los números.
  */
 export function RoutineSessionCard({
   href,
@@ -48,51 +51,54 @@ export function RoutineSessionCard({
 
   return (
     <Link href={href} className="block">
-      <div className="relative min-h-36 overflow-hidden rounded-2xl bg-card transition-colors hover:bg-accent/40">
-        <div className="absolute inset-y-0 left-0 w-[46%]">
+      <div className="relative flex min-h-24 overflow-hidden rounded-2xl bg-card transition-colors hover:bg-accent/40">
+        <div className="absolute inset-y-0 left-0 w-[34%]">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-primary/12 text-primary">
-              <Dumbbell className="size-8" />
+              <Dumbbell className="size-6" />
             </div>
           )}
           {/* Difuminado hacia el fondo de la tarjeta: usa el token
               --card, así funciona igual en claro y en oscuro. */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-card/50 to-card" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-card/40 to-card" />
         </div>
 
-        <div className="relative flex min-h-36 flex-col justify-center gap-1 py-4 pr-4 pl-[48%]">
-          <p className="line-clamp-2 text-lg leading-tight font-bold">{routineName}</p>
+        <div className="relative flex min-w-0 flex-1 flex-col justify-center gap-1 py-3 pr-3 pl-[36%]">
+          <p className="line-clamp-2 text-sm leading-snug font-bold">{routineName}</p>
           {subtitle ? (
-            <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
+            <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
           ) : null}
-          <div className="mt-1 flex items-center gap-4 text-sm font-semibold tabular-nums">
-            <span className="flex items-center gap-1.5 text-primary">
-              <Dumbbell className="size-4" />
-              <span className="text-foreground">{meta?.exerciseCount ?? 0}</span>
-            </span>
-            <span className="flex items-center gap-1.5 text-primary">
-              <RefreshCw className="size-4" />
-              <span className="text-foreground">{meta?.setCount ?? 0}</span>
+
+          <div className="mt-0.5 flex items-center justify-between gap-2">
+            <div className="flex shrink-0 items-center gap-2.5 text-xs font-semibold tabular-nums">
+              <span className="flex items-center gap-1 text-primary">
+                <Dumbbell className="size-3.5" />
+                <span className="text-foreground">{meta?.exerciseCount ?? 0}</span>
+              </span>
+              <span className="flex items-center gap-1 text-primary">
+                <RefreshCw className="size-3.5" />
+                <span className="text-foreground">{meta?.setCount ?? 0}</span>
+              </span>
+            </div>
+
+            <span
+              className={cn(
+                "inline-flex shrink-0 items-center gap-0.5 rounded-full py-1 pr-1.5 pl-2.5 text-xs font-semibold",
+                chip.className,
+              )}
+            >
+              {chip.label}
+              {status === "completed" ? (
+                <Check className="size-3.5" />
+              ) : (
+                <ChevronRight className="size-3.5" />
+              )}
             </span>
           </div>
         </div>
-
-        <span
-          className={cn(
-            "absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold",
-            chip.className,
-          )}
-        >
-          {chip.label}
-          {status === "completed" ? (
-            <Check className="size-4" />
-          ) : (
-            <ChevronRight className="size-4" />
-          )}
-        </span>
       </div>
     </Link>
   );

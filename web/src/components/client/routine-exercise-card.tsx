@@ -39,28 +39,28 @@ export function RoutineExerciseCard({
 
   return (
     <button type="button" onClick={onSelect} className="w-full text-left">
-      <div className="flex gap-3 rounded-2xl bg-card p-3 transition-colors hover:bg-accent/40">
-        <div className="size-[88px] shrink-0 overflow-hidden rounded-xl bg-primary/12">
+      <div className="flex gap-3 rounded-2xl bg-card p-2.5 transition-colors hover:bg-accent/40">
+        <div className="size-[72px] shrink-0 overflow-hidden rounded-xl bg-primary/12">
           {exercise.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={exercise.image_url} alt="" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-primary">
-              <Dumbbell className="size-7" />
+              <Dumbbell className="size-6" />
             </div>
           )}
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <p className="text-base leading-tight font-semibold">{exercise.exercise_name}</p>
-          <span className="w-fit rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <p className="text-sm leading-snug font-semibold">{exercise.exercise_name}</p>
+          <span className="w-fit rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold text-primary-foreground">
             {targetLabel(exercise)}
           </span>
           <div className="mt-auto flex items-end justify-between gap-2">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {restSeconds !== null ? `${restSeconds}" de descanso` : ""}
             </span>
-            <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
           </div>
         </div>
       </div>
