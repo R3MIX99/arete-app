@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { isAlreadyRegisteredSignUp } from "@/lib/auth-errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
@@ -23,22 +24,29 @@ export default function TrainerSignUpPage() {
   const [fullName, setFullName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [needsConfirmation, setNeedsConfirmation] = React.useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setLoading(true);
     setError(null);
     setNeedsConfirmation(false);
 
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setLoading(true);
     const supabase = createClient();
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { role: "trainer", full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/login`,
       },
     });
 
@@ -124,15 +132,26 @@ export default function TrainerSignUpPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="password">Contraseña</Label>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     required
                     minLength={6}
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="confirm_password">Confirmar contraseña</Label>
+                  <PasswordInput
+                    id="confirm_password"
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repite tu contraseña"
                   />
                 </div>
 
