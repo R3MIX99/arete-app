@@ -11,7 +11,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -79,17 +78,8 @@ export function ClientTopBar({
           align="start"
           className="w-auto min-w-0 max-w-[calc(100vw-2rem)] whitespace-nowrap"
         >
-          <DropdownMenuLabel className="truncate">{userName}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem asChild>
-            <Link href="/cliente/configuracion">
-              <Settings className="size-4" />
-              Configuración
-            </Link>
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator />
+          {/* El nombre no se repite aquí: ya se lee en el botón que abre
+              este menú, justo arriba. */}
           {/* El título va arriba y los tres íconos debajo. Los botones
               son círculos del ancho de su ícono (nada de flex-1, que los
               estiraba a todo lo ancho) y el elegido se pinta con el
@@ -124,6 +114,14 @@ export function ClientTopBar({
               })}
             </div>
           </div>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/cliente/configuracion">
+              <Settings className="size-4" />
+              Configuración
+            </Link>
+          </DropdownMenuItem>
 
           <DropdownMenuSeparator />
           <DropdownMenuItem
