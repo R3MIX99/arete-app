@@ -17,7 +17,6 @@ import {
   ClientMonthActivity,
   type CompletedSessionDay,
 } from "@/components/client/client-month-activity";
-import { ClientProgramProgress } from "@/components/client/client-program-progress";
 import {
   ClientRecords,
   ClientWeightTrend,
@@ -169,22 +168,20 @@ export function ClientHomeToday({
         Ver agenda de entrenamiento
       </Link>
 
-      {nutritionTotals ? (
-        <ClientNutritionSummary totals={nutritionTotals} calorieTarget={calorieTarget} />
-      ) : null}
-
-      <ClientProgramProgress today={today} assignments={assignments} />
-
-      <ClientRecords records={records} />
-
-      <ClientWeightTrend points={weightPoints} />
-
       <ClientMonthActivity
         today={today}
         assignments={assignments}
         completedSessions={monthCompletedSessions}
         completedSetDates={completedSetDates}
       />
+
+      {nutritionTotals ? (
+        <ClientNutritionSummary totals={nutritionTotals} calorieTarget={calorieTarget} />
+      ) : null}
+
+      <ClientRecords records={records} />
+
+      <ClientWeightTrend points={weightPoints} />
     </div>
   );
 }
