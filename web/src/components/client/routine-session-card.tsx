@@ -52,30 +52,45 @@ export function RoutineSessionCard({
   return (
     <Link href={href} className="block">
       <div className="relative flex min-h-24 overflow-hidden rounded-2xl bg-card transition-colors hover:bg-accent/40">
-        {/* La foto va de fondo, ocupando tres cuartos del ancho: una
-            imagen cuadrada se recorta con object-cover en vez de
-            estirarse a toda la tarjeta. */}
-        <div className="absolute inset-y-0 left-0 w-3/4">
-          {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-primary/12 text-primary">
-              <Dumbbell className="size-6" />
-            </div>
-          )}
-        </div>
-
-        {/* El degradado cubre la tarjeta COMPLETA, no solo la foto: así
-            el borde derecho de la imagen queda debajo de la parte ya
-            opaca y no se ve el corte. Va de derecha a izquierda:
-            totalmente opaco donde está el texto, luego baja muy poco
-            (85% a media rampa) y solo al final se abre para dejar ver la
-            foto. Nunca llega a transparente del todo — un salto de
-            opaco a transparente en un solo tramo se lee como una línea
-            vertical, que es justo lo que se veía antes. Usa el token
-            --card, así que funciona igual en claro y en oscuro. */}
-        <div className="absolute inset-0 bg-gradient-to-l from-card from-58% via-card/85 via-78% to-card/20" />
+        {imageUrl ? (
+          <>
+            {/* La foto va de fondo, ocupando tres cuartos del ancho: una
+                imagen cuadrada se recorta con object-cover en vez de
+                estirarse a toda la tarjeta. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt=""
+              className="absolute inset-y-0 left-0 h-full w-3/4 object-cover"
+            />
+            {/* El degradado cubre la tarjeta COMPLETA, no solo la foto:
+                así el borde derecho de la imagen queda debajo de la
+                parte ya opaca y no se ve el corte. Va de derecha a
+                izquierda: totalmente opaco donde está el texto, luego
+                baja muy poco (85% a media rampa) y solo al final se abre
+                para dejar ver la foto. Se escribe como linear-gradient
+                explícito en vez de utilidades de Tailwind porque las
+                paradas de porcentaje sueltas (58%, 78%) no están en la
+                escala por defecto y quedaban ignoradas. */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(to left, var(--card) 0%, var(--card) 58%, color-mix(in oklab, var(--card) 85%, transparent) 78%, color-mix(in oklab, var(--card) 20%, transparent) 100%)",
+              }}
+            />
+          </>
+        ) : (
+          /* Sin foto NO se pinta ningún bloque de color de fondo. Antes
+             había un rectángulo bg-primary/12 de tres cuartos de ancho y
+             el degradado, al destaparlo, dejaba ver su borde como una
+             raya vertical — sobre un color plano el corte se nota mucho
+             más que sobre una foto. Queda solo el ícono, y centrado en
+             el tercio izquierdo para que no caiga detrás del texto. */
+          <div className="absolute inset-y-0 left-0 flex w-[30%] items-center justify-center text-primary/30">
+            <Dumbbell className="size-7" />
+          </div>
+        )}
 
         <div className="relative flex min-w-0 flex-1 flex-col justify-center gap-1 py-3 pr-3 pl-[36%]">
           <p className="line-clamp-2 text-sm leading-snug font-bold">{routineName}</p>
