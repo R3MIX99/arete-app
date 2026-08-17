@@ -20,6 +20,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { MonthCalendarGrid } from "@/components/trainer/month-calendar-grid";
 
+const WEEKDAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
 function monthGridRange(year: number, month: number) {
   const firstOfMonth = `${year}-${String(month).padStart(2, "0")}-01`;
   const gridStart = mondayOfWeek(firstOfMonth);
@@ -58,6 +60,29 @@ export function ClientAgenda({
     () => sessionsInRange(assignments, selectedDate, selectedDate),
     [assignments, selectedDate],
   );
+
+  // Los 7 días de la semana del día elegido, de lunes a domingo. Se
+  // calcula sobre `selectedDate` y no sobre hoy: así, al moverse con las
+  // flechas o el swipe, la tira sigue al día elegido y cambia de semana
+  // sola cuando toca. Las sesiones se consultan aparte de las del mes
+  // porque la semana puede cruzar dos meses.
+  const weekDays = React.useMemo(() => {
+    const monday = mondayOfWeek(selectedDate);
+    const weekSessionKeys = new Set(
+      groupSessionsByDate(sessionsInRange(assignments, monday, addDays(monday, 6))).keys(),
+    );
+    return Array.from({ length: 7 }, (_, i) => {
+      const key = addDays(monday, i);
+      return {
+        key,
+        label: WEEKDAY_LABELS[i],
+        dayNumber: Number(key.split("-")[2]),
+        hasSession: weekSessionKeys.has(key),
+        isSelected: key === selectedDate,
+        isToday: key === today,
+      };
+    });
+  }, [assignments, selectedDate, today]);
 
   function selectDate(key: string) {
     setSelectedDate(key);
@@ -119,6 +144,49 @@ export function ClientAgenda({
             Hoy
           </Button>
         )}
+      </div>
+
+      <div className="flex justify-between gap-1">
+        {weekDays.map((day) => (
+          <button
+            key={day.key}
+            type="button"
+            onClick={() => selectDate(day.key)}
+            aria-label={`${day.label} ${day.dayNumber}`}
+            aria-current={day.isSelected ? "date" : undefined}
+            className="flex flex-1 flex-col items-center gap-1"
+          >
+            <span
+              className={cn(
+                "text-[11px] font-medium",
+                day.isSelected ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              {day.label}
+            </span>
+            {/* El punto marca que ese día tiene rutina. Va siempre
+                presente y transparente cuando no hay, para que los
+                círculos no se muevan de sitio al cambiar de día. */}
+            <span
+              className={cn(
+                "size-1.5 rounded-full",
+                day.hasSession ? "bg-primary" : "bg-transparent",
+              )}
+            />
+            <span
+              className={cn(
+                "flex size-9 items-center justify-center rounded-full text-sm font-medium tabular-nums transition-colors",
+                day.isSelected
+                  ? "bg-primary text-primary-foreground"
+                  : day.isToday
+                    ? "border border-primary text-primary"
+                    : "text-foreground hover:bg-accent",
+              )}
+            >
+              {day.dayNumber}
+            </span>
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center justify-between">
