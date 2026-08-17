@@ -4,12 +4,28 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { CalendarDays, Check, ChevronRight, Dumbbell } from "lucide-react";
 
-import { todayKey, sessionsInRange, type CalendarAssignment } from "@/lib/calendar-logic";
+import {
+  addDays,
+  compareKeys,
+  sessionsInRange,
+  todayKey,
+  type CalendarAssignment,
+} from "@/lib/calendar-logic";
+import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ClientMonthActivity,
   type CompletedSessionDay,
 } from "@/components/client/client-month-activity";
+import { ClientProgramProgress } from "@/components/client/client-program-progress";
+import {
+  ClientRecords,
+  ClientWeightTrend,
+  type PersonalRecord,
+  type WeightPoint,
+} from "@/components/client/client-highlights";
+import { ClientNutritionSummary } from "@/components/client/client-nutrition-summary";
+import type { NutritionTotals } from "@/lib/types/client-nutrition";
 
 interface SessionRef {
   id: string;
@@ -34,6 +50,10 @@ export function ClientHomeToday({
   recentCompletedSessions,
   monthCompletedSessions,
   completedSetDates,
+  records,
+  weightPoints,
+  nutritionTotals,
+  calorieTarget,
 }: {
   firstName: string;
   assignments: CalendarAssignment[];
@@ -41,12 +61,27 @@ export function ClientHomeToday({
   recentCompletedSessions: SessionRef[];
   monthCompletedSessions: CompletedSessionDay[];
   completedSetDates: string[];
+  records: PersonalRecord[];
+  weightPoints: WeightPoint[];
+  nutritionTotals: NutritionTotals | null;
+  calorieTarget: number | null;
 }) {
   const today = useMemo(() => todayKey(), []);
   const todaySessions = useMemo(
     () => sessionsInRange(assignments, today, today),
     [assignments, today],
   );
+
+  // La siguiente sesión programada, para que un día de descanso no sea
+  // un callejón sin salida. Se mira un mes hacia adelante: si en 30 días
+  // no hay nada, es que el programa ya terminó o no tiene asignaciones.
+  const nextSession = useMemo(() => {
+    if (todaySessions.length > 0) return null;
+    const upcoming = sessionsInRange(assignments, addDays(today, 1), addDays(today, 30));
+    return upcoming.length > 0
+      ? upcoming.reduce((first, s) => (compareKeys(s.date, first.date) < 0 ? s : first))
+      : null;
+  }, [assignments, today, todaySessions]);
 
   const inProgressByKey = useMemo(
     () => new Map(inProgressSessions.map((s) => [`${s.assignment_id}:${s.routine_id}:${s.session_date}`, s.id])),
@@ -77,6 +112,13 @@ export function ClientHomeToday({
             <p className="text-sm text-muted-foreground">
               No tienes ninguna rutina asignada para hoy. Aprovecha para recuperarte.
             </p>
+            {nextSession ? (
+              <div className="mt-2 flex flex-col items-center gap-0.5 border-t pt-3 text-sm">
+                <span className="text-xs text-muted-foreground">Tu próximo entrenamiento</span>
+                <span className="font-medium">{nextSession.routineName}</span>
+                <span className="text-xs text-primary">{formatDate(nextSession.date)}</span>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       ) : (
@@ -126,6 +168,16 @@ export function ClientHomeToday({
       >
         Ver agenda de entrenamiento
       </Link>
+
+      {nutritionTotals ? (
+        <ClientNutritionSummary totals={nutritionTotals} calorieTarget={calorieTarget} />
+      ) : null}
+
+      <ClientProgramProgress today={today} assignments={assignments} />
+
+      <ClientRecords records={records} />
+
+      <ClientWeightTrend points={weightPoints} />
 
       <ClientMonthActivity
         today={today}

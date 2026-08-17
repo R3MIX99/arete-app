@@ -2,7 +2,15 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { addDays, todayKey, type CalendarAssignment } from "@/lib/calendar-logic";
+import {
+  fetchActiveDietAssignment,
+  fetchClientNutritionPlan,
+  fetchSubstitutionsForDate,
+} from "@/lib/server/client-nutrition-data";
+import { applySubstitutions, planTotals, roundTotals } from "@/lib/client-nutrition-utils";
 import { ClientHomeToday } from "@/components/client/client-home-today";
+import type { PersonalRecord, WeightPoint } from "@/components/client/client-highlights";
+import type { NutritionTotals } from "@/lib/types/client-nutrition";
 
 interface ProgramRoutineRow {
   id: string;
@@ -31,6 +39,18 @@ interface AssignmentRow {
 interface ActivitySessionRow {
   session_date: string;
   duration_seconds: number | null;
+}
+
+interface WeightSetLogRow {
+  session_date: string;
+  actual_weight: number | null;
+  exercise_id: string;
+  exercises: { name: string } | { name: string }[] | null;
+}
+
+interface WeightRow {
+  entry_date: string;
+  value: number;
 }
 
 function one<T>(value: T | T[] | null): T | null {
@@ -64,6 +84,8 @@ export default async function ClientHomePage() {
     { data: completedSessions },
     { data: activitySessionRows },
     { data: setLogRows },
+    { data: weightSetLogRows },
+    { data: weightRows },
   ] = await Promise.all([
       supabase.from("profiles").select("full_name").eq("id", user.id).single(),
       supabase
@@ -98,6 +120,21 @@ export default async function ClientHomePage() {
         .eq("client_id", user.id)
         .eq("is_completed", true)
         .gte("session_date", activityStart),
+      // Historial completo de pesos por ejercicio para detectar récords.
+      // Solo series de fuerza: el cardio no tiene peso.
+      supabase
+        .from("client_set_logs")
+        .select("session_date, actual_weight, exercise_id, exercises(name)")
+        .eq("client_id", user.id)
+        .eq("is_completed", true)
+        .not("actual_weight", "is", null)
+        .order("session_date"),
+      supabase
+        .from("progress_measurements")
+        .select("entry_date, value")
+        .eq("client_id", user.id)
+        .eq("metric_key", "weight_kg")
+        .order("entry_date"),
     ]);
 
   const assignments: CalendarAssignment[] = ((assignmentRows ?? []) as AssignmentRow[]).map((row) => {
@@ -138,6 +175,61 @@ export default async function ClientHomePage() {
 
   const firstName = (profile?.full_name || "").trim().split(" ")[0] || "";
 
+  // Récords: recorriendo los registros en orden cronológico, cada vez
+  // que un ejercicio supera su propio máximo anterior cuenta como
+  // récord. Se exige que hubiera una marca previa — el primer día que
+  // haces un ejercicio no es un "récord", es simplemente el inicio.
+  const bestByExercise = new Map<string, number>();
+  const recordsByExercise = new Map<string, PersonalRecord>();
+  for (const row of (weightSetLogRows ?? []) as WeightSetLogRow[]) {
+    if (row.actual_weight === null) continue;
+    const previousBest = bestByExercise.get(row.exercise_id);
+    if (previousBest === undefined) {
+      bestByExercise.set(row.exercise_id, row.actual_weight);
+      continue;
+    }
+    if (row.actual_weight > previousBest) {
+      bestByExercise.set(row.exercise_id, row.actual_weight);
+      recordsByExercise.set(row.exercise_id, {
+        exerciseId: row.exercise_id,
+        exerciseName: one(row.exercises)?.name ?? "Ejercicio",
+        date: row.session_date,
+        weight: row.actual_weight,
+      });
+    }
+  }
+  // Solo el récord más reciente de cada ejercicio, y los 3 más nuevos:
+  // la idea es celebrar lo último, no listar un historial.
+  const records = Array.from(recordsByExercise.values())
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 3);
+
+  const weightPoints: WeightPoint[] = ((weightRows ?? []) as WeightRow[]).map((r) => ({
+    date: r.entry_date,
+    value: r.value,
+  }));
+
+  // Objetivo nutricional de hoy, con las sustituciones del día ya
+  // aplicadas para que coincida con lo que ve en su pestaña de Nutrición.
+  const dietAssignment = await fetchActiveDietAssignment(supabase, user.id, serverToday);
+  let nutritionTotals: NutritionTotals | null = null;
+  let calorieTarget: number | null = null;
+  if (dietAssignment) {
+    const [plan, substitutions, { data: dietPlan }] = await Promise.all([
+      fetchClientNutritionPlan(supabase, dietAssignment),
+      fetchSubstitutionsForDate(supabase, user.id, serverToday),
+      supabase
+        .from("diet_plans")
+        .select("daily_calorie_target")
+        .eq("id", dietAssignment.diet_plan_id)
+        .maybeSingle(),
+    ]);
+    if (plan) {
+      nutritionTotals = roundTotals(planTotals(applySubstitutions(plan, substitutions)));
+      calorieTarget = (dietPlan?.daily_calorie_target as number | null) ?? null;
+    }
+  }
+
   return (
     <ClientHomeToday
       firstName={firstName}
@@ -151,6 +243,10 @@ export default async function ClientHomePage() {
       completedSetDates={((setLogRows ?? []) as { session_date: string }[]).map(
         (r) => r.session_date,
       )}
+      records={records}
+      weightPoints={weightPoints}
+      nutritionTotals={nutritionTotals}
+      calorieTarget={calorieTarget}
     />
   );
 }
