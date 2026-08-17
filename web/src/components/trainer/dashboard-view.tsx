@@ -2,7 +2,17 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Users, UserX, Dumbbell, CalendarDays, Plus, Apple, UserPlus, ChevronDown } from "lucide-react";
+import {
+  Users,
+  UserX,
+  Dumbbell,
+  CalendarDays,
+  Plus,
+  Apple,
+  UserPlus,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 
 import { initialsOf, formatDate } from "@/lib/format";
 import { sessionsInRange, todayKey, type CalendarAssignment } from "@/lib/calendar-logic";
@@ -10,7 +20,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarSessionList } from "@/components/trainer/calendar-session-list";
 import { ClientPickerDialog } from "@/components/trainer/client-picker-dialog";
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 
@@ -30,6 +39,9 @@ interface WeightRow {
   entry_date: string;
   value: number;
 }
+
+/** Cuántos clientes se listan antes de cortar con "Ver más". */
+const CLIENTS_TODAY_LIMIT = 4;
 
 const quickActions = [
   { label: "Crear rutina", href: "/entrenador/rutinas/nueva", icon: Plus },
@@ -66,6 +78,29 @@ export function DashboardView({
     [assignments, today],
   );
 
+  // Al entrenador le importa QUIÉN va hoy al gimnasio, no cuántas
+  // rutinas hay: un mismo cliente puede tener cardio y programa el mismo
+  // día y aparecía dos veces en la lista. Se agrupa por cliente y sus
+  // rutinas del día se juntan en una sola línea.
+  const clientsToday = React.useMemo(() => {
+    const byClient = new Map<string, { clientId: string; clientName: string; routines: string[] }>();
+    for (const session of todaySessions) {
+      const entry = byClient.get(session.clientId) ?? {
+        clientId: session.clientId,
+        clientName: session.clientName,
+        routines: [],
+      };
+      if (!entry.routines.includes(session.routineName)) entry.routines.push(session.routineName);
+      byClient.set(session.clientId, entry);
+    }
+    return Array.from(byClient.values()).sort((a, b) => a.clientName.localeCompare(b.clientName));
+  }, [todaySessions]);
+
+  const [showAllClientsToday, setShowAllClientsToday] = React.useState(false);
+  const visibleClientsToday = showAllClientsToday
+    ? clientsToday
+    : clientsToday.slice(0, CLIENTS_TODAY_LIMIT);
+
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [selectedClient, setSelectedClient] = React.useState<ClientOption | null>(
     clientOptions[0] ?? null,
@@ -75,7 +110,7 @@ export function DashboardView({
     { label: "Clientes activos", value: activeClientsCount, icon: Users },
     { label: "Clientes inactivos", value: inactiveClients.length, icon: UserX },
     { label: "Rutinas creadas", value: routineCount, icon: Dumbbell },
-    { label: "Sesiones de hoy", value: todaySessions.length, icon: CalendarDays },
+    { label: "Clientes hoy", value: clientsToday.length, icon: CalendarDays },
   ];
 
   const chartPoints = React.useMemo(() => {
@@ -127,9 +162,9 @@ export function DashboardView({
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="flex flex-col gap-3">
           <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Sesiones de hoy
+            Clientes que entrenan hoy
           </h2>
-          {todaySessions.length === 0 ? (
+          {clientsToday.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
                 <CalendarDays className="size-6" />
@@ -137,7 +172,44 @@ export function DashboardView({
               </CardContent>
             </Card>
           ) : (
-            <CalendarSessionList sessions={todaySessions} />
+            <div className="flex flex-col gap-2">
+              {visibleClientsToday.map((client) => (
+                <Link key={client.clientId} href={`/entrenador/clientes/${client.clientId}`}>
+                  <Card className="transition-colors hover:bg-accent/40">
+                    <CardContent className="flex items-center gap-3 p-4">
+                      <Avatar className="size-9">
+                        <AvatarFallback>{initialsOf(client.clientName)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{client.clientName}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {client.routines.join(" · ")}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+
+              {/* Con más de cuatro la lista se vuelve un muro en teléfono:
+                  se corta y el resto se ve en el calendario del día. */}
+              {clientsToday.length > CLIENTS_TODAY_LIMIT && !showAllClientsToday ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowAllClientsToday(true)}
+                >
+                  Ver {clientsToday.length - CLIENTS_TODAY_LIMIT} más
+                </Button>
+              ) : null}
+
+              <Button variant="ghost" className="w-full" asChild>
+                <Link href="/entrenador/calendario">
+                  Ver todos en el calendario <ChevronRight />
+                </Link>
+              </Button>
+            </div>
           )}
         </div>
 
