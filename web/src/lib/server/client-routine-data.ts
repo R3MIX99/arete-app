@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { youtubeThumbnailUrl } from "@/lib/youtube";
 import type { SessionExerciseInfo } from "@/lib/types/client-panel";
 
 interface ExerciseJoin {
@@ -61,9 +62,11 @@ export async function fetchRoutineSessionData(supabase: SupabaseClient<any>, rou
       muscle_group: ex?.muscle_group ?? "",
       equipment: ex?.equipment ?? "",
       video_url: ex?.video_url ?? null,
+      // Sin foto propia se usa la miniatura del video: es mejor que un
+      // ícono genérico, y casi todos los ejercicios traen video.
       image_url: ex?.image_path
         ? supabase.storage.from("exercise-images").getPublicUrl(ex.image_path).data.publicUrl
-        : null,
+        : youtubeThumbnailUrl(ex?.video_url ?? null, "square"),
       notes: row.notes,
       order_index: row.order_index,
       sets: (row.routine_exercise_sets ?? [])
