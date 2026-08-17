@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Check, ChevronDown, Dumbbell, LogOut, Monitor, Moon, Settings, Sun } from "lucide-react";
+import { ChevronDown, Dumbbell, LogOut, Monitor, Moon, Settings, Sun } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,24 +84,35 @@ export function ClientTopBar({
           <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
             Apariencia
           </DropdownMenuLabel>
-          {THEME_OPTIONS.map((option) => {
-            const Icon = option.icon;
-            return (
-              <DropdownMenuItem
-                key={option.value}
-                // El menú no se cierra al cambiar de tema: así se ve el
-                // cambio al momento y se puede probar otra opción.
-                onSelect={(event) => {
-                  event.preventDefault();
-                  setTheme(option.value);
-                }}
-              >
-                <Icon className="size-4" />
-                <span className="flex-1">{option.label}</span>
-                {theme === option.value ? <Check className="size-4 text-primary" /> : null}
-              </DropdownMenuItem>
-            );
-          })}
+          {/* Tres íconos en fila en vez de tres renglones: el elegido se
+              pinta con el color de acento, así se ve de un vistazo cuál
+              está activo sin necesidad de una palomita. Son botones
+              normales (no DropdownMenuItem) justamente para que tocarlos
+              no cierre el menú y se puedan comparar los temas al momento. */}
+          <div className="flex gap-1 px-1 pb-1">
+            {THEME_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              const active = theme === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTheme(option.value)}
+                  aria-label={option.label}
+                  aria-pressed={active}
+                  title={option.label}
+                  className={cn(
+                    "flex flex-1 items-center justify-center rounded-md py-2 transition-colors",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  <Icon className="size-4" />
+                </button>
+              );
+            })}
+          </div>
 
           <DropdownMenuSeparator />
           <DropdownMenuItem
