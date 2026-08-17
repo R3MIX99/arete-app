@@ -69,7 +69,16 @@ export function ClientTopBar({
           <ChevronDown className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="start" className="w-56">
+        {/* Se ajusta a su contenido en vez de un ancho fijo (antes w-56,
+            que dejaba un hueco a la derecha). min-w-0 anula el mínimo de
+            10rem que trae el componente base, y whitespace-nowrap evita
+            que al encoger los textos se partan en dos renglones. El
+            max-w es el tope para un nombre muy largo: ahí sí se recorta
+            con puntos suspensivos en vez de desbordar la pantalla. */}
+        <DropdownMenuContent
+          align="start"
+          className="w-auto min-w-0 max-w-[calc(100vw-2rem)] whitespace-nowrap"
+        >
           <DropdownMenuLabel className="truncate">{userName}</DropdownMenuLabel>
           <DropdownMenuSeparator />
 
