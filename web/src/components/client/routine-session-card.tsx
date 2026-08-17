@@ -68,11 +68,14 @@ export function RoutineSessionCard({
 
         {/* El degradado cubre la tarjeta COMPLETA, no solo la foto: así
             el borde derecho de la imagen queda debajo de la parte ya
-            opaca y no se ve la línea del corte. Va de derecha a
-            izquierda — sólido donde está el texto, y solo se abre a la
-            foto en el último tramo de la izquierda. Usa el token --card,
-            así que funciona igual en claro y en oscuro. */}
-        <div className="absolute inset-0 bg-gradient-to-l from-card from-68% to-transparent" />
+            opaca y no se ve el corte. Va de derecha a izquierda:
+            totalmente opaco donde está el texto, luego baja muy poco
+            (85% a media rampa) y solo al final se abre para dejar ver la
+            foto. Nunca llega a transparente del todo — un salto de
+            opaco a transparente en un solo tramo se lee como una línea
+            vertical, que es justo lo que se veía antes. Usa el token
+            --card, así que funciona igual en claro y en oscuro. */}
+        <div className="absolute inset-0 bg-gradient-to-l from-card from-58% via-card/85 via-78% to-card/20" />
 
         <div className="relative flex min-w-0 flex-1 flex-col justify-center gap-1 py-3 pr-3 pl-[36%]">
           <p className="line-clamp-2 text-sm leading-snug font-bold">{routineName}</p>
