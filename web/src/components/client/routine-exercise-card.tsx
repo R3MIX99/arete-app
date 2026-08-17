@@ -44,18 +44,27 @@ export function RoutineExerciseCard({
           derecha, donde va el texto) para dejarle todo el espacio
           posible a la foto. */}
       <div className="flex gap-3 rounded-2xl bg-card p-1.5 pr-3 transition-colors hover:bg-accent/40">
-        {/* self-stretch: la foto crece hasta el alto de la tarjeta, así
-            que en un ejercicio con nombre de dos líneas ya no queda
-            hueco vacío arriba y abajo como cuando era cuadrada fija. */}
-        <div className="w-22 min-h-22 shrink-0 self-stretch overflow-hidden rounded-xl bg-primary/12">
+        {/* La foto va en posición absoluta dentro de este contenedor, no
+            en el flujo. Si estuviera en el flujo, su `h-full` no tendría
+            contra qué resolver (la altura de la tarjeta todavía no está
+            decidida) y el navegador la dibujaría en su proporción
+            natural: con la miniatura de un Short (720x1280) salía un
+            rectángulo vertical de 88x156 que además estiraba la tarjeta.
+            Sacándola del flujo, quien manda es este contenedor:
+            - min-h-22: nunca más chica que cuadrada (88x88).
+            - self-stretch: crece con la tarjeta, así que si el nombre
+              salta a dos líneas la foto también crece.
+            - max-h-30: pero nunca se alarga tanto como para volverse un
+              rectángulo vertical. */}
+        <div className="relative w-22 min-h-22 max-h-30 shrink-0 self-stretch overflow-hidden rounded-xl bg-primary/12">
           {exercise.image_url ? (
             <ThumbnailImage
               src={exercise.image_url}
               fallbackSrc={exercise.image_fallback_url}
-              className="h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-primary">
+            <div className="absolute inset-0 flex items-center justify-center text-primary">
               <Dumbbell className="size-6" />
             </div>
           )}
