@@ -43,6 +43,22 @@ function emptyLog(): LogState[string] {
   return { actual_reps: "", actual_weight: "", actual_minutes: "", actual_level: "", is_completed: false };
 }
 
+/** Resumen del objetivo del ejercicio ("3 series x 10-12 reps") a partir
+ * de su primera serie — se muestra siempre, incluso con la pestaña
+ * cerrada, para que el cliente sepa qué le toca sin tener que abrirla. */
+function exerciseTargetSummary(exercise: SessionExerciseInfo): string {
+  const setCount = exercise.sets.length;
+  const label = `${setCount} serie${setCount === 1 ? "" : "s"}`;
+  const first = exercise.sets[0];
+  if (!first) return label;
+  if (first.target_minutes !== null) return `${label} x ${first.target_minutes} min`;
+  const min = first.target_reps_min;
+  const max = first.target_reps_max;
+  if (min === null && max === null) return label;
+  const reps = min !== null && max !== null && min !== max ? `${min}-${max}` : `${min ?? max}`;
+  return `${label} x ${reps} reps`;
+}
+
 /** Una serie se da por hecha en cuanto tiene lo que le corresponde: en
  * fuerza, peso y reps (no hace falta tocar el check a mano, y si borras
  * uno se desmarca sola); en cardio, con minutos O nivel alcanza — a
@@ -484,7 +500,7 @@ export function WorkoutSessionView({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 px-4">
+      <div className="flex flex-col divide-y px-4">
         {exercises.map((exercise) => {
           const isOpen = expanded.has(exercise.id);
           const cardio = isCardio(exercise.muscle_group);
@@ -493,10 +509,10 @@ export function WorkoutSessionView({
           const videoId = exercise.video_url ? youtubeVideoId(exercise.video_url) : null;
 
           return (
-            <div key={exercise.id} className="glass-card overflow-hidden rounded-xl">
+            <div key={exercise.id}>
               <button
                 type="button"
-                className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                className="flex w-full items-center gap-3 py-4 text-left"
                 onClick={() =>
                   setExpanded((prev) => {
                     const next = new Set(prev);
@@ -516,9 +532,7 @@ export function WorkoutSessionView({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{exercise.exercise_name}</p>
-                  {exercise.notes ? (
-                    <p className="truncate text-xs text-muted-foreground">{exercise.notes}</p>
-                  ) : null}
+                  <p className="truncate text-xs text-muted-foreground">{exerciseTargetSummary(exercise)}</p>
                 </div>
                 <button
                   type="button"
@@ -535,9 +549,9 @@ export function WorkoutSessionView({
               </button>
 
               {isOpen ? (
-                <div className="border-t px-4 py-3">
+                <div className="pb-4">
                   {videoId ? (
-                    <div className="mb-3 aspect-video w-full overflow-hidden rounded-lg border border-border">
+                    <div className="mb-3 aspect-video w-full overflow-hidden rounded-lg">
                       <iframe
                         className="size-full"
                         src={`https://www.youtube.com/embed/${videoId}`}
@@ -546,59 +560,61 @@ export function WorkoutSessionView({
                       />
                     </div>
                   ) : null}
+                  {exercise.notes ? (
+                    <p className="mb-3 text-xs text-muted-foreground">{exercise.notes}</p>
+                  ) : null}
                   <div
-                    className={cn(
-                      "grid items-center gap-2 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground",
-                      cardio ? "grid-cols-[1.5rem_1fr_1fr_2.25rem]" : "grid-cols-[1.5rem_1fr_1fr_2.25rem]",
-                    )}
+                    className="grid items-center gap-3 pb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+                    style={{ gridTemplateColumns: "1.5rem 1fr 1fr 2.25rem" }}
                   >
                     <span>#</span>
                     <span>{cardio ? "Minutos" : "Peso"}</span>
                     <span>{cardio ? "Nivel" : "Reps"}</span>
                     <span />
                   </div>
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-3">
                     {exercise.sets.map((set) => {
                       const log = logs[set.id] ?? emptyLog();
                       return (
                         <div
                           key={set.id}
-                          className="grid grid-cols-[1.5rem_1fr_1fr_2.25rem] items-center gap-2"
+                          className="grid items-center gap-3"
+                          style={{ gridTemplateColumns: "1.5rem 1fr 1fr 2.25rem" }}
                         >
                           <span className="text-sm text-muted-foreground">{set.set_number}</span>
                           {cardio ? (
                             <>
-                              <Input
+                              <input
                                 inputMode="decimal"
                                 placeholder={set.target_minutes?.toString() ?? "-"}
                                 value={log.actual_minutes}
                                 onChange={(e) =>
                                   updateField(set.id, "actual_minutes", e.target.value, true, set.rest_seconds)
                                 }
-                                className="h-9"
+                                className="w-full border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
                               />
-                              <Input
+                              <input
                                 inputMode="numeric"
                                 placeholder={set.target_level?.toString() ?? "-"}
                                 value={log.actual_level}
                                 onChange={(e) =>
                                   updateField(set.id, "actual_level", e.target.value, true, set.rest_seconds)
                                 }
-                                className="h-9"
+                                className="w-full border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
                               />
                             </>
                           ) : (
                             <>
-                              <Input
+                              <input
                                 inputMode="decimal"
                                 placeholder={set.suggested_weight?.toString() ?? "kg"}
                                 value={log.actual_weight}
                                 onChange={(e) =>
                                   updateField(set.id, "actual_weight", e.target.value, false, set.rest_seconds)
                                 }
-                                className="h-9"
+                                className="w-full border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
                               />
-                              <Input
+                              <input
                                 inputMode="numeric"
                                 placeholder={
                                   set.target_reps_min && set.target_reps_max
@@ -609,7 +625,7 @@ export function WorkoutSessionView({
                                 onChange={(e) =>
                                   updateField(set.id, "actual_reps", e.target.value, false, set.rest_seconds)
                                 }
-                                className="h-9"
+                                className="w-full border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
                               />
                             </>
                           )}
@@ -617,10 +633,10 @@ export function WorkoutSessionView({
                             type="button"
                             onClick={() => toggleComplete(set.id, cardio, set.rest_seconds)}
                             className={cn(
-                              "flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors",
+                              "flex size-8 shrink-0 items-center justify-center rounded-full transition-colors",
                               log.is_completed
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-input text-muted-foreground hover:bg-accent",
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground/50 hover:bg-accent hover:text-foreground",
                             )}
                             aria-label="Marcar serie completada"
                           >
