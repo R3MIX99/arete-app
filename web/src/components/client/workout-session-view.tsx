@@ -593,11 +593,6 @@ export function WorkoutSessionView({
                       <PlayCircle className="size-8 text-white drop-shadow" />
                     </div>
                   ) : null}
-                  {exerciseComplete ? (
-                    <div className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <Check className="size-3" />
-                    </div>
-                  ) : null}
                 </button>
 
                 {/* Nombre (manda al detalle), objetivo con su banderita —
@@ -646,17 +641,29 @@ export function WorkoutSessionView({
                 </div>
               </div>
 
-              {/* Botón de ver/ocultar series. Al abrirlo solo aparece la
-                  tabla de series — la nota del entrenador vive en el
-                  detalle del ejercicio (clic en el nombre), no aquí. */}
-              <button
-                type="button"
-                onClick={() => toggleSet(setExpanded, exercise.id)}
-                className="mt-3 flex items-center gap-1.5 rounded-full bg-muted px-3.5 py-2 text-sm font-medium text-primary"
-              >
-                {isOpen ? "Ocultar series" : "Ver series"}
-                <ChevronDown className={cn("size-4 transition-transform", isOpen && "rotate-180")} />
-              </button>
+              {/* Botón de ver/ocultar series, con el chip de "Completada"
+                  al lado cuando ya se hicieron todas — se sacó del cuadro
+                  del video (ahí se veía mal encima de la miniatura) y se
+                  puso aquí, en índigo, el mismo color que ya usa la app
+                  como color de marca. Al abrirlo solo aparece la tabla de
+                  series — la nota del entrenador vive en el detalle del
+                  ejercicio (clic en el nombre), no aquí. */}
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => toggleSet(setExpanded, exercise.id)}
+                  className="flex items-center gap-1.5 rounded-full bg-muted px-3.5 py-2 text-sm font-medium text-primary"
+                >
+                  {isOpen ? "Ocultar series" : "Ver series"}
+                  <ChevronDown className={cn("size-4 transition-transform", isOpen && "rotate-180")} />
+                </button>
+                {exerciseComplete ? (
+                  <span className="flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+                    <Check className="size-3.5" />
+                    Completada
+                  </span>
+                ) : null}
+              </div>
 
               {isOpen ? (
                 <div className="px-5 pt-3">
