@@ -1,6 +1,7 @@
 import { corsHeaders } from "./_shared/cors.ts";
 import { callClaude, extractJson } from "./_shared/anthropic.ts";
 import { requireTrainerWithinLimit, logAiUsage, jsonResponse } from "./_shared/trainer.ts";
+import { fetchKnowledgeContext, knowledgeContextBlock } from "./_shared/knowledge.ts";
 
 interface CatalogDish {
   id: string;
@@ -99,6 +100,15 @@ Reglas importantes:
 - Respeta las restricciones (alergias, cosas que no puede comer) de forma estricta: si un platillo o alimento del catálogo choca con una restricción, no lo uses.
 - Ten en cuenta las preferencias del cliente cuando elijas entre varias opciones válidas.`;
 
+    // Fase 14: platillos/documentos de referencia parecidos a este
+    // pedido, si el superadmin cargó algo relevante — "" si no hay
+    // nada o falla, nunca bloquea la generación en sí.
+    const knowledgeContext = await fetchKnowledgeContext({
+      supabase,
+      queryText: `Plan de alimentación. Preferencias: ${body.preferences?.trim() || "ninguna en particular"}. Restricciones: ${body.restrictions?.trim() || "ninguna"}.`,
+      category: null,
+    });
+
     const userMessage = `Meta calórica diaria: ${body.calorieTarget ? `${body.calorieTarget} kcal` : "sin especificar"}
 Preferencias del cliente: ${body.preferences?.trim() || "sin preferencias particulares"}
 Restricciones / alergias: ${body.restrictions?.trim() || "ninguna"}
@@ -107,7 +117,8 @@ Catálogo de platillos disponibles:
 ${dishesText || "(no hay platillos en el catálogo)"}
 
 Catálogo de alimentos individuales disponibles:
-${foodsText || "(no hay alimentos en el catálogo)"}`;
+${foodsText || "(no hay alimentos en el catálogo)"}
+${knowledgeContextBlock(knowledgeContext)}`;
 
     const text = await callClaude({ apiKey, system, userMessage, maxTokens: 4096 });
     const result = extractJson<AiDietResult>(text);

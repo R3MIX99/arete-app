@@ -1,6 +1,7 @@
 import { corsHeaders } from "./_shared/cors.ts";
 import { callClaude, extractJson } from "./_shared/anthropic.ts";
 import { requireTrainerWithinLimit, logAiUsage, jsonResponse } from "./_shared/trainer.ts";
+import { fetchKnowledgeContext, knowledgeContextBlock } from "./_shared/knowledge.ts";
 
 interface ScoreRoutineExercise {
   exercise_name: string;
@@ -81,12 +82,21 @@ Deno.serve(async (req: Request) => {
 }
 Evalúa considerando: (1) balance muscular — que no se sobrecargue un solo grupo dejando otros sin trabajar, (2) volumen y estructura de series/repeticiones razonable para el nivel, (3) qué tan coherente es la selección de ejercicios con el objetivo declarado del cliente. Sé justo pero exigente: una rutina genérica de 3 ejercicios sin balance no debería pasar de 60; una rutina bien pensada y completa puede llegar a 90+.`;
 
+    // Fase 14: rutinas/documentos de referencia parecidos, para que la
+    // evaluación considere estándares que el superadmin haya cargado.
+    const knowledgeContext = await fetchKnowledgeContext({
+      supabase,
+      queryText: `Evaluar rutina de gimnasio para objetivo ${body.goal ? (GOAL_LABEL[body.goal] ?? body.goal) : "sin especificar"}, nivel ${LEVEL_LABEL[body.level] ?? body.level}`,
+      category: body.goal,
+    });
+
     const userMessage = `Nombre de la rutina: ${body.name}
 Nivel: ${LEVEL_LABEL[body.level] ?? body.level}
 Objetivo declarado: ${body.goal ? (GOAL_LABEL[body.goal] ?? body.goal) : "sin especificar"}
 
 Ejercicios:
-${exercisesText}`;
+${exercisesText}
+${knowledgeContextBlock(knowledgeContext)}`;
 
     const text = await callClaude({ apiKey, system, userMessage, maxTokens: 1024 });
     const result = extractJson<AiScoreResult>(text);

@@ -1,6 +1,7 @@
 import { corsHeaders } from "./_shared/cors.ts";
 import { callClaude, extractJson } from "./_shared/anthropic.ts";
 import { requireTrainerWithinLimit, logAiUsage, jsonResponse } from "./_shared/trainer.ts";
+import { fetchKnowledgeContext, knowledgeContextBlock } from "./_shared/knowledge.ts";
 
 interface CatalogExercise {
   id: string;
@@ -107,6 +108,16 @@ Reglas importantes:
 - Respeta el equipo disponible que te indican si te lo dan.
 - No repitas el mismo ejercicio dos veces.`;
 
+    // Fase 14: contenido experto (documentos, videos, rutinas de
+    // referencia) parecido a este pedido, si el superadmin cargó algo
+    // relevante para este objetivo — "" si no hay nada o si falla, así
+    // que nunca bloquea la generación en sí.
+    const knowledgeContext = await fetchKnowledgeContext({
+      supabase,
+      queryText: `Rutina de gimnasio para objetivo ${GOAL_LABEL[body.goal] ?? body.goal}, nivel ${LEVEL_LABEL[body.level] ?? body.level}${body.focus ? `, enfoque: ${body.focus}` : ""}`,
+      category: body.goal,
+    });
+
     const userMessage = `Objetivo del cliente: ${GOAL_LABEL[body.goal] ?? body.goal}
 Nivel: ${LEVEL_LABEL[body.level] ?? body.level}
 Días de entrenamiento por semana: ${body.daysPerWeek}
@@ -114,7 +125,8 @@ Equipo disponible: ${body.equipment.length > 0 ? body.equipment.join(", ") : "cu
 ${body.focus ? `Enfoque o pedido adicional del entrenador: ${body.focus}` : ""}
 
 Catálogo de ejercicios disponibles (usa estos ids cuando aplique):
-${catalogText || "(el entrenador todavía no tiene ejercicios en su biblioteca)"}`;
+${catalogText || "(el entrenador todavía no tiene ejercicios en su biblioteca)"}
+${knowledgeContextBlock(knowledgeContext)}`;
 
     const text = await callClaude({ apiKey, system, userMessage, maxTokens: 4096 });
     const result = extractJson<AiRoutineResult>(text);
