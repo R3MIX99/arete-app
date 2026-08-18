@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronLeft,
   Clock,
+  Dumbbell,
   Flame,
   Footprints,
   History,
@@ -28,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ExerciseHistoryList } from "@/components/client/exercise-history";
+import { ThumbnailImage } from "@/components/client/thumbnail-image";
 import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
 
 type LogState = Record<
@@ -522,17 +524,37 @@ export function WorkoutSessionView({
                   })
                 }
               >
+                {/* Miniatura grande — se ve de un vistazo qué ejercicio es,
+                    sin tener que abrir la pestaña. El aro verde alrededor
+                    reemplaza al numerito de series como señal de
+                    "completado", así el círculo no compite por espacio con
+                    la foto. */}
                 <div
                   className={cn(
-                    "flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                    exerciseComplete ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                    "relative size-16 shrink-0 overflow-hidden rounded-xl bg-primary/12",
+                    exerciseComplete && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                   )}
                 >
-                  {exerciseComplete ? <Check className="size-4" /> : exercise.sets.length}
+                  {exercise.image_url ? (
+                    <ThumbnailImage
+                      src={exercise.image_url}
+                      fallbackSrc={exercise.image_fallback_url}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-primary">
+                      <Dumbbell className="size-6" />
+                    </div>
+                  )}
+                  {exerciseComplete ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-primary/80">
+                      <Check className="size-6 text-primary-foreground" />
+                    </div>
+                  ) : null}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{exercise.exercise_name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{exerciseTargetSummary(exercise)}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{exerciseTargetSummary(exercise)}</p>
                 </div>
                 <button
                   type="button"
