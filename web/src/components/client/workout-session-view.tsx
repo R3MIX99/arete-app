@@ -33,7 +33,6 @@ import { Slider } from "@/components/ui/slider";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ExerciseHistoryList } from "@/components/client/exercise-history";
 import { ThumbnailImage } from "@/components/client/thumbnail-image";
-import { WeightConverterDialog } from "@/components/client/weight-converter-dialog";
 import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
 
 type LogState = Record<
@@ -129,9 +128,6 @@ export function WorkoutSessionView({
   // ejercicio (en teléfono el Drawer sale de abajo a pantalla completa) —
   // video grande arriba, nombre, e historial, sin la tabla de series.
   const [detailExercise, setDetailExercise] = useState<SessionExerciseInfo | null>(null);
-  // Convertidor de libras a kilos — es genérico, no depende de qué
-  // ejercicio lo abrió, así que un solo diálogo alcanza para todos.
-  const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [startedAt] = useState<number>(() => Date.now());
   const startedAtRef = useRef<number>(startedAt);
 
@@ -626,9 +622,9 @@ export function WorkoutSessionView({
                   {/* Círculos con fondo — igual de "botón" que el pill de
                       "Ver series", solo que redondos, para que no se
                       pierdan entre el resto de íconos en gris. La
-                      calculadora convierte libras a kilos (discos, barra)
-                      — no depende de qué ejercicio es, por eso abre el
-                      mismo diálogo sin importar desde cuál botón se abrió. */}
+                      calculadora manda a su propia página (no es un
+                      diálogo): con el teclado numérico abierto, un drawer
+                      con dos inputs y un switch se veía roto. */}
                   <div className="mt-1 flex items-center gap-2">
                     <button
                       type="button"
@@ -640,7 +636,7 @@ export function WorkoutSessionView({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setCalculatorOpen(true)}
+                      onClick={() => router.push("/cliente/entrenamiento/calculadora")}
                       className="flex size-9 items-center justify-center rounded-full bg-muted text-primary"
                       aria-label="Convertidor de libras a kilos"
                     >
@@ -793,8 +789,6 @@ export function WorkoutSessionView({
           )}
         </div>
       ) : null}
-
-      <WeightConverterDialog open={calculatorOpen} onOpenChange={setCalculatorOpen} />
 
       <ResponsiveDialog
         open={historyExercise !== null}
