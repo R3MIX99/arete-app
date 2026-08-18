@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, Flame, Repeat, ShoppingCart } from "lucide-react";
+import { ChevronDown, Flame, RotateCcw, Repeat, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SubstituteFoodDialog } from "@/components/client/substitute-food-dialog";
 
 type SubstitutionWithFood = MealSubstitutionRow & { substituteFood: ClientNutritionFoodRef | null };
@@ -104,6 +105,8 @@ export function ClientNutritionView({
   const [activeTab, setActiveTab] = React.useState("hoy");
   const [expandedDays, setExpandedDays] = React.useState<Set<string>>(new Set());
   const [shoppingListOpen, setShoppingListOpen] = React.useState(false);
+  const [resetOpen, setResetOpen] = React.useState(false);
+  const [resetting, setResetting] = React.useState(false);
 
   // Plan de un día cualquiera de la semana: solo con las sustituciones
   // permanentes, que son las que valen todos los días.
@@ -227,6 +230,25 @@ export function ClientNutritionView({
     setTarget(null);
   }
 
+  // Borra TODAS las sustituciones del cliente (de hoy y las
+  // permanentes) de un jalón: el plan vuelve exactamente a como lo dejó
+  // el entrenador, sin tener que deshacer cambio por cambio.
+  async function handleReset() {
+    setResetting(true);
+    const { error } = await supabase
+      .from("client_meal_substitutions")
+      .delete()
+      .eq("client_id", clientId);
+    setResetting(false);
+    if (error) {
+      toast.error("No se pudo reiniciar la dieta. Intenta de nuevo.");
+      return;
+    }
+    setSubstitutions([]);
+    setResetOpen(false);
+    toast.success("Tu dieta volvió a como la dejó tu entrenador");
+  }
+
   if (!plan || !effectivePlan || !weekPlan) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-10 text-center">
@@ -262,8 +284,19 @@ export function ClientNutritionView({
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-4 pb-24 md:p-8">
-      <div>
+      <div className="flex items-start justify-between gap-2">
         <h1 className="text-xl font-semibold">{effectivePlan.planName}</h1>
+        {substitutions.length > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => setResetOpen(true)}
+          >
+            <RotateCcw /> Reiniciar dieta
+          </Button>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -496,6 +529,16 @@ export function ClientNutritionView({
         open={shoppingListOpen}
         onOpenChange={setShoppingListOpen}
         items={shoppingList}
+      />
+
+      <ConfirmDialog
+        open={resetOpen}
+        onOpenChange={setResetOpen}
+        title="¿Reiniciar tu dieta?"
+        description="Se borran todos los cambios que has hecho — los de hoy y los que dejaste fijos en todo el plan. Tu dieta vuelve exactamente a como te la dejó tu entrenador."
+        confirmLabel="Reiniciar dieta"
+        loading={resetting}
+        onConfirm={handleReset}
       />
     </div>
   );
