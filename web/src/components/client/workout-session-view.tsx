@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateActio
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+  Calculator,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -32,6 +33,7 @@ import { Slider } from "@/components/ui/slider";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ExerciseHistoryList } from "@/components/client/exercise-history";
 import { ThumbnailImage } from "@/components/client/thumbnail-image";
+import { WeightConverterDialog } from "@/components/client/weight-converter-dialog";
 import type { SessionExerciseInfo, SessionSetLog } from "@/lib/types/client-panel";
 
 type LogState = Record<
@@ -114,6 +116,11 @@ export function WorkoutSessionView({
   const [finishing, setFinishing] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set(exercises[0] ? [exercises[0].id] : []));
   const [restSecondsLeft, setRestSecondsLeft] = useState<number | null>(null);
+  // Al llegar a 0 no desaparece de inmediato: se queda un momento en
+  // verde diciendo "¡Continúa!" y luego se anima saliendo (fade + slide
+  // hacia abajo) antes de desmontarse — `restLeaving` dispara esa
+  // animación de salida.
+  const [restLeaving, setRestLeaving] = useState(false);
   const [historyExercise, setHistoryExercise] = useState<SessionExerciseInfo | null>(null);
   // Clic en el cuadro del video: se abre en grande en un popup, ya no se
   // reproduce ahí mismo en el cuadrito chico (se veía muy pequeño).
@@ -122,6 +129,9 @@ export function WorkoutSessionView({
   // ejercicio (en teléfono el Drawer sale de abajo a pantalla completa) —
   // video grande arriba, nombre, e historial, sin la tabla de series.
   const [detailExercise, setDetailExercise] = useState<SessionExerciseInfo | null>(null);
+  // Convertidor de libras a kilos — es genérico, no depende de qué
+  // ejercicio lo abrió, así que un solo diálogo alcanza para todos.
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [startedAt] = useState<number>(() => Date.now());
   const startedAtRef = useRef<number>(startedAt);
 
@@ -171,15 +181,29 @@ export function WorkoutSessionView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Timer de descanso no intrusivo.
+  // Timer de descanso no intrusivo. Al llegar a 0 ya no se oculta de
+  // inmediato: se queda un momento mostrando "¡Continúa!" en verde, y
+  // recién después arranca la animación de salida.
   useEffect(() => {
-    if (restSecondsLeft === null || restSecondsLeft <= 0) return;
-    const t = setTimeout(
-      () => setRestSecondsLeft((s) => (s !== null && s > 1 ? s - 1 : null)),
-      1000,
-    );
+    if (restSecondsLeft === null) return;
+    if (restSecondsLeft > 0) {
+      const t = setTimeout(() => setRestSecondsLeft((s) => (s !== null && s > 0 ? s - 1 : s)), 1000);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setRestLeaving(true), 1800);
     return () => clearTimeout(t);
   }, [restSecondsLeft]);
+
+  // Una vez que empieza a salir, se le da tiempo a la transición CSS
+  // (duration-300) antes de desmontar del todo.
+  useEffect(() => {
+    if (!restLeaving) return;
+    const t = setTimeout(() => {
+      setRestSecondsLeft(null);
+      setRestLeaving(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [restLeaving]);
 
   // exercise_id y set_number se guardan tal cual en cada registro (no
   // solo el enlace a la serie planeada) para que el historial y la
@@ -257,7 +281,10 @@ export function WorkoutSessionView({
     // El descanso solo aplica a series de fuerza — el cardio no tiene
     // ese concepto entre valores de minutos/nivel, así que nunca debe
     // aparecer el cronómetro de descanso ahí.
-    if (justCompleted && restSeconds && !cardio) setRestSecondsLeft(restSeconds);
+    if (justCompleted && restSeconds && !cardio) {
+      setRestLeaving(false);
+      setRestSecondsLeft(restSeconds);
+    }
   }
 
   function toggleComplete(setId: string, cardio: boolean, restSeconds: number | null) {
@@ -267,7 +294,10 @@ export function WorkoutSessionView({
     setLogs((prev) => ({ ...prev, [setId]: next }));
     if (saveTimers.current[setId]) clearTimeout(saveTimers.current[setId]);
     setTimeout(() => persistLog(setId, next), 50);
-    if (next.is_completed && restSeconds && !cardio) setRestSecondsLeft(restSeconds);
+    if (next.is_completed && restSeconds && !cardio) {
+      setRestLeaving(false);
+      setRestSecondsLeft(restSeconds);
+    }
   }
 
   // La rutina se trata como "de cardio" solo si TODOS sus ejercicios lo
@@ -593,17 +623,30 @@ export function WorkoutSessionView({
                       <span>{restSeconds}&quot; de descanso</span>
                     </div>
                   ) : null}
-                  {/* Círculo con fondo — igual de "botón" que el pill de
-                      "Ver series", solo que redondo, para que no se pierda
-                      entre el resto de íconos en gris. */}
-                  <button
-                    type="button"
-                    onClick={() => setHistoryExercise(exercise)}
-                    className="mt-1 flex size-9 items-center justify-center rounded-full bg-muted text-primary"
-                    aria-label="Ver historial del ejercicio"
-                  >
-                    <History className="size-4.5" />
-                  </button>
+                  {/* Círculos con fondo — igual de "botón" que el pill de
+                      "Ver series", solo que redondos, para que no se
+                      pierdan entre el resto de íconos en gris. La
+                      calculadora convierte libras a kilos (discos, barra)
+                      — no depende de qué ejercicio es, por eso abre el
+                      mismo diálogo sin importar desde cuál botón se abrió. */}
+                  <div className="mt-1 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setHistoryExercise(exercise)}
+                      className="flex size-9 items-center justify-center rounded-full bg-muted text-primary"
+                      aria-label="Ver historial del ejercicio"
+                    >
+                      <History className="size-4.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCalculatorOpen(true)}
+                      className="flex size-9 items-center justify-center rounded-full bg-muted text-primary"
+                      aria-label="Convertidor de libras a kilos"
+                    >
+                      <Calculator className="size-4.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -719,23 +762,39 @@ export function WorkoutSessionView({
       </div>
 
       {restSecondsLeft !== null ? (
-        <div className="fixed inset-x-0 bottom-24 z-30 flex justify-center px-4">
-          <div className="flex items-center gap-3 rounded-full border bg-card/95 px-4 py-2 shadow-lg backdrop-blur-sm">
-            <Timer className="size-4 text-primary" />
-            <span className="text-sm font-medium tabular-nums">
-              Descanso: {Math.floor(restSecondsLeft / 60)}:{String(restSecondsLeft % 60).padStart(2, "0")}
-            </span>
-            <button
-              type="button"
-              onClick={() => setRestSecondsLeft(null)}
-              className="text-muted-foreground hover:text-foreground"
-              aria-label="Saltar descanso"
-            >
-              <X className="size-4" />
-            </button>
-          </div>
+        <div
+          className={cn(
+            "fixed inset-x-0 bottom-24 z-30 flex justify-center px-4 transition-all duration-300",
+            restLeaving ? "translate-y-3 opacity-0" : "translate-y-0 opacity-100",
+          )}
+        >
+          {restSecondsLeft > 0 ? (
+            <div className="flex items-center gap-3 rounded-full border bg-card/95 px-4 py-2 shadow-lg backdrop-blur-sm">
+              <Timer className="size-4 text-primary" />
+              <span className="text-sm font-medium tabular-nums">
+                Descanso: {Math.floor(restSecondsLeft / 60)}:{String(restSecondsLeft % 60).padStart(2, "0")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setRestLeaving(true)}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Saltar descanso"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          ) : (
+            // Termina el descanso: en vez de desaparecer de golpe, se
+            // queda un momento en verde avisando que ya toca continuar.
+            <div className="flex items-center gap-2 rounded-full bg-success px-4 py-2 text-white shadow-lg">
+              <Check className="size-4" />
+              <span className="text-sm font-semibold">¡Continúa!</span>
+            </div>
+          )}
         </div>
       ) : null}
+
+      <WeightConverterDialog open={calculatorOpen} onOpenChange={setCalculatorOpen} />
 
       <ResponsiveDialog
         open={historyExercise !== null}
