@@ -242,7 +242,7 @@ export function LibraryDishBuilder({
       </div>
 
       <p className="rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
-        Esto edita el catálogo global de Areté — lo ve cualquier entrenador que lo tenga en su
+        Esto edita el catálogo global de Aretia — lo ve cualquier entrenador que lo tenga en su
         catálogo.
       </p>
 

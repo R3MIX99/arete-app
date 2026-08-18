@@ -122,7 +122,7 @@ export function NewFoodForm({
         return;
       }
 
-      // No es tuyo (esencial de Areté, o de otro entrenador): guardar
+      // No es tuyo (esencial de Aretia, o de otro entrenador): guardar
       // crea tu propia copia personalizada en vez de tocar la
       // compartida — a los demás no les cambia nada.
       const { error: forkError } = await supabase
@@ -199,7 +199,7 @@ export function NewFoodForm({
         <CardContent>
           {mode === "edit" && !isOwned && (
             <p className="mb-4 rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
-              Este alimento es de {food?.trainer_id ? "otro entrenador" : "Areté"}. Al guardar se
+              Este alimento es de {food?.trainer_id ? "otro entrenador" : "Aretia"}. Al guardar se
               creará tu propia copia personalizada — el original no cambia para nadie más.
             </p>
           )}

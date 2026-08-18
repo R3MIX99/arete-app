@@ -38,7 +38,7 @@ function one<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
-/** Biblioteca de Areté (Fase de biblioteca del superadmin): solo lo
+/** Biblioteca de Aretia (Fase de biblioteca del superadmin): solo lo
  * global (trainer_id IS NULL) — no la biblioteca de ningún entrenador
  * en particular. */
 export default async function SuperadminLibraryPage() {

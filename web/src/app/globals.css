@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ---------------------------------------------------------------------
- * Tokens de Areté — misma paleta que ya se usó en la app de Flutter
+ * Tokens de Aretia — misma paleta que ya se usó en la app de Flutter
  * (ver app/lib/core/theme/app_colors.dart), portada a variables CSS para
  * que shadcn/ui las use directo. Minimalismo tipo shadcn/ui: escala de
  * grises fría, un único acento índigo de uso deliberado.

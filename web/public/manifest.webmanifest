@@ -1,7 +1,7 @@
 {
-  "name": "Areté",
-  "short_name": "Areté",
-  "description": "Areté: panel de entrenador y de cliente para gestionar clientes, rutinas, programas, nutrición y progreso.",
+  "name": "Aretia",
+  "short_name": "Aretia",
+  "description": "Aretia: panel de entrenador y de cliente para gestionar clientes, rutinas, programas, nutrición y progreso.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -132,7 +132,7 @@ export default async function NutritionPage() {
     .filter((f) => !f.forked_from)
     .map((f) => ({
       ...toFoodOption(f),
-      creator_name: f.trainer_id ? (one(f.profiles)?.full_name ?? "Entrenador") : "Areté",
+      creator_name: f.trainer_id ? (one(f.profiles)?.full_name ?? "Entrenador") : "Aretia",
       in_my_catalog: !f.trainer_id || f.trainer_id === user.id || forkedFoodIds.has(f.id),
     }));
 
@@ -140,7 +140,7 @@ export default async function NutritionPage() {
     .filter((d) => !d.forked_from)
     .map((d) => ({
       ...toDishOption(d),
-      creator_name: d.trainer_id ? (one(d.profiles)?.full_name ?? "Entrenador") : "Areté",
+      creator_name: d.trainer_id ? (one(d.profiles)?.full_name ?? "Entrenador") : "Aretia",
       in_my_catalog: !d.trainer_id || d.trainer_id === user.id || forkedDishIds.has(d.id),
     }));
 

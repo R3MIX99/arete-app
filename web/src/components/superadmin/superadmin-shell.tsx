@@ -34,7 +34,7 @@ export function SuperadminShell({
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = React.useState(false);
 
-  const title = superadminNavItems.find((item) => isActive(pathname, item.href))?.label ?? "Areté";
+  const title = superadminNavItems.find((item) => isActive(pathname, item.href))?.label ?? "Aretia";
 
   const navList = (onNavigate?: () => void) => (
     <ul className="flex flex-col gap-1.5">
@@ -70,7 +70,7 @@ export function SuperadminShell({
         <ShieldCheck className="size-4 text-white" />
       </div>
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold">Areté</p>
+        <p className="truncate text-sm font-semibold">Aretia</p>
         <p className="truncate text-[11px]" style={{ color: "var(--sb-text-muted)" }}>
           Superadministrador
         </p>

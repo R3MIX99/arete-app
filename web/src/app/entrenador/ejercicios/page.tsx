@@ -77,7 +77,7 @@ export default async function ExercisesPage() {
       image_path: r.image_path,
       trainer_id: r.trainer_id,
       forked_from: r.forked_from,
-      creator_name: r.trainer_id ? (one(r.profiles)?.full_name ?? "Entrenador") : "Areté",
+      creator_name: r.trainer_id ? (one(r.profiles)?.full_name ?? "Entrenador") : "Aretia",
       created_at: r.created_at,
       in_my_library:
         (!r.trainer_id && !hiddenIds.has(r.id)) || r.trainer_id === user.id || forkedIds.has(r.id),

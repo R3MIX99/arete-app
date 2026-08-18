@@ -20,7 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 
 /**
- * Todo lo que cualquier entrenador (o Areté, para los esenciales) ha
+ * Todo lo que cualquier entrenador (o Aretia, para los esenciales) ha
  * creado — a diferencia de "Catálogo", que solo muestra lo que este
  * entrenador ya puede usar. Desde aquí se copia un alimento o platillo
  * a tu propio catálogo con "Agregar a mi catálogo".

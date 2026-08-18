@@ -72,7 +72,7 @@ export function ExerciseForm({
   const [hideConfirmOpen, setHideConfirmOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const isOwned = !exercise || exercise.trainer_id === trainerId;
-  // Esencial de Areté: no es mío, pero sí lo puedo quitar de mi propia
+  // Esencial de Aretia: no es mío, pero sí lo puedo quitar de mi propia
   // biblioteca sin afectar a nadie más.
   const isEssential = mode === "edit" && !!exercise && exercise.trainer_id === null;
 
@@ -135,7 +135,7 @@ export function ExerciseForm({
         return;
       }
 
-      // No es tuyo (esencial de Areté, o de otro entrenador): guardar
+      // No es tuyo (esencial de Aretia, o de otro entrenador): guardar
       // crea tu propia copia personalizada en vez de tocar el
       // compartido — a los demás no les cambia nada. Pero esa copia no
       // se queda huérfana: se reemplaza el original por la copia en
@@ -167,7 +167,7 @@ export function ExerciseForm({
         );
       }
 
-      // Si el original era esencial de Areté, se quita de tu biblioteca
+      // Si el original era esencial de Aretia, se quita de tu biblioteca
       // para que ya no aparezcan dos versiones del mismo ejercicio — tu
       // copia editada la reemplaza. No afecta a otros entrenadores.
       if (!exercise.trainer_id) {
@@ -282,7 +282,7 @@ export function ExerciseForm({
 
       {mode === "edit" && !isOwned && (
         <p className="rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
-          Este ejercicio es de {exercise?.trainer_id ? "otro entrenador" : "Areté"}. Al guardar se
+          Este ejercicio es de {exercise?.trainer_id ? "otro entrenador" : "Aretia"}. Al guardar se
           creará tu propia copia personalizada — el original no cambia para nadie más.
         </p>
       )}

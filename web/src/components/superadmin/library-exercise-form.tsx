@@ -48,7 +48,7 @@ const EQUIPMENT_OPTIONS = [
 ];
 
 /**
- * Crear/editar un ejercicio de la biblioteca de Areté (trainer_id
+ * Crear/editar un ejercicio de la biblioteca de Aretia (trainer_id
  * null). A diferencia del formulario del entrenador, aquí no hay
  * lógica de "copiar" — el superadmin edita el original directamente, y
  * ese cambio lo ve cualquier entrenador que lo tenga en su biblioteca.
@@ -186,7 +186,7 @@ export function LibraryExerciseForm({
       </div>
 
       <p className="rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
-        Esto edita el catálogo global de Areté — lo ve cualquier entrenador que lo tenga en su
+        Esto edita el catálogo global de Aretia — lo ve cualquier entrenador que lo tenga en su
         biblioteca.
       </p>
 

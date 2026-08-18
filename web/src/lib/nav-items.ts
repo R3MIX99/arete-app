@@ -40,7 +40,7 @@ export const superadminNavItems: NavItem[] = [
   { href: "/superadmin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/superadmin/entrenadores", label: "Entrenadores", icon: Users },
   { href: "/superadmin/clientes", label: "Clientes", icon: UserRound },
-  { href: "/superadmin/biblioteca", label: "Biblioteca de Areté", icon: Library },
+  { href: "/superadmin/biblioteca", label: "Biblioteca de Aretia", icon: Library },
   { href: "/superadmin/ia", label: "Sección IA", icon: Sparkles },
 ];
 

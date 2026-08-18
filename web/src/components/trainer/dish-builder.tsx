@@ -267,7 +267,7 @@ export function DishBuilder({
           </div>
           {!isOwned && (
             <p className="rounded-lg bg-primary/8 px-3 py-2 text-sm text-muted-foreground">
-              Este platillo es de {dish.trainer_id ? "otro entrenador" : "Areté"}. No puedes
+              Este platillo es de {dish.trainer_id ? "otro entrenador" : "Aretia"}. No puedes
               editarlo ni agregarle ingredientes directamente — usa &quot;Copiar y editar&quot;
               para crear tu propia versión.
             </p>

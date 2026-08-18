@@ -21,7 +21,7 @@ import { CommunityBrowser } from "@/components/trainer/community-browser";
  * Flutter, para no tener que tocar los 9 módulos fijos del panel.
  *
  * Catálogo = lo que este entrenador puede usar directamente al armar un
- * plan (los esenciales de Areté + lo suyo). Comunidad = todo lo que
+ * plan (los esenciales de Aretia + lo suyo). Comunidad = todo lo que
  * cualquier entrenador ha creado, para poder copiarlo a tu catálogo.
  */
 export function NutritionShell({

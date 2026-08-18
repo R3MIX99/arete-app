@@ -45,7 +45,7 @@ export function LibraryExercisesBrowser({ exercises }: { exercises: ExerciseSumm
           <Dumbbell className="size-8" />
           <p className="text-sm">
             {exercises.length === 0
-              ? "Todavía no hay ejercicios en la biblioteca de Areté."
+              ? "Todavía no hay ejercicios en la biblioteca de Aretia."
               : "Ningún ejercicio coincide con la búsqueda."}
           </p>
         </div>

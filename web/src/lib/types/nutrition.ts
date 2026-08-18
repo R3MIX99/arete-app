@@ -38,7 +38,7 @@ export interface DishOption {
 }
 
 /** Un alimento tal como aparece en la pestaña Comunidad: de cualquier
- * entrenador (o esencial de Areté), con quién lo creó y si ya está en
+ * entrenador (o esencial de Aretia), con quién lo creó y si ya está en
  * el catálogo propio del entrenador que está viendo la lista. */
 export interface CommunityFoodOption extends FoodOption {
   creator_name: string;

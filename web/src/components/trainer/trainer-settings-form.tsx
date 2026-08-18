@@ -214,7 +214,7 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Opcional. Si no subes uno, tus clientes ven el logo de Areté.
+                    Opcional. Si no subes uno, tus clientes ven el logo de Aretia.
                   </p>
                 </div>
               </div>

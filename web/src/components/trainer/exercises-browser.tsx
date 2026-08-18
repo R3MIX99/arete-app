@@ -66,7 +66,7 @@ export function ExercisesBrowser({
   const [filtersOpen, setFiltersOpen] = React.useState(false);
 
   // "Creados" = lo que yo escribí desde cero. "Comunidad" = esenciales
-  // de Areté o copias que hice de otro entrenador — no nacieron conmigo.
+  // de Aretia o copias que hice de otro entrenador — no nacieron conmigo.
   function matchesOrigin(exercise: ExerciseSummary) {
     if (origin === "all") return true;
     const wasCreatedByMe = exercise.trainer_id === trainerId && !exercise.forked_from;

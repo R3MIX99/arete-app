@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Dumbbell, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -55,15 +55,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Dumbbell className="size-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold">Areté</h1>
-            <p className="text-sm text-muted-foreground">
-              Inicia sesión para continuar
-            </p>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/aretia-logo.png" alt="Aretia" className="h-16 w-auto" />
+          <p className="text-sm text-muted-foreground">Inicia sesión para continuar</p>
         </div>
 
         <Card>

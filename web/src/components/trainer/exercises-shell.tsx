@@ -7,7 +7,7 @@ import { ExerciseCommunityBrowser } from "@/components/trainer/exercise-communit
 
 /**
  * "Mi biblioteca" = lo que este entrenador puede usar directamente al
- * armar una rutina (los esenciales de Areté + lo suyo). Comunidad =
+ * armar una rutina (los esenciales de Aretia + lo suyo). Comunidad =
  * todo lo que cualquier entrenador ha creado, para poder copiarlo a tu
  * biblioteca — mismo patrón que Catálogo/Comunidad en Nutrición.
  */

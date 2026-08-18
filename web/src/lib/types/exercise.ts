@@ -26,7 +26,7 @@ export interface ExerciseSummary {
   equipment: Equipment;
   video_url: string | null;
   image_path: string | null;
-  /** null = esencial de Areté; en mi biblioteca solo puede ser esto o mi
+  /** null = esencial de Aretia; en mi biblioteca solo puede ser esto o mi
    * propio id de entrenador (ver ExercisesPage). */
   trainer_id: string | null;
   forked_from: string | null;
@@ -45,7 +45,7 @@ export interface ExerciseDetail {
 }
 
 /** Ejercicio visto desde la pestaña Comunidad — cualquiera creado por
- * cualquier entrenador, o esencial de Areté (trainer_id null). */
+ * cualquier entrenador, o esencial de Aretia (trainer_id null). */
 export interface CommunityExerciseOption {
   id: string;
   name: string;

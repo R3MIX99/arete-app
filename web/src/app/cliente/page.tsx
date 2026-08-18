@@ -202,7 +202,7 @@ export default async function ClientHomePage() {
 
   const firstName = (profile?.full_name || "").trim().split(" ")[0] || "";
 
-  const businessName = trainerProfile?.business_name || "Areté";
+  const businessName = trainerProfile?.business_name || "Aretia";
   const businessLogoUrl = trainerProfile?.business_logo_path
     ? supabase.storage.from("business-logos").getPublicUrl(trainerProfile.business_logo_path).data
         .publicUrl

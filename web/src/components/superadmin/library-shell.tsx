@@ -8,7 +8,7 @@ import { LibraryFoodsBrowser } from "@/components/superadmin/library-foods-brows
 import { LibraryDishesBrowser } from "@/components/superadmin/library-dishes-browser";
 
 /**
- * Biblioteca de Areté: el catálogo global (trainer_id null) que ve
+ * Biblioteca de Aretia: el catálogo global (trainer_id null) que ve
  * cualquier entrenador en su biblioteca/catálogo. Solo el superadmin
  * puede crear, editar o borrar aquí — un entrenador solo puede
  * copiarlo a lo suyo, nunca tocar el original.
@@ -25,7 +25,7 @@ export function LibraryShell({
   return (
     <div className="flex w-full flex-col gap-4 p-4 pb-24 md:p-8">
       <div>
-        <h1 className="text-xl font-semibold">Biblioteca de Areté</h1>
+        <h1 className="text-xl font-semibold">Biblioteca de Aretia</h1>
         <p className="text-sm text-muted-foreground">
           El catálogo global que ven todos los entrenadores. Súbele imágenes, video y edítalo
           desde aquí.

@@ -63,7 +63,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 /**
- * Todo lo que cualquier entrenador (o Areté, para los esenciales) ha
+ * Todo lo que cualquier entrenador (o Aretia, para los esenciales) ha
  * creado — a diferencia de "Mi biblioteca", que solo muestra lo que
  * este entrenador ya puede usar. Desde aquí se copia un ejercicio a tu
  * propia biblioteca con "Agregar".
@@ -133,7 +133,7 @@ export function ExerciseCommunityBrowser({
     setAddingId(exercise.id);
     const supabase = createClient();
 
-    // Esencial de Areté que antes quitaste de tu biblioteca: solo hay
+    // Esencial de Aretia que antes quitaste de tu biblioteca: solo hay
     // que deshacer el "ocultar", no crear una copia — el ejercicio
     // esencial sigue siendo el mismo para todos.
     if (!exercise.trainer_id) {

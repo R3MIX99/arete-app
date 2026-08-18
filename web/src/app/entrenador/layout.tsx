@@ -33,7 +33,7 @@ export default async function TrainerLayout({
 
   const userName = profile?.full_name || user.email || "Entrenador";
   const userEmail = profile?.email || user.email || "";
-  const brandName = profile?.business_name || "Areté";
+  const brandName = profile?.business_name || "Aretia";
   const brandLogoUrl = profile?.business_logo_path
     ? supabase.storage.from("business-logos").getPublicUrl(profile.business_logo_path).data
         .publicUrl

@@ -45,7 +45,7 @@ export function LibraryFoodsBrowser({ foods }: { foods: FoodOption[] }) {
           <Apple className="size-8" />
           <p className="text-sm">
             {foods.length === 0
-              ? "Todavía no hay alimentos en el catálogo de Areté."
+              ? "Todavía no hay alimentos en el catálogo de Aretia."
               : "Ningún alimento coincide con la búsqueda."}
           </p>
         </div>

@@ -278,7 +278,7 @@ export default async function DietPlanDetailPage({
         image_path: f.image_path,
         is_favorite: false,
         forked_from: f.forked_from,
-        creator_name: f.trainer_id ? (one(f.profiles)?.full_name ?? "Entrenador") : "Areté",
+        creator_name: f.trainer_id ? (one(f.profiles)?.full_name ?? "Entrenador") : "Aretia",
         in_my_catalog: myFoodIds.has(f.id) || forkedFoodIds.has(f.id),
       };
     },
@@ -293,7 +293,7 @@ export default async function DietPlanDetailPage({
       trainer_id: d.trainer_id,
       image_path: d.image_path,
       forked_from: d.forked_from,
-      creator_name: d.trainer_id ? (one(d.profiles)?.full_name ?? "Entrenador") : "Areté",
+      creator_name: d.trainer_id ? (one(d.profiles)?.full_name ?? "Entrenador") : "Aretia",
       in_my_catalog: myDishIds.has(d.id) || forkedDishIds.has(d.id),
     }),
   );

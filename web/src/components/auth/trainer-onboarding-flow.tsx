@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Dumbbell, Loader2, Sparkles, Upload } from "lucide-react";
+import { Building2, Loader2, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -18,7 +18,7 @@ const TOTAL_STEPS = 3;
 /**
  * Onboarding de un entrenador recién registrado: bienvenida, cómo se
  * llama y su género, y los datos de su negocio (nombre + logo, ambos
- * opcionales — si no los pone, sus clientes ven el logo de Areté). Al
+ * opcionales — si no los pone, sus clientes ven el logo de Aretia). Al
  * terminar marca `onboarding_completed_at` y entra al panel.
  */
 export function TrainerOnboardingFlow({
@@ -94,13 +94,11 @@ export function TrainerOnboardingFlow({
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Dumbbell className="size-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold">Areté</h1>
-            <p className="text-sm text-muted-foreground">Paso {step} de {TOTAL_STEPS}</p>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/aretia-logo.png" alt="Aretia" className="h-14 w-auto" />
+          <p className="text-sm text-muted-foreground">
+            Paso {step} de {TOTAL_STEPS}
+          </p>
         </div>
 
         {step === 1 ? (
@@ -110,7 +108,7 @@ export function TrainerOnboardingFlow({
                 <Sparkles className="size-6" />
               </div>
               <div>
-                <p className="text-lg font-semibold">¡Bienvenido a Areté!</p>
+                <p className="text-lg font-semibold">¡Bienvenido a Aretia!</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   En un par de pasos dejamos tu cuenta lista para que empieces a armar rutinas
                   y planes para tus clientes.
@@ -198,7 +196,7 @@ export function TrainerOnboardingFlow({
                   id="business_name"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder="Si lo dejas vacío, tus clientes ven el logo de Areté"
+                  placeholder="Si lo dejas vacío, tus clientes ven el logo de Aretia"
                 />
               </div>
 

@@ -68,8 +68,8 @@ export default async function LibraryDishDetailPage({
       .select(
         "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, image_path, food_categories(name, slug)",
       )
-      // Los ingredientes de un platillo de Areté salen del catálogo
-      // global de Areté, no del catálogo de ningún entrenador.
+      // Los ingredientes de un platillo de Aretia salen del catálogo
+      // global de Aretia, no del catálogo de ningún entrenador.
       .is("trainer_id", null)
       .order("name"),
   ]);

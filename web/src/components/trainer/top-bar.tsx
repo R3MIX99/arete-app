@@ -27,7 +27,7 @@ export function TopBar({
   const title =
     trainerNavItems.find((item) =>
       item.href === "/entrenador" ? pathname === "/entrenador" : pathname.startsWith(item.href),
-    )?.label ?? "Areté";
+    )?.label ?? "Aretia";
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 md:px-6">

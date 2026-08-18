@@ -46,7 +46,7 @@ export function LibraryDishesBrowser({ dishes }: { dishes: DishOption[] }) {
           <Utensils className="size-8" />
           <p className="text-sm">
             {dishes.length === 0
-              ? "Todavía no hay platillos en el catálogo de Areté."
+              ? "Todavía no hay platillos en el catálogo de Aretia."
               : "Ningún platillo coincide con la búsqueda."}
           </p>
         </div>
