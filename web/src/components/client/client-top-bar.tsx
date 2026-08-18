@@ -102,11 +102,11 @@ export function ClientTopBar({
           <img
             src={brandLogoUrl}
             alt={brandName}
-            className="size-7 shrink-0 rounded-lg object-cover"
+            className="size-9 shrink-0 rounded-lg object-cover"
           />
         ) : (
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Dumbbell className="size-4" />
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Dumbbell className="size-5" />
           </div>
         )}
       </div>
