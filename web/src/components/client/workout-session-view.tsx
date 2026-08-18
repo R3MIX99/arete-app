@@ -112,13 +112,15 @@ export function WorkoutSessionView({
   const [ensuring, setEnsuring] = useState(!initialSessionId);
   const [finishing, setFinishing] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set(exercises[0] ? [exercises[0].id] : []));
-  // Independiente de `expanded`: ese controla si se ven las series a
-  // rellenar, este si el cuadro del video está reproduciendo o mostrando
-  // su miniatura — el cliente pidió que fueran dos cosas separadas (uno
-  // abre el video, el otro muestra las repeticiones).
-  const [videoOpen, setVideoOpen] = useState<Set<string>>(new Set());
   const [restSecondsLeft, setRestSecondsLeft] = useState<number | null>(null);
   const [historyExercise, setHistoryExercise] = useState<SessionExerciseInfo | null>(null);
+  // Clic en el cuadro del video: se abre en grande en un popup, ya no se
+  // reproduce ahí mismo en el cuadrito chico (se veía muy pequeño).
+  const [videoModalExercise, setVideoModalExercise] = useState<SessionExerciseInfo | null>(null);
+  // Clic en el nombre del ejercicio: manda a una "página" propia del
+  // ejercicio (en teléfono el Drawer sale de abajo a pantalla completa) —
+  // video grande arriba, nombre, e historial, sin la tabla de series.
+  const [detailExercise, setDetailExercise] = useState<SessionExerciseInfo | null>(null);
   const [startedAt] = useState<number>(() => Date.now());
   const startedAtRef = useRef<number>(startedAt);
 
@@ -522,7 +524,6 @@ export function WorkoutSessionView({
       <div className="flex flex-col divide-y px-4">
         {exercises.map((exercise) => {
           const isOpen = expanded.has(exercise.id);
-          const isVideoOpen = videoOpen.has(exercise.id);
           const cardio = isCardio(exercise.muscle_group);
           const exerciseComplete =
             exercise.sets.length > 0 && exercise.sets.every((s) => logs[s.id]?.is_completed);
@@ -531,84 +532,76 @@ export function WorkoutSessionView({
 
           return (
             <div key={exercise.id} className="py-4">
+              {/* El cuadro del video ocupa casi la mitad de la fila — se
+                  pidió explícitamente que fuera "lo más grande" posible, no
+                  una miniatura chica. Un clic abre el video en grande en un
+                  popup (más abajo); ya no se reproduce dentro del cuadro. */}
               <div className="flex items-start gap-3">
-                {/* El cuadro del video: con la miniatura de YouTube (o la
-                    foto del ejercicio si no tiene video) hasta que se le da
-                    clic — ahí se cambia por el reproductor de verdad, en el
-                    mismo cuadro, ya en tamaño para verse bien. Es un botón
-                    aparte del que abre las series: uno no depende del otro. */}
                 <button
                   type="button"
-                  onClick={() => videoId && toggleSet(setVideoOpen, exercise.id)}
+                  onClick={() => videoId && setVideoModalExercise(exercise)}
                   disabled={!videoId}
-                  className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-lg bg-muted"
+                  className="relative aspect-video w-[46%] shrink-0 overflow-hidden rounded-lg bg-muted"
                   aria-label={videoId ? "Ver video del ejercicio" : undefined}
                 >
-                  {videoId && isVideoOpen ? (
-                    <iframe
-                      className="absolute inset-0 size-full"
-                      src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-                      title={exercise.exercise_name}
-                      allowFullScreen
+                  {thumbs ? (
+                    <ThumbnailImage
+                      src={thumbs.primary}
+                      fallbackSrc={thumbs.fallback}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  ) : exercise.image_url ? (
+                    <ThumbnailImage
+                      src={exercise.image_url}
+                      fallbackSrc={exercise.image_fallback_url}
+                      className="absolute inset-0 h-full w-full object-cover"
                     />
                   ) : (
-                    <>
-                      {thumbs ? (
-                        <ThumbnailImage
-                          src={thumbs.primary}
-                          fallbackSrc={thumbs.fallback}
-                          className="absolute inset-0 h-full w-full object-cover"
-                        />
-                      ) : exercise.image_url ? (
-                        <ThumbnailImage
-                          src={exercise.image_url}
-                          fallbackSrc={exercise.image_fallback_url}
-                          className="absolute inset-0 h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                          <Dumbbell className="size-5" />
-                        </div>
-                      )}
-                      {videoId ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <PlayCircle className="size-7 text-white drop-shadow" />
-                        </div>
-                      ) : null}
-                      {exerciseComplete ? (
-                        <div className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                          <Check className="size-3" />
-                        </div>
-                      ) : null}
-                    </>
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                      <Dumbbell className="size-6" />
+                    </div>
                   )}
+                  {videoId ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <PlayCircle className="size-9 text-white drop-shadow" />
+                    </div>
+                  ) : null}
+                  {exerciseComplete ? (
+                    <div className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <Check className="size-3" />
+                    </div>
+                  ) : null}
                 </button>
 
-                <div className="min-w-0 flex-1 py-0.5">
-                  <p className="truncate text-sm font-medium">{exercise.exercise_name}</p>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{exerciseTargetSummary(exercise)}</p>
-                  {/* Chevron bajo el nombre — al abrirlo solo se ven las
-                      series a rellenar y la nota del entrenador, nada de
-                      video (ese ya tiene su propio cuadro arriba). */}
+                <div className="flex min-w-0 flex-1 flex-col gap-1 py-0.5">
+                  {/* El nombre manda a la "página" del ejercicio (el
+                      Drawer de abajo), separado del check de series. */}
+                  <button type="button" onClick={() => setDetailExercise(exercise)} className="text-left">
+                    <p className="text-sm font-medium">{exercise.exercise_name}</p>
+                  </button>
+                  <p className="text-xs text-muted-foreground">{exerciseTargetSummary(exercise)}</p>
                   <button
                     type="button"
-                    onClick={() => toggleSet(setExpanded, exercise.id)}
-                    className="mt-1.5 flex items-center gap-1 text-xs font-medium text-primary"
+                    onClick={() => setHistoryExercise(exercise)}
+                    className="flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {isOpen ? "Ocultar series" : "Ver series"}
-                    <ChevronDown className={cn("size-3.5 transition-transform", isOpen && "rotate-180")} />
+                    <History className="size-3.5" />
+                    Historial
                   </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setHistoryExercise(exercise)}
-                  className="shrink-0 text-muted-foreground hover:text-foreground"
-                  aria-label="Ver historial del ejercicio"
-                >
-                  <History className="size-4.5" />
-                </button>
               </div>
+
+              {/* Botón de ver/ocultar series: más grande y separado de la
+                  fila de arriba — al abrirlo solo aparecen la nota del
+                  entrenador y la tabla de series, nada de video. */}
+              <button
+                type="button"
+                onClick={() => toggleSet(setExpanded, exercise.id)}
+                className="mt-3 flex items-center gap-1.5 rounded-full bg-muted px-3.5 py-2 text-sm font-medium text-primary"
+              >
+                {isOpen ? "Ocultar series" : "Ver series"}
+                <ChevronDown className={cn("size-4 transition-transform", isOpen && "rotate-180")} />
+              </button>
 
               {isOpen ? (
                 <div className="pt-3">
@@ -738,6 +731,99 @@ export function WorkoutSessionView({
       >
         {historyExercise ? (
           <ExerciseHistoryList exercise={historyExercise} cardio={isCardio(historyExercise.muscle_group)} />
+        ) : null}
+      </ResponsiveDialog>
+
+      {/* Popup del video: se abre al hacer clic en el cuadro de la lista,
+          ya en grande — ahí sí se reproduce. */}
+      <ResponsiveDialog
+        open={videoModalExercise !== null}
+        onOpenChange={(open) => !open && setVideoModalExercise(null)}
+        title={videoModalExercise?.exercise_name ?? ""}
+        contentClassName="sm:max-w-lg"
+      >
+        {videoModalExercise?.video_url && youtubeVideoId(videoModalExercise.video_url) ? (
+          <div className="aspect-video w-full overflow-hidden rounded-lg">
+            <iframe
+              className="size-full"
+              src={`https://www.youtube.com/embed/${youtubeVideoId(videoModalExercise.video_url)}?autoplay=1`}
+              title={videoModalExercise.exercise_name}
+              allowFullScreen
+            />
+          </div>
+        ) : null}
+      </ResponsiveDialog>
+
+      {/* "Página" del ejercicio: al hacer clic en su nombre. En teléfono
+          es el Drawer saliendo a pantalla completa — video grande arriba,
+          nombre, objetivo, nota del entrenador, y el historial — sin la
+          tabla de series, que se queda en la lista. */}
+      <ResponsiveDialog
+        open={detailExercise !== null}
+        onOpenChange={(open) => !open && setDetailExercise(null)}
+        title={detailExercise?.exercise_name ?? ""}
+        contentClassName="sm:max-w-lg"
+      >
+        {detailExercise ? (
+          <div className="flex flex-col gap-4">
+            <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted">
+              {(() => {
+                const videoId = detailExercise.video_url ? youtubeVideoId(detailExercise.video_url) : null;
+                if (videoId) {
+                  return (
+                    <iframe
+                      className="size-full"
+                      src={`https://www.youtube.com/embed/${videoId}`}
+                      title={detailExercise.exercise_name}
+                      allowFullScreen
+                    />
+                  );
+                }
+                const thumbs = youtubeThumbnails(detailExercise.video_url);
+                if (thumbs) {
+                  return (
+                    <ThumbnailImage
+                      src={thumbs.primary}
+                      fallbackSrc={thumbs.fallback}
+                      className="size-full object-cover"
+                    />
+                  );
+                }
+                if (detailExercise.image_url) {
+                  return (
+                    <ThumbnailImage
+                      src={detailExercise.image_url}
+                      fallbackSrc={detailExercise.image_fallback_url}
+                      className="size-full object-cover"
+                    />
+                  );
+                }
+                return (
+                  <div className="flex size-full items-center justify-center text-muted-foreground">
+                    <Dumbbell className="size-8" />
+                  </div>
+                );
+              })()}
+            </div>
+
+            <p className="text-sm font-medium text-primary">{exerciseTargetSummary(detailExercise)}</p>
+
+            {detailExercise.notes ? (
+              <p className="text-sm text-muted-foreground">{detailExercise.notes}</p>
+            ) : null}
+
+            <Button
+              variant="outline"
+              className="w-fit"
+              onClick={() => {
+                setDetailExercise(null);
+                setHistoryExercise(detailExercise);
+              }}
+            >
+              <History className="size-4" />
+              Ver historial
+            </Button>
+          </div>
         ) : null}
       </ResponsiveDialog>
     </div>
