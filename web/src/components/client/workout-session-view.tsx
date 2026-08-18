@@ -593,10 +593,13 @@ export function WorkoutSessionView({
                       <span>{restSeconds}&quot; de descanso</span>
                     </div>
                   ) : null}
+                  {/* Círculo con fondo — igual de "botón" que el pill de
+                      "Ver series", solo que redondo, para que no se pierda
+                      entre el resto de íconos en gris. */}
                   <button
                     type="button"
                     onClick={() => setHistoryExercise(exercise)}
-                    className="mt-0.5 flex w-fit items-center text-muted-foreground hover:text-foreground"
+                    className="mt-1 flex size-9 items-center justify-center rounded-full bg-muted text-primary"
                     aria-label="Ver historial del ejercicio"
                   >
                     <History className="size-4.5" />
@@ -617,7 +620,7 @@ export function WorkoutSessionView({
               </button>
 
               {isOpen ? (
-                <div className="px-2 pt-3">
+                <div className="px-5 pt-3">
                   <div
                     className="grid items-center gap-2 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
                     style={{ gridTemplateColumns: "1.5rem 1fr 1fr 2.25rem" }}
@@ -646,7 +649,7 @@ export function WorkoutSessionView({
                                 onChange={(e) =>
                                   updateField(set.id, "actual_minutes", e.target.value, true, set.rest_seconds)
                                 }
-                                className="w-full border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
+                                className="w-20 border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
                               />
                               <input
                                 inputMode="numeric"
@@ -655,7 +658,7 @@ export function WorkoutSessionView({
                                 onChange={(e) =>
                                   updateField(set.id, "actual_level", e.target.value, true, set.rest_seconds)
                                 }
-                                className="w-full border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
+                                className="w-20 border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
                               />
                             </>
                           ) : (
@@ -667,7 +670,7 @@ export function WorkoutSessionView({
                                 onChange={(e) =>
                                   updateField(set.id, "actual_weight", e.target.value, false, set.rest_seconds)
                                 }
-                                className="w-full border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
+                                className="w-20 border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
                               />
                               <input
                                 inputMode="numeric"
@@ -680,7 +683,7 @@ export function WorkoutSessionView({
                                 onChange={(e) =>
                                   updateField(set.id, "actual_reps", e.target.value, false, set.rest_seconds)
                                 }
-                                className="w-full border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
+                                className="w-20 border-0 border-b border-input bg-transparent px-0 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
                               />
                             </>
                           )}
