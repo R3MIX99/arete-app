@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   Clock,
   Dumbbell,
+  Flag,
   Flame,
   Footprints,
   History,
@@ -529,20 +530,19 @@ export function WorkoutSessionView({
             exercise.sets.length > 0 && exercise.sets.every((s) => logs[s.id]?.is_completed);
           const videoId = exercise.video_url ? youtubeVideoId(exercise.video_url) : null;
           const thumbs = youtubeThumbnails(exercise.video_url);
+          const restSeconds = exercise.sets[0]?.rest_seconds ?? null;
 
           return (
             <div key={exercise.id} className="py-4">
-              {/* El cuadro del video es cuadrado (mismo alto que ancho) y
-                  más chico en ancho que antes, pero más alto — se pidió
-                  explícitamente "cuadrado literal" y con más altura. Un
-                  clic abre el video en grande en un popup (más abajo); ya
-                  no se reproduce dentro del cuadro. */}
+              {/* El cuadro del video: cuadrado y más chico que la iteración
+                  anterior. Un clic abre el video en grande en un popup (más
+                  abajo); ya no se reproduce dentro del cuadro. */}
               <div className="flex items-start gap-3">
                 <button
                   type="button"
                   onClick={() => videoId && setVideoModalExercise(exercise)}
                   disabled={!videoId}
-                  className="relative aspect-square w-36 shrink-0 overflow-hidden rounded-lg bg-muted"
+                  className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-lg bg-muted"
                   aria-label={videoId ? "Ver video del ejercicio" : undefined}
                 >
                   {thumbs ? (
@@ -564,7 +564,7 @@ export function WorkoutSessionView({
                   )}
                   {videoId ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <PlayCircle className="size-10 text-white drop-shadow" />
+                      <PlayCircle className="size-8 text-white drop-shadow" />
                     </div>
                   ) : null}
                   {exerciseComplete ? (
@@ -574,31 +574,39 @@ export function WorkoutSessionView({
                   ) : null}
                 </button>
 
-                {/* Nombre e historial más grandes — el nombre es lo que se
-                    hace clic para entrar al detalle, así que necesita verse
-                    como algo clicable. El objetivo (series x reps) se baja
-                    debajo del video, más grande, antes del botón de ver
-                    series. */}
-                <div className="flex min-w-0 flex-1 flex-col gap-2 py-0.5">
+                {/* Nombre (manda al detalle), objetivo con su banderita —
+                    el ícono va en el color de la app, el texto en el color
+                    normal, no todo en azul — y el descanso debajo, con su
+                    reloj. El historial queda solo como ícono, para poder
+                    ponerle más íconos al lado después. */}
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5 py-0.5">
                   <button type="button" onClick={() => setDetailExercise(exercise)} className="text-left">
                     <p className="text-base leading-snug font-semibold">{exercise.exercise_name}</p>
                   </button>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <Flag className="size-4 shrink-0 text-primary" />
+                    <span>{exerciseTargetSummary(exercise)}</span>
+                  </div>
+                  {restSeconds !== null ? (
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Clock className="size-4 shrink-0" />
+                      <span>{restSeconds}&quot; de descanso</span>
+                    </div>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => setHistoryExercise(exercise)}
-                    className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                    className="mt-0.5 flex w-fit items-center text-muted-foreground hover:text-foreground"
+                    aria-label="Ver historial del ejercicio"
                   >
-                    <History className="size-4" />
-                    Historial
+                    <History className="size-4.5" />
                   </button>
                 </div>
               </div>
 
-              <p className="mt-3 text-base font-medium text-primary">{exerciseTargetSummary(exercise)}</p>
-
-              {/* Botón de ver/ocultar series: más grande y separado de la
-                  fila de arriba — al abrirlo solo aparecen la nota del
-                  entrenador y la tabla de series, nada de video. */}
+              {/* Botón de ver/ocultar series. Al abrirlo solo aparece la
+                  tabla de series — la nota del entrenador vive en el
+                  detalle del ejercicio (clic en el nombre), no aquí. */}
               <button
                 type="button"
                 onClick={() => toggleSet(setExpanded, exercise.id)}
@@ -609,12 +617,9 @@ export function WorkoutSessionView({
               </button>
 
               {isOpen ? (
-                <div className="pt-3">
-                  {exercise.notes ? (
-                    <p className="mb-3 text-xs text-muted-foreground">{exercise.notes}</p>
-                  ) : null}
+                <div className="px-2 pt-3">
                   <div
-                    className="grid items-center gap-3 pb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+                    className="grid items-center gap-2 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
                     style={{ gridTemplateColumns: "1.5rem 1fr 1fr 2.25rem" }}
                   >
                     <span>#</span>
@@ -622,13 +627,13 @@ export function WorkoutSessionView({
                     <span>{cardio ? "Nivel" : "Reps"}</span>
                     <span />
                   </div>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2.5">
                     {exercise.sets.map((set) => {
                       const log = logs[set.id] ?? emptyLog();
                       return (
                         <div
                           key={set.id}
-                          className="grid items-center gap-3"
+                          className="grid items-center gap-2"
                           style={{ gridTemplateColumns: "1.5rem 1fr 1fr 2.25rem" }}
                         >
                           <span className="text-sm text-muted-foreground">{set.set_number}</span>
