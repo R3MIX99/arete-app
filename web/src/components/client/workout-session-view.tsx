@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -13,6 +13,7 @@ import {
   Footprints,
   History,
   Loader2,
+  PlayCircle,
   Route,
   Star,
   Target,
@@ -22,7 +23,7 @@ import {
 
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { youtubeVideoId } from "@/lib/youtube";
+import { youtubeThumbnails, youtubeVideoId } from "@/lib/youtube";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +40,17 @@ type LogState = Record<
 
 function isCardio(muscleGroup: string) {
   return muscleGroup === "cardio";
+}
+
+/** Alterna un id dentro de un Set en state (los `expanded`/`videoOpen`
+ * de abajo) — misma lógica de toggle, reutilizada para los dos. */
+function toggleSet(setter: Dispatch<SetStateAction<Set<string>>>, id: string) {
+  setter((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
 }
 
 function emptyLog(): LogState[string] {
@@ -100,6 +112,11 @@ export function WorkoutSessionView({
   const [ensuring, setEnsuring] = useState(!initialSessionId);
   const [finishing, setFinishing] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set(exercises[0] ? [exercises[0].id] : []));
+  // Independiente de `expanded`: ese controla si se ven las series a
+  // rellenar, este si el cuadro del video está reproduciendo o mostrando
+  // su miniatura — el cliente pidió que fueran dos cosas separadas (uno
+  // abre el video, el otro muestra las repeticiones).
+  const [videoOpen, setVideoOpen] = useState<Set<string>>(new Set());
   const [restSecondsLeft, setRestSecondsLeft] = useState<number | null>(null);
   const [historyExercise, setHistoryExercise] = useState<SessionExerciseInfo | null>(null);
   const [startedAt] = useState<number>(() => Date.now());
@@ -505,83 +522,96 @@ export function WorkoutSessionView({
       <div className="flex flex-col divide-y px-4">
         {exercises.map((exercise) => {
           const isOpen = expanded.has(exercise.id);
+          const isVideoOpen = videoOpen.has(exercise.id);
           const cardio = isCardio(exercise.muscle_group);
           const exerciseComplete =
             exercise.sets.length > 0 && exercise.sets.every((s) => logs[s.id]?.is_completed);
           const videoId = exercise.video_url ? youtubeVideoId(exercise.video_url) : null;
+          const thumbs = youtubeThumbnails(exercise.video_url);
 
           return (
-            <div key={exercise.id}>
-              <button
-                type="button"
-                className="flex w-full items-center gap-3 py-4 text-left"
-                onClick={() =>
-                  setExpanded((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(exercise.id)) next.delete(exercise.id);
-                    else next.add(exercise.id);
-                    return next;
-                  })
-                }
-              >
-                {/* Miniatura grande — se ve de un vistazo qué ejercicio es,
-                    sin tener que abrir la pestaña. El aro verde alrededor
-                    reemplaza al numerito de series como señal de
-                    "completado", así el círculo no compite por espacio con
-                    la foto. */}
-                <div
-                  className={cn(
-                    "relative size-16 shrink-0 overflow-hidden rounded-xl bg-primary/12",
-                    exerciseComplete && "ring-2 ring-primary ring-offset-2 ring-offset-background",
-                  )}
-                >
-                  {exercise.image_url ? (
-                    <ThumbnailImage
-                      src={exercise.image_url}
-                      fallbackSrc={exercise.image_fallback_url}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-primary">
-                      <Dumbbell className="size-6" />
-                    </div>
-                  )}
-                  {exerciseComplete ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-primary/80">
-                      <Check className="size-6 text-primary-foreground" />
-                    </div>
-                  ) : null}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{exercise.exercise_name}</p>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{exerciseTargetSummary(exercise)}</p>
-                </div>
+            <div key={exercise.id} className="py-4">
+              <div className="flex items-start gap-3">
+                {/* El cuadro del video: con la miniatura de YouTube (o la
+                    foto del ejercicio si no tiene video) hasta que se le da
+                    clic — ahí se cambia por el reproductor de verdad, en el
+                    mismo cuadro, ya en tamaño para verse bien. Es un botón
+                    aparte del que abre las series: uno no depende del otro. */}
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setHistoryExercise(exercise);
-                  }}
+                  onClick={() => videoId && toggleSet(setVideoOpen, exercise.id)}
+                  disabled={!videoId}
+                  className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-lg bg-muted"
+                  aria-label={videoId ? "Ver video del ejercicio" : undefined}
+                >
+                  {videoId && isVideoOpen ? (
+                    <iframe
+                      className="absolute inset-0 size-full"
+                      src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+                      title={exercise.exercise_name}
+                      allowFullScreen
+                    />
+                  ) : (
+                    <>
+                      {thumbs ? (
+                        <ThumbnailImage
+                          src={thumbs.primary}
+                          fallbackSrc={thumbs.fallback}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : exercise.image_url ? (
+                        <ThumbnailImage
+                          src={exercise.image_url}
+                          fallbackSrc={exercise.image_fallback_url}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                          <Dumbbell className="size-5" />
+                        </div>
+                      )}
+                      {videoId ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <PlayCircle className="size-7 text-white drop-shadow" />
+                        </div>
+                      ) : null}
+                      {exerciseComplete ? (
+                        <div className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="size-3" />
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+                </button>
+
+                <div className="min-w-0 flex-1 py-0.5">
+                  <p className="truncate text-sm font-medium">{exercise.exercise_name}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{exerciseTargetSummary(exercise)}</p>
+                  {/* Chevron bajo el nombre — al abrirlo solo se ven las
+                      series a rellenar y la nota del entrenador, nada de
+                      video (ese ya tiene su propio cuadro arriba). */}
+                  <button
+                    type="button"
+                    onClick={() => toggleSet(setExpanded, exercise.id)}
+                    className="mt-1.5 flex items-center gap-1 text-xs font-medium text-primary"
+                  >
+                    {isOpen ? "Ocultar series" : "Ver series"}
+                    <ChevronDown className={cn("size-3.5 transition-transform", isOpen && "rotate-180")} />
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setHistoryExercise(exercise)}
                   className="shrink-0 text-muted-foreground hover:text-foreground"
                   aria-label="Ver historial del ejercicio"
                 >
                   <History className="size-4.5" />
                 </button>
-                <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
-              </button>
+              </div>
 
               {isOpen ? (
-                <div className="pb-4">
-                  {videoId ? (
-                    <div className="mb-3 aspect-video w-full overflow-hidden rounded-lg">
-                      <iframe
-                        className="size-full"
-                        src={`https://www.youtube.com/embed/${videoId}`}
-                        title={exercise.exercise_name}
-                        allowFullScreen
-                      />
-                    </div>
-                  ) : null}
+                <div className="pt-3">
                   {exercise.notes ? (
                     <p className="mb-3 text-xs text-muted-foreground">{exercise.notes}</p>
                   ) : null}
