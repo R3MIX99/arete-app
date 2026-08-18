@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown, Dumbbell, LogOut, Settings } from "lucide-react";
+import { ChevronDown, LogOut, Settings } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemePicker } from "@/components/theme-picker";
+import { NotificationBell } from "@/components/client/notification-bell";
 
 /** Iniciales para el círculo del avatar — dos como mucho, que es lo que
  * se alcanza a leer ("Cliente de Prueba" → "CP"). */
@@ -25,15 +26,7 @@ function initials(name: string): string {
     .join("");
 }
 
-export function ClientTopBar({
-  userName,
-  brandName,
-  brandLogoUrl,
-}: {
-  userName: string;
-  brandName: string;
-  brandLogoUrl: string | null;
-}) {
+export function ClientTopBar({ userName }: { userName: string }) {
   const router = useRouter();
 
   async function handleLogout() {
@@ -95,21 +88,10 @@ export function ClientTopBar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="flex min-w-0 shrink-0 items-center gap-2">
-        <span className="hidden truncate text-sm font-semibold sm:inline">{brandName}</span>
-        {brandLogoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={brandLogoUrl}
-            alt={brandName}
-            className="size-9 shrink-0 rounded-lg object-cover"
-          />
-        ) : (
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Dumbbell className="size-5" />
-          </div>
-        )}
-      </div>
+      {/* El logo del negocio ya no vive aquí — ahora sale grande en la
+          pantalla de inicio, junto con el nombre del entrenador. Aquí,
+          donde antes estaba el logo, va la campana de notificaciones. */}
+      <NotificationBell />
     </header>
   );
 }

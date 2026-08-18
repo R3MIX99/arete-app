@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Dumbbell } from "lucide-react";
 
 import {
   addDays,
@@ -57,6 +57,9 @@ interface SessionRef {
  */
 export function ClientHomeToday({
   firstName,
+  businessName,
+  businessLogoUrl,
+  trainerName,
   assignments,
   inProgressSessions,
   recentCompletedSessions,
@@ -70,6 +73,9 @@ export function ClientHomeToday({
   routineMeta,
 }: {
   firstName: string;
+  businessName: string;
+  businessLogoUrl: string | null;
+  trainerName: string | null;
   assignments: CalendarAssignment[];
   routineMeta: Record<string, RoutineCardMeta>;
   inProgressSessions: SessionRef[];
@@ -127,6 +133,29 @@ export function ClientHomeToday({
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-5 p-4">
+      {/* Logo y nombre del negocio del entrenador, grandes — antes vivían
+          chicos en la esquina de la barra superior (ahí ahora va la
+          campana de notificaciones). El nombre del entrenador va debajo
+          del nombre del negocio. */}
+      <div className="flex items-center gap-3">
+        {businessLogoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={businessLogoUrl}
+            alt={businessName}
+            className="size-14 shrink-0 rounded-xl object-cover"
+          />
+        ) : (
+          <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <Dumbbell className="size-7" />
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-lg font-bold">{businessName}</p>
+          {trainerName ? <p className="truncate text-sm text-muted-foreground">{trainerName}</p> : null}
+        </div>
+      </div>
+
       <div>
         <p className="text-sm text-muted-foreground">Hola{firstName ? `, ${firstName}` : ""} 👋</p>
         <h1 className="text-xl font-semibold">Tu entrenamiento de hoy</h1>

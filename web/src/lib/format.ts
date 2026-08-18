@@ -162,3 +162,18 @@ export function formatMonthYear(year: number, month: number): string {
   });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
+
+/** Timestamp ISO → "hace 5 min" / "hace 3 h" / "hace 2 d", o la fecha
+ * corta si ya pasó más de una semana — para listas de notificaciones,
+ * donde lo relativo importa más que la fecha exacta cuando es reciente. */
+export function formatRelativeTime(value: string): string {
+  const diffMs = Date.now() - new Date(value).getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "ahora mismo";
+  if (diffMin < 60) return `hace ${diffMin} min`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `hace ${diffHours} h`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `hace ${diffDays} d`;
+  return formatDate(value.slice(0, 10));
+}

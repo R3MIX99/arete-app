@@ -85,8 +85,18 @@ export default async function ClientHomePage() {
   // paso alcanza para la racha, que puede venir del mes anterior).
   const activityStart = addDays(serverToday, -70);
 
+  // trainer_id se necesita antes del Promise.all de abajo, para poder
+  // pedir en paralelo el nombre/logo del negocio del entrenador (se
+  // muestran grandes arriba de la pantalla de inicio).
+  const { data: ownProfile } = await supabase
+    .from("profiles")
+    .select("full_name, trainer_id")
+    .eq("id", user.id)
+    .single();
+
   const [
     { data: profile },
+    { data: trainerProfile },
     { data: assignmentRows },
     { data: inProgressSessions },
     { data: completedSessions },
@@ -96,7 +106,14 @@ export default async function ClientHomePage() {
     { data: weightRows },
     routineMeta,
   ] = await Promise.all([
-      supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+      Promise.resolve({ data: ownProfile }),
+      ownProfile?.trainer_id
+        ? supabase
+            .from("profiles")
+            .select("full_name, business_name, business_logo_path")
+            .eq("id", ownProfile.trainer_id)
+            .single()
+        : Promise.resolve({ data: null }),
       supabase
         .from("client_assignments")
         .select(
@@ -185,6 +202,13 @@ export default async function ClientHomePage() {
 
   const firstName = (profile?.full_name || "").trim().split(" ")[0] || "";
 
+  const businessName = trainerProfile?.business_name || "Areté";
+  const businessLogoUrl = trainerProfile?.business_logo_path
+    ? supabase.storage.from("business-logos").getPublicUrl(trainerProfile.business_logo_path).data
+        .publicUrl
+    : null;
+  const trainerName = trainerProfile?.full_name || null;
+
   // Récords: recorriendo los registros en orden cronológico, cada vez
   // que un ejercicio supera su propio máximo anterior cuenta como
   // récord. Se exige que hubiera una marca previa — el primer día que
@@ -245,6 +269,9 @@ export default async function ClientHomePage() {
   return (
     <ClientHomeToday
       firstName={firstName}
+      businessName={businessName}
+      businessLogoUrl={businessLogoUrl}
+      trainerName={trainerName}
       assignments={assignments}
       inProgressSessions={inProgressSessions ?? []}
       recentCompletedSessions={completedSessions ?? []}
