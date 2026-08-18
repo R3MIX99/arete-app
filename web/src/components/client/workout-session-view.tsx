@@ -532,16 +532,17 @@ export function WorkoutSessionView({
 
           return (
             <div key={exercise.id} className="py-4">
-              {/* El cuadro del video ocupa casi la mitad de la fila — se
-                  pidió explícitamente que fuera "lo más grande" posible, no
-                  una miniatura chica. Un clic abre el video en grande en un
-                  popup (más abajo); ya no se reproduce dentro del cuadro. */}
+              {/* El cuadro del video es cuadrado (mismo alto que ancho) y
+                  más chico en ancho que antes, pero más alto — se pidió
+                  explícitamente "cuadrado literal" y con más altura. Un
+                  clic abre el video en grande en un popup (más abajo); ya
+                  no se reproduce dentro del cuadro. */}
               <div className="flex items-start gap-3">
                 <button
                   type="button"
                   onClick={() => videoId && setVideoModalExercise(exercise)}
                   disabled={!videoId}
-                  className="relative aspect-video w-[46%] shrink-0 overflow-hidden rounded-lg bg-muted"
+                  className="relative aspect-square w-36 shrink-0 overflow-hidden rounded-lg bg-muted"
                   aria-label={videoId ? "Ver video del ejercicio" : undefined}
                 >
                   {thumbs ? (
@@ -563,7 +564,7 @@ export function WorkoutSessionView({
                   )}
                   {videoId ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <PlayCircle className="size-9 text-white drop-shadow" />
+                      <PlayCircle className="size-10 text-white drop-shadow" />
                     </div>
                   ) : null}
                   {exerciseComplete ? (
@@ -573,23 +574,27 @@ export function WorkoutSessionView({
                   ) : null}
                 </button>
 
-                <div className="flex min-w-0 flex-1 flex-col gap-1 py-0.5">
-                  {/* El nombre manda a la "página" del ejercicio (el
-                      Drawer de abajo), separado del check de series. */}
+                {/* Nombre e historial más grandes — el nombre es lo que se
+                    hace clic para entrar al detalle, así que necesita verse
+                    como algo clicable. El objetivo (series x reps) se baja
+                    debajo del video, más grande, antes del botón de ver
+                    series. */}
+                <div className="flex min-w-0 flex-1 flex-col gap-2 py-0.5">
                   <button type="button" onClick={() => setDetailExercise(exercise)} className="text-left">
-                    <p className="text-sm font-medium">{exercise.exercise_name}</p>
+                    <p className="text-base leading-snug font-semibold">{exercise.exercise_name}</p>
                   </button>
-                  <p className="text-xs text-muted-foreground">{exerciseTargetSummary(exercise)}</p>
                   <button
                     type="button"
                     onClick={() => setHistoryExercise(exercise)}
-                    className="flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                    className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
                   >
-                    <History className="size-3.5" />
+                    <History className="size-4" />
                     Historial
                   </button>
                 </div>
               </div>
+
+              <p className="mt-3 text-base font-medium text-primary">{exerciseTargetSummary(exercise)}</p>
 
               {/* Botón de ver/ocultar series: más grande y separado de la
                   fila de arriba — al abrirlo solo aparecen la nota del
