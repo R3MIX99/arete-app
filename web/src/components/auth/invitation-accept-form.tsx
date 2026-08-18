@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Dumbbell, Loader2 } from "lucide-react";
+import { Dumbbell, Loader2, MailCheck } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { isAlreadyRegisteredSignUp } from "@/lib/auth-errors";
@@ -46,6 +46,7 @@ export function InvitationAcceptForm({
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [needsConfirmation, setNeedsConfirmation] = React.useState(false);
 
   React.useEffect(() => {
     async function load() {
@@ -117,11 +118,10 @@ export function InvitationAcceptForm({
     if (!signUpData.session) {
       // El proyecto pide confirmar el correo antes de dar sesión — no
       // podemos canjear la invitación todavía (redeem_client_invitation
-      // exige auth.uid()). Se le pide confirmar y volver.
+      // exige auth.uid()). Se le pide confirmar y volver — pantalla
+      // aparte, no un error: la cuenta sí se creó bien.
       setLoading(false);
-      setError(
-        "Cuenta creada. Revisa tu correo, confirma tu cuenta y vuelve a abrir este enlace para terminar de unirte.",
-      );
+      setNeedsConfirmation(true);
       return;
     }
 
@@ -143,7 +143,22 @@ export function InvitationAcceptForm({
           </div>
         </div>
 
-        {alreadyUsed ? (
+        {needsConfirmation ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
+              <div className="flex size-12 items-center justify-center rounded-full bg-primary/12 text-primary">
+                <MailCheck className="size-6" />
+              </div>
+              <div>
+                <p className="font-medium">Revisa tu correo</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Te mandamos un enlace de confirmación a {invitation.email}. Ábrelo desde tu correo
+                  y esto se abre solo, ya con tu cuenta lista para terminar de unirte a {brandName}.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : alreadyUsed ? (
           <Card>
             <CardContent className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
               <p className="text-sm">
