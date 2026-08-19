@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# capacitor (android/ios): se commitea el proyecto nativo en sí (build.gradle,
+# Podfile, Info.plist, etc.) pero no lo que cada máquina genera al compilar.
+/android/app/build
+/android/build
+/android/.gradle
+/android/local.properties
+/android/.idea
+/android/captures
+/ios/App/Pods
+/ios/App/build
+/ios/App/DerivedData
+/ios/.xcode.env.local
+*.xcuserstate
+xcuserdata/

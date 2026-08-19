@@ -121,6 +121,18 @@ export default function LoginPage() {
             Regístrate
           </a>
         </p>
+
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          Al continuar aceptas nuestros{" "}
+          <a href="/terminos" className="underline hover:text-foreground">
+            términos de servicio
+          </a>{" "}
+          y{" "}
+          <a href="/privacidad" className="underline hover:text-foreground">
+            política de privacidad
+          </a>
+          .
+        </p>
       </div>
     </div>
   );

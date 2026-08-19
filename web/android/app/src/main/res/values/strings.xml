@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Aretia</string>
+    <string name="title_activity_main">Aretia</string>
+    <string name="package_name">mx.aretia.app</string>
+    <string name="custom_url_scheme">mx.aretia.app</string>
+</resources>
