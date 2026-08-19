@@ -36,12 +36,13 @@ function formatRange(range: SessionDateRange): string {
 // tener que ir agregando meses sobre la marcha.
 const CUSTOM_RANGE_MONTHS_BACK = 24;
 
-/** El mes actual primero, y hacia atrás — el orden en el que se apilan
- * los calendarios del scroll vertical (se pidió que el mes de hoy se
- * vea de entrada, sin tener que buscarlo). */
-function monthsCurrentFirst(count: number): Date[] {
+/** Orden cronológico ascendente (el más viejo arriba, el mes actual
+ * hasta abajo) — como Airbnb: el mes de hoy es lo primero que se ve
+ * porque el scroll arranca pegado abajo, y subir revela los meses
+ * anteriores. Bajar no revela nada más porque no hay meses futuros. */
+function monthsAscending(count: number): Date[] {
   const current = startOfMonth(new Date());
-  return Array.from({ length: count }, (_, i) => subMonths(current, i));
+  return Array.from({ length: count }, (_, i) => subMonths(current, count - 1 - i));
 }
 
 /**
@@ -64,6 +65,17 @@ export function DateRangeFilter({
   const [draftRange, setDraftRange] = React.useState<DateRange | undefined>(
     value ? { from: value.from, to: value.to } : undefined,
   );
+  const monthsScrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Arranca pegado hasta abajo de la lista (el mes actual, que es el
+  // último del arreglo ascendente) — antes de que se pinte, para que no
+  // se alcance a ver un salto desde el mes más viejo. Se repite cada vez
+  // que se abre esta vista porque el scroll se resetea al desmontar.
+  React.useLayoutEffect(() => {
+    if (customOpen && monthsScrollRef.current) {
+      monthsScrollRef.current.scrollTop = monthsScrollRef.current.scrollHeight;
+    }
+  }, [customOpen]);
 
   function applyPreset(range: SessionDateRange) {
     onChange(range);
@@ -141,17 +153,19 @@ export function DateRangeFilter({
           </div>
         ) : (
           <div className="flex flex-col gap-3 pb-2">
-            {/* Scroll vertical en vez de flechitas para cambiar de mes —
-                el mes de hoy siempre queda arriba (nada de qué acordarse
-                dónde se quedó la última vez), y hacia abajo van
-                apareciendo los meses anteriores. data-vaul-no-drag evita
-                que el gesto de arrastrar para cerrar el drawer se coma el
-                scroll de esta lista en el teléfono. */}
+            {/* Scroll vertical en vez de flechitas para cambiar de mes,
+                como en Airbnb: arranca pegado abajo mostrando el mes de
+                hoy, y subir va revelando los meses anteriores. Bajar no
+                hace nada porque no hay meses futuros que mostrar.
+                data-vaul-no-drag evita que el gesto de arrastrar para
+                cerrar el drawer se coma el scroll de esta lista en el
+                teléfono. */}
             <div
+              ref={monthsScrollRef}
               data-vaul-no-drag
-              className="flex max-h-[50vh] flex-col gap-4 overflow-y-auto overscroll-contain px-1"
+              className="flex max-h-[50vh] flex-col items-center gap-4 overflow-y-auto overscroll-contain px-1"
             >
-              {monthsCurrentFirst(CUSTOM_RANGE_MONTHS_BACK).map((month) => (
+              {monthsAscending(CUSTOM_RANGE_MONTHS_BACK).map((month) => (
                 <Calendar
                   key={month.toISOString()}
                   mode="range"
