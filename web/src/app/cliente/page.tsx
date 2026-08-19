@@ -202,6 +202,11 @@ export default async function ClientHomePage() {
 
   const firstName = (profile?.full_name || "").trim().split(" ")[0] || "";
 
+  // Si el entrenador no puso ni nombre ni logo de negocio, no hay nada
+  // propio que mostrar arriba de "Hola, ..." — se oculta ese bloque por
+  // completo en vez de caer a un "Aretia" genérico sin razón de estar
+  // ahí (ver ClientHomeToday).
+  const hasBusinessBranding = Boolean(trainerProfile?.business_name || trainerProfile?.business_logo_path);
   const businessName = trainerProfile?.business_name || "Aretia";
   const businessLogoUrl = trainerProfile?.business_logo_path
     ? supabase.storage.from("business-logos").getPublicUrl(trainerProfile.business_logo_path).data
@@ -269,6 +274,7 @@ export default async function ClientHomePage() {
   return (
     <ClientHomeToday
       firstName={firstName}
+      hasBusinessBranding={hasBusinessBranding}
       businessName={businessName}
       businessLogoUrl={businessLogoUrl}
       trainerName={trainerName}

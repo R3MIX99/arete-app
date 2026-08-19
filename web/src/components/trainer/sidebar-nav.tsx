@@ -3,12 +3,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsLeft, ChevronsRight, Dumbbell } from "lucide-react";
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { trainerNavItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SidebarProfileFooter } from "@/components/trainer/sidebar-profile-footer";
+import { BrandLockup } from "@/components/trainer/brand-lockup";
 
 /**
  * Barra lateral de escritorio: sigue el tema claro/oscuro (ver
@@ -48,29 +49,7 @@ export function SidebarNav({
         style={{ borderColor: "var(--sb-border-dim)" }}
       >
         {!collapsed && (
-          <div className="flex min-w-0 flex-1 items-center gap-2.5 px-1">
-            {brandLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={brandLogoUrl}
-                alt=""
-                className="size-8 shrink-0 rounded-lg object-cover"
-              />
-            ) : (
-              <div
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--sb-accent-start), var(--sb-accent-end))",
-                }}
-              >
-                <Dumbbell className="size-4 text-white" />
-              </div>
-            )}
-            <span className="truncate text-sm font-semibold tracking-tight">
-              {brandName}
-            </span>
-          </div>
+          <BrandLockup brandName={brandName} brandLogoUrl={brandLogoUrl} className="flex-1 px-1" />
         )}
         <Tooltip>
           <TooltipTrigger asChild>

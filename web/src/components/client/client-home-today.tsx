@@ -57,6 +57,7 @@ interface SessionRef {
  */
 export function ClientHomeToday({
   firstName,
+  hasBusinessBranding,
   businessName,
   businessLogoUrl,
   trainerName,
@@ -73,6 +74,10 @@ export function ClientHomeToday({
   routineMeta,
 }: {
   firstName: string;
+  /** false si el entrenador no puso nombre ni logo de negocio — en ese
+   * caso no hay nada propio que mostrar, así que todo el bloque de
+   * abajo (logo + nombre + entrenador) no se renderiza. */
+  hasBusinessBranding: boolean;
   businessName: string;
   businessLogoUrl: string | null;
   trainerName: string | null;
@@ -136,25 +141,30 @@ export function ClientHomeToday({
       {/* Logo y nombre del negocio del entrenador, grandes — antes vivían
           chicos en la esquina de la barra superior (ahí ahora va la
           campana de notificaciones). El nombre del entrenador va debajo
-          del nombre del negocio. */}
-      <div className="flex items-center gap-3">
-        {businessLogoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={businessLogoUrl}
-            alt={businessName}
-            className="size-14 shrink-0 rounded-xl object-cover"
-          />
-        ) : (
-          <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Dumbbell className="size-7" />
+          del nombre del negocio. Si el entrenador no puso ni nombre ni
+          logo propio, no hay nada que mostrar aquí — se oculta todo el
+          bloque en vez de caer a un "Aretia" genérico sin razón de
+          estar. */}
+      {hasBusinessBranding ? (
+        <div className="flex items-center gap-3">
+          {businessLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={businessLogoUrl}
+              alt={businessName}
+              className="size-14 shrink-0 rounded-xl object-cover"
+            />
+          ) : (
+            <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <Dumbbell className="size-7" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-lg font-bold">{businessName}</p>
+            {trainerName ? <p className="truncate text-sm text-muted-foreground">{trainerName}</p> : null}
           </div>
-        )}
-        <div className="min-w-0">
-          <p className="truncate text-lg font-bold">{businessName}</p>
-          {trainerName ? <p className="truncate text-sm text-muted-foreground">{trainerName}</p> : null}
         </div>
-      </div>
+      ) : null}
 
       <div>
         <p className="text-sm text-muted-foreground">Hola{firstName ? `, ${firstName}` : ""} 👋</p>

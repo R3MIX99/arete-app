@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Dumbbell } from "lucide-react";
+import { Menu } from "lucide-react";
 
 import { trainerNavItems } from "@/lib/nav-items";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { SidebarProfileFooter } from "@/components/trainer/sidebar-profile-footer";
+import { BrandLockup } from "@/components/trainer/brand-lockup";
 
 export function MobileNav({
   userName,
@@ -41,22 +42,8 @@ export function MobileNav({
       <SheetContent side="left" className="sidebar-panel w-72 p-0 border-r-0 flex flex-col">
         <SheetHeader className="border-b" style={{ borderColor: "var(--sb-border-dim)" }}>
           <SheetTitle asChild>
-            <div className="flex items-center gap-2.5" style={{ color: "var(--sb-text)" }}>
-              {brandLogoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={brandLogoUrl} alt="" className="size-8 rounded-lg object-cover" />
-              ) : (
-                <div
-                  className="flex size-8 items-center justify-center rounded-lg"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, var(--sb-accent-start), var(--sb-accent-end))",
-                  }}
-                >
-                  <Dumbbell className="size-4 text-white" />
-                </div>
-              )}
-              <span className="text-sm font-semibold">{brandName}</span>
+            <div style={{ color: "var(--sb-text)" }}>
+              <BrandLockup brandName={brandName} brandLogoUrl={brandLogoUrl} />
             </div>
           </SheetTitle>
         </SheetHeader>

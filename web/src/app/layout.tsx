@@ -24,9 +24,12 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Aretia",
   },
-  // El ícono "any" (favicon + PWA) sale solo de src/app/icon.png, por la
-  // convención de archivos de Next.js — no hace falta declararlo aquí.
+  // Favicon declarado a mano (no con la convención de archivo
+  // src/app/icon.png) — esa convención no estaba resolviendo bien:
+  // Chrome mostraba el globo gris de "sin favicon" en vez del ícono.
+  // Con una ruta fija en public/ el navegador la encuentra siempre.
   icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
