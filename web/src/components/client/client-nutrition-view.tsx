@@ -342,12 +342,13 @@ export function ClientNutritionView({
               const totals = roundTotals(blockTotals(block));
               return (
                 <div key={block.id} className="flex flex-col gap-3 py-5">
-                  <div className="flex items-baseline justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2">
                     <h2 className="text-xl font-bold">{block.name}</h2>
-                    {/* El objetivo de la comida (lo que hay que comer) se
-                        resalta en índigo, el mismo color de marca — así se
-                        distingue de un dato secundario cualquiera. */}
-                    <p className="shrink-0 text-sm font-semibold tabular-nums text-primary">
+                    {/* El objetivo de la comida como chip — mismo
+                        tratamiento que los íconos de los alimentos
+                        (fondo índigo clarito, letra/ícono índigo), no
+                        negrita ni un tamaño que compita con el título. */}
+                    <p className="shrink-0 rounded-full bg-primary/12 px-2.5 py-1 text-xs tabular-nums text-primary">
                       {totals.calories} kcal · {totals.protein}g prot
                     </p>
                   </div>
