@@ -7,7 +7,6 @@ import { ChevronRight, Search, SlidersHorizontal, TrendingUp } from "lucide-reac
 import { muscleGroupLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ClientExerciseProgress } from "@/lib/types/client-panel";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
@@ -38,15 +37,13 @@ export function ClientExerciseEvolution({
 
   if (exerciseProgress.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
-          <TrendingUp className="size-8 text-muted-foreground" />
-          <p className="font-medium">Todavía no hay ejercicios registrados</p>
-          <p className="text-sm text-muted-foreground">
-            Cuando completes series con peso en una sesión, aparecerán aquí.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center gap-2 py-10 text-center">
+        <TrendingUp className="size-8 text-muted-foreground" />
+        <p className="font-medium">Todavía no hay ejercicios registrados</p>
+        <p className="text-sm text-muted-foreground">
+          Cuando completes series con peso en una sesión, aparecerán aquí.
+        </p>
+      </div>
     );
   }
 
@@ -114,24 +111,29 @@ export function ClientExerciseEvolution({
       {filtered.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">Sin resultados.</p>
       ) : (
-        <div className="flex flex-col gap-2">
+        // Sin tarjetas: lista plana, una fila compacta por ejercicio — el
+        // chip muestra el peso y las reps de la serie más reciente, así
+        // se ve "en qué vas" sin entrar al detalle de cada uno.
+        <div className="flex flex-col">
           {filtered.map((exercise) => (
             <Link
               key={exercise.exerciseId}
               href={`/cliente/entrenamiento/evolucion/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&muscle=${encodeURIComponent(exercise.muscleGroup)}`}
+              className="flex items-center gap-3 py-2.5 transition-colors hover:bg-accent/40"
             >
-              <Card className="transition-colors hover:bg-accent/40">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <TrendingUp className="size-4.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{exercise.exerciseName}</p>
-                    <p className="text-xs text-muted-foreground">{muscleGroupLabel(exercise.muscleGroup)}</p>
-                  </div>
-                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                </CardContent>
-              </Card>
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <TrendingUp className="size-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{exercise.exerciseName}</p>
+                <p className="text-xs text-muted-foreground">{muscleGroupLabel(exercise.muscleGroup)}</p>
+              </div>
+              {exercise.currentWeight !== null && (
+                <span className="shrink-0 rounded-full bg-primary/12 px-2.5 py-1 text-xs tabular-nums text-primary">
+                  {exercise.currentWeight} kg{exercise.currentReps !== null ? ` × ${exercise.currentReps}` : ""}
+                </span>
+              )}
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
             </Link>
           ))}
         </div>

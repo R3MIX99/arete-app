@@ -142,11 +142,11 @@ export function ExerciseHistoryPageView({
             })}
           </div>
 
-          <Card>
-            <CardContent>
-              <SwipeableChartPair pages={chartPages} />
-            </CardContent>
-          </Card>
+          {/* Sin tarjeta: el tooltip de la gráfica se salía de la caja en
+              los puntos de las orillas y quedaba cortado por el borde
+              del contenedor/la pantalla — sin envoltorio no hay contra
+              qué recortarse. */}
+          <SwipeableChartPair pages={chartPages} />
 
           <div className="flex flex-col gap-2">
             {monthSessions.map((session) => {

@@ -43,13 +43,22 @@ export interface CompletedSessionRow {
   sessionDate: string;
   routineName: string;
   durationSeconds: number | null;
+  /** Series marcadas como completadas en esta sesión — insight rápido
+   * en la lista de Historial, sin tener que abrir el detalle. */
+  completedSets: number;
 }
 
 export interface ClientExerciseProgress {
   exerciseId: string;
   exerciseName: string;
   muscleGroup: string;
-  logs: { date: string; weight: number }[];
+  logs: { date: string; weight: number; reps: number | null }[];
+  /** Peso y reps de la serie más reciente — para el chip de "ahora
+   * mismo estás en" en la lista de Evolución, sin tener que entrar al
+   * detalle. null si el ejercicio no tiene ninguna serie con peso
+   * registrada (p. ej. si solo se hizo con series de cardio). */
+  currentWeight: number | null;
+  currentReps: number | null;
 }
 
 /** Reseña que el cliente deja al terminar una sesión — campos de cardio

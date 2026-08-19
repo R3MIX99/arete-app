@@ -2,6 +2,8 @@
 
 import * as React from "react";
 
+import { cn } from "@/lib/utils";
+
 interface Point {
   label: string;
   value: number;
@@ -162,8 +164,20 @@ export function ProgressLineChart({
         </svg>
 
         {active && (
+          // El punto más a la izquierda o más a la derecha no puede
+          // centrar su tooltip sobre sí mismo — la mitad quedaría fuera
+          // de la pantalla (no es un recorte del contenedor: es que ya
+          // no hay nada de la ventana ahí). Se ancla a un lado en vez de
+          // centrarlo cuando es el primer o el último punto.
           <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-md border bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground shadow-md"
+            className={cn(
+              "pointer-events-none absolute z-10 -translate-y-full rounded-md border bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground shadow-md",
+              hoverIndex === 0
+                ? "translate-x-0"
+                : hoverIndex === coords.length - 1
+                  ? "-translate-x-full"
+                  : "-translate-x-1/2",
+            )}
             style={{
               left: `${(active.x / width) * 100}%`,
               top: `${Math.max((active.y / height) * 100 - 6, 0)}%`,

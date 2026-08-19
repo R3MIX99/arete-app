@@ -81,34 +81,40 @@ export function ClientTrainingTabs({
 
         <TabsContent value="historial" className="mt-4">
           {completedSessions.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
-                <CalendarClock className="size-8 text-muted-foreground" />
-                <p className="font-medium">Todavía no tienes sesiones completadas</p>
-                <p className="text-sm text-muted-foreground">
-                  Cuando termines un entrenamiento, aparecerá aquí.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="flex flex-col items-center gap-2 py-10 text-center">
+              <CalendarClock className="size-8 text-muted-foreground" />
+              <p className="font-medium">Todavía no tienes sesiones completadas</p>
+              <p className="text-sm text-muted-foreground">
+                Cuando termines un entrenamiento, aparecerá aquí.
+              </p>
+            </div>
           ) : (
-            <div className="flex flex-col gap-2.5">
+            // Sin tarjetas: lista plana, una fila compacta por sesión —
+            // el chip de series completadas es el insight rápido, sin
+            // tener que abrir el detalle.
+            <div className="flex flex-col">
               {completedSessions.map((session) => (
-                <Link key={session.id} href={`/cliente/entrenamiento/sesion/${session.id}`}>
-                  <Card className="transition-colors hover:bg-accent/40">
-                    <CardContent className="flex items-center gap-3 p-4">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <Dumbbell className="size-4.5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{session.routineName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(session.sessionDate)}
-                          {session.durationSeconds ? ` · ${formatDuration(session.durationSeconds)}` : ""}
-                        </p>
-                      </div>
-                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                    </CardContent>
-                  </Card>
+                <Link
+                  key={session.id}
+                  href={`/cliente/entrenamiento/sesion/${session.id}`}
+                  className="flex items-center gap-3 py-2.5 transition-colors hover:bg-accent/40"
+                >
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Dumbbell className="size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{session.routineName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(session.sessionDate)}
+                      {session.durationSeconds ? ` · ${formatDuration(session.durationSeconds)}` : ""}
+                    </p>
+                  </div>
+                  {session.completedSets > 0 && (
+                    <span className="shrink-0 rounded-full bg-primary/12 px-2.5 py-1 text-xs tabular-nums text-primary">
+                      {session.completedSets} series
+                    </span>
+                  )}
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                 </Link>
               ))}
             </div>

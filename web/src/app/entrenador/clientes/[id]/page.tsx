@@ -23,6 +23,10 @@ interface SetLogRow {
   exercises: ExerciseRef | ExerciseRef[] | null;
 }
 
+interface CompletedSetSessionRow {
+  session_id: string;
+}
+
 function one<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
@@ -46,6 +50,7 @@ export default async function ClientDetailPage({
     { data: sessionRows },
     { data: trainingAssignmentRows },
     { data: dietPlanAssignmentRows },
+    { data: completedSetSessionRows },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -89,7 +94,13 @@ export default async function ClientDetailPage({
       .select("id, start_date, diet_plan_id, diet_plans(id, name)")
       .eq("client_id", id)
       .order("start_date", { ascending: false }),
+    supabase.from("client_set_logs").select("session_id").eq("client_id", id).eq("is_completed", true),
   ]);
+
+  const completedSetsBySession = new Map<string, number>();
+  for (const row of (completedSetSessionRows ?? []) as CompletedSetSessionRow[]) {
+    completedSetsBySession.set(row.session_id, (completedSetsBySession.get(row.session_id) ?? 0) + 1);
+  }
 
   if (!client) notFound();
 
@@ -149,6 +160,7 @@ export default async function ClientDetailPage({
     sessionDate: row.session_date,
     routineName: one(row.routines)?.name ?? "Rutina",
     durationSeconds: row.duration_seconds,
+    completedSets: completedSetsBySession.get(row.id) ?? 0,
   }));
 
   interface TrainingAssignmentRow {

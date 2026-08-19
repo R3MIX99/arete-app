@@ -21,8 +21,13 @@ interface ExerciseRef {
 interface SetLogRow {
   session_date: string;
   actual_weight: number | null;
+  actual_reps: number | null;
   exercise_id: string;
   exercises: ExerciseRef | ExerciseRef[] | null;
+}
+
+interface CompletedSetSessionRow {
+  session_id: string;
 }
 
 function one<T>(value: T | T[] | null): T | null {
@@ -36,8 +41,13 @@ export default async function ClientTrainingPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: sessionRows }, { data: measurements }, { data: photoEntries }, { data: setLogRows }] =
-    await Promise.all([
+  const [
+    { data: sessionRows },
+    { data: measurements },
+    { data: photoEntries },
+    { data: setLogRows },
+    { data: completedSetSessionRows },
+  ] = await Promise.all([
       supabase
         .from("client_sessions")
         .select("id, session_date, finished_at, duration_seconds, routines(name)")
@@ -59,17 +69,30 @@ export default async function ClientTrainingPage() {
         .order("entry_date"),
       supabase
         .from("client_set_logs")
-        .select("session_date, actual_weight, exercise_id, exercises(name, muscle_group)")
+        .select("session_date, actual_weight, actual_reps, exercise_id, exercises(name, muscle_group)")
         .eq("client_id", user.id)
         .eq("is_completed", true)
         .order("session_date"),
+      // Solo el session_id: para contar cuántas series completadas tuvo
+      // cada sesión — el insight que se muestra en la lista de Historial.
+      supabase
+        .from("client_set_logs")
+        .select("session_id")
+        .eq("client_id", user.id)
+        .eq("is_completed", true),
     ]);
+
+  const completedSetsBySession = new Map<string, number>();
+  for (const row of (completedSetSessionRows ?? []) as CompletedSetSessionRow[]) {
+    completedSetsBySession.set(row.session_id, (completedSetsBySession.get(row.session_id) ?? 0) + 1);
+  }
 
   const completedSessions: CompletedSessionRow[] = ((sessionRows ?? []) as SessionRow[]).map((row) => ({
     id: row.id,
     sessionDate: row.session_date,
     routineName: one(row.routines)?.name ?? "Rutina",
     durationSeconds: row.duration_seconds,
+    completedSets: completedSetsBySession.get(row.id) ?? 0,
   }));
 
   // La lista de "Evolución" solo necesita el nombre y el grupo muscular
@@ -86,19 +109,35 @@ export default async function ClientTrainingPage() {
       exerciseName: exercise.name,
       muscleGroup: exercise.muscle_group,
       logs: [],
+      currentWeight: null,
+      currentReps: null,
     };
     if (row.actual_weight !== null) {
       const existingForDate = existing.logs.find((l) => l.date === row.session_date);
+      // Se guardan las reps de la serie con más peso de ese día — son
+      // las que van junto al peso máximo en el chip de "ahora mismo".
       if (existingForDate) {
-        existingForDate.weight = Math.max(existingForDate.weight, row.actual_weight);
+        if (row.actual_weight >= existingForDate.weight) {
+          existingForDate.weight = row.actual_weight;
+          existingForDate.reps = row.actual_reps;
+        }
       } else {
-        existing.logs.push({ date: row.session_date, weight: row.actual_weight });
+        existing.logs.push({ date: row.session_date, weight: row.actual_weight, reps: row.actual_reps });
       }
     }
     byExercise.set(row.exercise_id, existing);
   }
   const exerciseProgress = Array.from(byExercise.values())
-    .map((e) => ({ ...e, logs: e.logs.sort((a, b) => a.date.localeCompare(b.date)) }))
+    .map((e) => {
+      const sortedLogs = e.logs.sort((a, b) => a.date.localeCompare(b.date));
+      const latest = sortedLogs.at(-1) ?? null;
+      return {
+        ...e,
+        logs: sortedLogs,
+        currentWeight: latest?.weight ?? null,
+        currentReps: latest?.reps ?? null,
+      };
+    })
     .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));
 
   return (
