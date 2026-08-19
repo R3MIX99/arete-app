@@ -33,18 +33,51 @@ export function FoodPickerDialog({
   trainerId?: string;
   onPick: (food: FoodOption) => void;
 }) {
+  const showCommunityTab = Boolean(communityFoods && trainerId);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Elegir alimento</DialogTitle>
+        </DialogHeader>
+        {/* Se monta sólo mientras el diálogo está abierto: así la búsqueda
+         * y la pestaña seleccionada siempre arrancan limpias, sin
+         * necesitar un efecto que sincronice el estado al abrir. */}
+        {open && (
+          <FoodPickerDialogBody
+            foods={foods}
+            communityFoods={communityFoods}
+            trainerId={trainerId}
+            showCommunityTab={showCommunityTab}
+            onPick={onPick}
+            onOpenChange={onOpenChange}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FoodPickerDialogBody({
+  foods,
+  communityFoods,
+  trainerId,
+  showCommunityTab,
+  onPick,
+  onOpenChange,
+}: {
+  foods: FoodOption[];
+  communityFoods?: CommunityFoodOption[];
+  trainerId?: string;
+  showCommunityTab: boolean;
+  onPick: (food: FoodOption) => void;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [query, setQuery] = React.useState("");
   const [source, setSource] = React.useState<"mine" | "community">("mine");
   const [addingId, setAddingId] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (open) {
-      setQuery("");
-      setSource("mine");
-    }
-  }, [open]);
-
-  const showCommunityTab = Boolean(communityFoods && trainerId);
   const communityOnly = (communityFoods ?? []).filter((f) => !f.in_my_catalog);
 
   const filtered = (source === "mine" ? foods : communityOnly).filter((f) =>
@@ -80,108 +113,125 @@ export function FoodPickerDialog({
     toast.success(`"${food.name}" agregado a tu catálogo`);
     onPick({ ...food, id: data.id, trainer_id: trainerId, forked_from: food.id });
     onOpenChange(false);
-    setQuery("");
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Elegir alimento</DialogTitle>
-        </DialogHeader>
-
-        {showCommunityTab && (
-          <div className="inline-flex w-fit rounded-lg bg-foreground/[0.04] p-1">
-            <button
-              type="button"
-              onClick={() => setSource("mine")}
-              className={
-                source === "mine"
-                  ? "rounded-md bg-card px-3 py-1.5 text-sm font-medium shadow-sm"
-                  : "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-              }
-            >
-              Mi catálogo
-            </button>
-            <button
-              type="button"
-              onClick={() => setSource("community")}
-              className={
-                source === "community"
-                  ? "rounded-md bg-card px-3 py-1.5 text-sm font-medium shadow-sm"
-                  : "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-              }
-            >
-              Comunidad
-            </button>
-          </div>
-        )}
-
-        <div className="relative">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar alimento por nombre"
-            className="pl-9"
-          />
+    <>
+      {showCommunityTab && (
+        <div className="inline-flex w-fit rounded-lg bg-foreground/[0.04] p-1">
+          <button
+            type="button"
+            onClick={() => setSource("mine")}
+            className={
+              source === "mine"
+                ? "rounded-md bg-card px-3 py-1.5 text-sm font-medium shadow-sm"
+                : "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+            }
+          >
+            Mi catálogo
+          </button>
+          <button
+            type="button"
+            onClick={() => setSource("community")}
+            className={
+              source === "community"
+                ? "rounded-md bg-card px-3 py-1.5 text-sm font-medium shadow-sm"
+                : "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+            }
+          >
+            Comunidad
+          </button>
         </div>
-        <div className="flex max-h-80 flex-col gap-1.5 overflow-y-auto">
-          {filtered.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Ningún alimento coincide con la búsqueda.
-            </p>
-          ) : (
-            filtered.map((food) => {
-              const Icon = foodCategoryIcon(food.category_slug);
-              const isCommunity = source === "community";
-              const communityFood = food as CommunityFoodOption;
-              return (
-                <button
-                  key={food.id}
-                  type="button"
-                  disabled={addingId === food.id}
-                  onClick={() => {
-                    if (isCommunity) {
-                      void pickCommunityFood(communityFood);
-                      return;
-                    }
-                    onPick(food);
-                    onOpenChange(false);
-                    setQuery("");
-                  }}
-                  className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors hover:border-border hover:bg-accent disabled:opacity-60"
-                >
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-                    {addingId === food.id ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Icon className="size-4" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{food.name}</p>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                      <Badge variant="secondary" className="text-[10px]">
-                        {food.category_name}
-                      </Badge>
-                      <span className="text-[11px] text-muted-foreground">
-                        {Math.round(food.calories_per_100g)} kcal/100g
-                      </span>
-                      {isCommunity && (
-                        <span className="text-[11px] text-muted-foreground">
-                          · Por {communityFood.creator_name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              );
-            })
+      )}
+
+      <div className="relative">
+        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar alimento por nombre"
+          className="pl-9"
+        />
+      </div>
+      <div className="flex max-h-80 flex-col gap-1.5 overflow-y-auto">
+        {filtered.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Ningún alimento coincide con la búsqueda.
+          </p>
+        ) : (
+          filtered.map((food) => {
+            const isCommunity = source === "community";
+            const communityFood = food as CommunityFoodOption;
+            return (
+              <FoodPickerRow
+                key={food.id}
+                food={food}
+                isCommunity={isCommunity}
+                communityFood={isCommunity ? communityFood : undefined}
+                adding={addingId === food.id}
+                onSelect={() => {
+                  if (isCommunity) {
+                    void pickCommunityFood(communityFood);
+                    return;
+                  }
+                  onPick(food);
+                  onOpenChange(false);
+                }}
+              />
+            );
+          })
+        )}
+      </div>
+    </>
+  );
+}
+
+function FoodPickerRow({
+  food,
+  isCommunity,
+  communityFood,
+  adding,
+  onSelect,
+}: {
+  food: FoodOption;
+  isCommunity: boolean;
+  communityFood?: CommunityFoodOption;
+  adding: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={adding}
+      onClick={onSelect}
+      className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors hover:border-border hover:bg-accent disabled:opacity-60"
+    >
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+        {adding
+          ? // `foodCategoryIcon` elige el ícono dinámicamente; se invoca con
+            // React.createElement (no como tag JSX <Icon/>) porque el ícono
+            // no es una referencia estable entre renders y usarlo como tag
+            // dispara "Cannot create components during render".
+            <Loader2 className="size-4 animate-spin" />
+          : React.createElement(foodCategoryIcon(food.category_slug), { className: "size-4" })}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{food.name}</p>
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+          <Badge variant="secondary" className="text-[10px]">
+            {food.category_name}
+          </Badge>
+          <span className="text-[11px] text-muted-foreground">
+            {Math.round(food.calories_per_100g)} kcal/100g
+          </span>
+          {isCommunity && communityFood && (
+            <span className="text-[11px] text-muted-foreground">
+              · Por {communityFood.creator_name}
+            </span>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </button>
   );
 }

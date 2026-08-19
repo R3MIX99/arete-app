@@ -12,7 +12,6 @@ import {
   Loader2,
   Pencil,
   Plus,
-  Trash,
   Trash2,
   UserMinus,
   UserPlus,
@@ -354,15 +353,13 @@ export function ProgramBuilder({
     router.refresh();
   }
 
-  const slotsByWeek = React.useMemo(() => {
-    const map = new Map<number, ProgramSlot[]>();
-    for (const slot of slots) {
-      const list = map.get(slot.week_number) ?? [];
-      list.push(slot);
-      map.set(slot.week_number, list);
-    }
-    return map;
-  }, [slots]);
+  // Nota: sin React.useMemo — el React Compiler no lograba preservar la
+  // memoización manual aquí (bailout en otra parte del componente) y
+  // marcaba error; el cálculo es barato y el compilador igual lo optimiza.
+  const slotsByWeek = new Map<number, ProgramSlot[]>();
+  for (const slot of slots) {
+    slotsByWeek.set(slot.week_number, [...(slotsByWeek.get(slot.week_number) ?? []), slot]);
+  }
 
   const assignedClientIds = assignments.map((a) => a.client_id);
 
@@ -771,19 +768,35 @@ function EditProgramInfoDialog({
   onOpenChange: (open: boolean) => void;
   program: ProgramDetail;
 }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar información</DialogTitle>
+        </DialogHeader>
+        {/* Se monta sólo mientras el diálogo está abierto: así el formulario
+         * siempre arranca con los valores actuales del programa, sin
+         * necesitar un efecto que sincronice el estado al abrir. */}
+        {open && (
+          <EditProgramInfoForm program={program} onOpenChange={onOpenChange} />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditProgramInfoForm({
+  program,
+  onOpenChange,
+}: {
+  program: ProgramDetail;
+  onOpenChange: (open: boolean) => void;
+}) {
   const router = useRouter();
   const [name, setName] = React.useState(program.name);
   const [description, setDescription] = React.useState(program.description ?? "");
   const [goal, setGoal] = React.useState(program.goal ?? "");
   const [saving, setSaving] = React.useState(false);
-
-  React.useEffect(() => {
-    if (open) {
-      setName(program.name);
-      setDescription(program.description ?? "");
-      setGoal(program.goal ?? "");
-    }
-  }, [open, program]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -808,46 +821,39 @@ function EditProgramInfoDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar información</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_name">Nombre</Label>
-            <Input id="edit_name" required value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_goal">Objetivo (opcional)</Label>
-            <Select value={goal} onValueChange={setGoal}>
-              <SelectTrigger id="edit_goal">
-                <SelectValue placeholder="Sin definir" />
-              </SelectTrigger>
-              <SelectContent>
-                {GOAL_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_description">Descripción (opcional)</Label>
-            <Textarea
-              id="edit_description"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          <Button type="submit" disabled={saving} className="w-fit">
-            {saving ? <Loader2 className="animate-spin" /> : null}
-            Guardar cambios
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_name">Nombre</Label>
+        <Input id="edit_name" required value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_goal">Objetivo (opcional)</Label>
+        <Select value={goal} onValueChange={setGoal}>
+          <SelectTrigger id="edit_goal">
+            <SelectValue placeholder="Sin definir" />
+          </SelectTrigger>
+          <SelectContent>
+            {GOAL_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_description">Descripción (opcional)</Label>
+        <Textarea
+          id="edit_description"
+          rows={3}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+      <Button type="submit" disabled={saving} className="w-fit">
+        {saving ? <Loader2 className="animate-spin" /> : null}
+        Guardar cambios
+      </Button>
+    </form>
   );
 }
