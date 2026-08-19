@@ -40,10 +40,16 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: D
           "size-9 flex items-center justify-center rounded-full font-normal transition-colors",
           "hover:bg-accent",
         ),
-        range_start: "day-range-start rounded-l-full bg-primary/10",
-        range_end: "day-range-end rounded-r-full bg-primary/10",
+        // Solo el día de inicio y el de fin del rango llevan el círculo
+        // sólido (son los que se pueden tocar para moverlos) — los días
+        // de en medio son nada más la barra sombreada, sin círculo, para
+        // no llenar el rango de puntos.
+        range_start:
+          "day-range-start rounded-l-full bg-primary/10 [&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary",
+        range_end:
+          "day-range-end rounded-r-full bg-primary/10 [&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary",
         range_middle: "bg-primary/10 rounded-none",
-        selected: "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary",
+        selected: "",
         today: "[&>button]:font-semibold [&>button]:text-primary",
         outside: "text-muted-foreground/40",
         disabled: "text-muted-foreground/30 pointer-events-none",

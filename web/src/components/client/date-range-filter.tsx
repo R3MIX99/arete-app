@@ -31,6 +31,19 @@ function formatRange(range: SessionDateRange): string {
   return `${format(range.from, "d MMM", { locale: es })} – ${format(range.to, "d MMM", { locale: es })}`;
 }
 
+// Cuántos meses hacia atrás se pueden explorar en el rango
+// personalizado — de sobra para el historial de cualquier cliente sin
+// tener que ir agregando meses sobre la marcha.
+const CUSTOM_RANGE_MONTHS_BACK = 24;
+
+/** El mes actual primero, y hacia atrás — el orden en el que se apilan
+ * los calendarios del scroll vertical (se pidió que el mes de hoy se
+ * vea de entrada, sin tener que buscarlo). */
+function monthsCurrentFirst(count: number): Date[] {
+  const current = startOfMonth(new Date());
+  return Array.from({ length: count }, (_, i) => subMonths(current, i));
+}
+
 /**
  * Filtro por fecha del Historial: presets rápidos (este mes, 3/6 meses)
  * más un rango personalizado con nuestro propio Calendar (react-day-picker)
@@ -127,16 +140,31 @@ export function DateRangeFilter({
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3 pb-2">
-            <Calendar
-              mode="range"
-              selected={draftRange}
-              onSelect={setDraftRange}
-              defaultMonth={draftRange?.from ?? subMonths(new Date(), 1)}
-              numberOfMonths={1}
-              locale={es}
-              className="mx-auto"
-            />
+          <div className="flex flex-col gap-3 pb-2">
+            {/* Scroll vertical en vez de flechitas para cambiar de mes —
+                el mes de hoy siempre queda arriba (nada de qué acordarse
+                dónde se quedó la última vez), y hacia abajo van
+                apareciendo los meses anteriores. data-vaul-no-drag evita
+                que el gesto de arrastrar para cerrar el drawer se coma el
+                scroll de esta lista en el teléfono. */}
+            <div
+              data-vaul-no-drag
+              className="flex max-h-[50vh] flex-col gap-4 overflow-y-auto overscroll-contain px-1"
+            >
+              {monthsCurrentFirst(CUSTOM_RANGE_MONTHS_BACK).map((month) => (
+                <Calendar
+                  key={month.toISOString()}
+                  mode="range"
+                  selected={draftRange}
+                  onSelect={setDraftRange}
+                  month={month}
+                  numberOfMonths={1}
+                  locale={es}
+                  disabled={{ after: new Date() }}
+                  classNames={{ nav: "hidden" }}
+                />
+              ))}
+            </div>
             <div className="flex w-full gap-2">
               <Button type="button" variant="outline" className="flex-1" onClick={() => setCustomOpen(false)}>
                 Atrás
