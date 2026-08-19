@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { AuthBrandIcon } from "@/components/auth/auth-brand-icon";
 
 interface InvitationPreview {
   id: string;
@@ -132,8 +133,7 @@ export function InvitationAcceptForm({
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aretia-logo.png" alt="Aretia" className="h-16 w-auto" />
+          <AuthBrandIcon />
           <p className="text-sm text-muted-foreground">Invitación de {brandName}</p>
         </div>
 

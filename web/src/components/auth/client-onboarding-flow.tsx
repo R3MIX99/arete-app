@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { GenderPicker } from "@/components/auth/gender-picker";
+import { AuthBrandIcon } from "@/components/auth/auth-brand-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,8 +83,7 @@ export function ClientOnboardingFlow({
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/aretia-logo.png" alt="Aretia" className="h-14 w-auto" />
+          <AuthBrandIcon className="h-14 w-auto" />
           <p className="text-sm text-muted-foreground">
             Paso {step} de {TOTAL_STEPS}
           </p>
