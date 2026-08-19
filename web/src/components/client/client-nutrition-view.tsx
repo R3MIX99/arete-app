@@ -334,10 +334,11 @@ export function ClientNutritionView({
             </div>
           </div>
 
-          {/* Sin tarjetas por comida: cada bloque (Desayuno, Almuerzo...)
-              es solo una sección con su nombre grande, separada de la
-              siguiente por una línea — mucho más aire, menos cajas. */}
-          <div className="flex flex-col divide-y">
+          {/* Sin tarjetas por comida ni líneas divisorias: cada bloque
+              (Desayuno, Almuerzo...) es solo una sección con su nombre
+              grande, separada de la siguiente por espacio en blanco
+              (py-5) — sin necesitar una línea para notar el corte. */}
+          <div className="flex flex-col">
             {effectivePlan.blocks.map((block) => {
               const totals = roundTotals(blockTotals(block));
               return (
@@ -365,7 +366,7 @@ export function ClientNutritionView({
                   {block.items.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Sin comidas en este bloque.</p>
                   ) : (
-                    <div className="flex flex-col divide-y">
+                    <div className="flex flex-col">
                       {block.items.map((item) =>
                         item.kind === "food" && item.food ? (
                           <FoodRow
@@ -400,7 +401,7 @@ export function ClientNutritionView({
                                 />
                               </div>
                             )}
-                            <div className="flex flex-col divide-y pl-1">
+                            <div className="flex flex-col pl-1">
                               {(item.ingredients ?? []).map((ing) => (
                                 <FoodRow
                                   key={ing.dishIngredientId}
@@ -572,8 +573,8 @@ function FoodRow({
     food.householdUnitName,
     food.householdUnitGrams,
   );
-  // Sin caja ni borde: es una fila plana de lista, separada de la
-  // siguiente por la línea del divide-y del contenedor padre.
+  // Sin caja, borde ni línea divisoria: es una fila plana de lista,
+  // separada de la siguiente solo por su propio padding vertical.
   return (
     <div className={cn("flex items-center gap-1", nested ? "py-2" : "py-2.5")}>
       <button
