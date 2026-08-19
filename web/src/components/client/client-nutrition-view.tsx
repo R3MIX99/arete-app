@@ -283,7 +283,7 @@ export function ClientNutritionView({
   const dayTotals = roundTotals(planTotals(effectivePlan));
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-4 pb-24 md:p-8">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-6 py-4 pb-24 md:px-8 md:py-8">
       <div className="flex items-start justify-between gap-2">
         <h1 className="text-xl font-semibold">{effectivePlan.planName}</h1>
         {substitutions.length > 0 && (
@@ -344,7 +344,10 @@ export function ClientNutritionView({
                 <div key={block.id} className="flex flex-col gap-3 py-5">
                   <div className="flex items-baseline justify-between gap-2">
                     <h2 className="text-xl font-bold">{block.name}</h2>
-                    <p className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {/* El objetivo de la comida (lo que hay que comer) se
+                        resalta en índigo, el mismo color de marca — así se
+                        distingue de un dato secundario cualquiera. */}
+                    <p className="shrink-0 text-sm font-semibold tabular-nums text-primary">
                       {totals.calories} kcal · {totals.protein}g prot
                     </p>
                   </div>
