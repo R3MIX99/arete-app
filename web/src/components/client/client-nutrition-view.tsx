@@ -25,7 +25,7 @@ import type {
   ShoppingListItem,
 } from "@/lib/types/client-nutrition";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -312,41 +312,44 @@ export function ClientNutritionView({
           )}
         </div>
 
-        <TabsContent value="hoy" className="flex flex-col gap-4 pt-4">
-          <Card>
-            <CardContent className="flex items-center justify-around py-4 text-center">
-              <div>
-                <p className="text-lg font-bold tabular-nums">{dayTotals.calories}</p>
-                <p className="text-[11px] text-muted-foreground uppercase">kcal</p>
-              </div>
-              <div>
-                <p className="text-lg font-bold tabular-nums">{dayTotals.protein}g</p>
-                <p className="text-[11px] text-muted-foreground uppercase">Proteína</p>
-              </div>
-              <div>
-                <p className="text-lg font-bold tabular-nums">{dayTotals.carbs}g</p>
-                <p className="text-[11px] text-muted-foreground uppercase">Carbs</p>
-              </div>
-              <div>
-                <p className="text-lg font-bold tabular-nums">{dayTotals.fat}g</p>
-                <p className="text-[11px] text-muted-foreground uppercase">Grasa</p>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="hoy" className="flex flex-col gap-1 pt-4">
+          {/* Totales del día: solo una fila con números grandes, sin
+              tarjeta — el bloque de abajo ya separa con su propia línea. */}
+          <div className="flex items-center justify-around border-b pb-5 text-center">
+            <div>
+              <p className="text-2xl font-bold tabular-nums">{dayTotals.calories}</p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">kcal</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold tabular-nums">{dayTotals.protein}g</p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Proteína</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold tabular-nums">{dayTotals.carbs}g</p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Carbs</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold tabular-nums">{dayTotals.fat}g</p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Grasa</p>
+            </div>
+          </div>
 
-          {effectivePlan.blocks.map((block) => {
-            const totals = roundTotals(blockTotals(block));
-            return (
-              <Card key={block.id}>
-                <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-                  <CardTitle className="text-sm">{block.name}</CardTitle>
-                  <p className="text-xs tabular-nums text-muted-foreground">
-                    {totals.calories} kcal · {totals.protein}g prot
-                  </p>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
+          {/* Sin tarjetas por comida: cada bloque (Desayuno, Almuerzo...)
+              es solo una sección con su nombre grande, separada de la
+              siguiente por una línea — mucho más aire, menos cajas. */}
+          <div className="flex flex-col divide-y">
+            {effectivePlan.blocks.map((block) => {
+              const totals = roundTotals(blockTotals(block));
+              return (
+                <div key={block.id} className="flex flex-col gap-3 py-5">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h2 className="text-xl font-bold">{block.name}</h2>
+                    <p className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {totals.calories} kcal · {totals.protein}g prot
+                    </p>
+                  </div>
                   {block.imagePath && (
-                    <div className="aspect-[4/3] w-full overflow-hidden rounded-lg border border-border">
+                    <div className="aspect-[4/3] w-full overflow-hidden rounded-lg">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={publicImageUrl(block.imagePath)}
@@ -358,66 +361,71 @@ export function ClientNutritionView({
                   {block.items.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Sin comidas en este bloque.</p>
                   ) : (
-                    block.items.map((item) =>
-                      item.kind === "food" && item.food ? (
-                        <FoodRow
-                          key={item.id}
-                          food={item.food}
-                          onSubstitute={() =>
-                            setTarget({
-                              dietPlanMealId: item.id,
-                              dishIngredientId: null,
-                              originalFoodId: item.food!.originalFoodId,
-                              currentFoodId: item.food!.foodId,
-                              currentQuantity: item.food!.quantityGrams,
-                              name: item.food!.name,
-                              categorySlug: item.food!.categorySlug,
-                            })
-                          }
-                          onOpenDetail={() => setDetailFood(item.food)}
-                        />
-                      ) : (
-                        <div key={item.id} className="flex flex-col gap-2 rounded-lg border px-3 py-2.5">
-                          <p className="text-sm font-medium">{item.dishName}</p>
-                          {item.dishImagePath && (
-                            <div className="aspect-[4/3] w-full overflow-hidden rounded-lg">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={publicImageUrl(item.dishImagePath)}
-                                alt={item.dishName ?? ""}
-                                className="h-full w-full object-cover"
-                              />
+                    <div className="flex flex-col divide-y">
+                      {block.items.map((item) =>
+                        item.kind === "food" && item.food ? (
+                          <FoodRow
+                            key={item.id}
+                            food={item.food}
+                            onSubstitute={() =>
+                              setTarget({
+                                dietPlanMealId: item.id,
+                                dishIngredientId: null,
+                                originalFoodId: item.food!.originalFoodId,
+                                currentFoodId: item.food!.foodId,
+                                currentQuantity: item.food!.quantityGrams,
+                                name: item.food!.name,
+                                categorySlug: item.food!.categorySlug,
+                              })
+                            }
+                            onOpenDetail={() => setDetailFood(item.food)}
+                          />
+                        ) : (
+                          <div key={item.id} className="flex flex-col gap-2 py-3 first:pt-0">
+                            {/* El nombre del platillo va un poco más chico
+                                que el de la comida (Desayuno/Almuerzo...),
+                                para que quede claro que es un nivel debajo. */}
+                            <p className="text-base font-semibold">{item.dishName}</p>
+                            {item.dishImagePath && (
+                              <div className="aspect-[4/3] w-full overflow-hidden rounded-lg">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={publicImageUrl(item.dishImagePath)}
+                                  alt={item.dishName ?? ""}
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex flex-col divide-y pl-1">
+                              {(item.ingredients ?? []).map((ing) => (
+                                <FoodRow
+                                  key={ing.dishIngredientId}
+                                  food={ing}
+                                  nested
+                                  onSubstitute={() =>
+                                    setTarget({
+                                      dietPlanMealId: item.id,
+                                      dishIngredientId: ing.dishIngredientId,
+                                      originalFoodId: ing.originalFoodId,
+                                      currentFoodId: ing.foodId,
+                                      currentQuantity: ing.quantityGrams,
+                                      name: ing.name,
+                                      categorySlug: ing.categorySlug,
+                                    })
+                                  }
+                                  onOpenDetail={() => setDetailFood(ing)}
+                                />
+                              ))}
                             </div>
-                          )}
-                          <div className="flex flex-col gap-2">
-                            {(item.ingredients ?? []).map((ing) => (
-                              <FoodRow
-                                key={ing.dishIngredientId}
-                                food={ing}
-                                nested
-                                onSubstitute={() =>
-                                  setTarget({
-                                    dietPlanMealId: item.id,
-                                    dishIngredientId: ing.dishIngredientId,
-                                    originalFoodId: ing.originalFoodId,
-                                    currentFoodId: ing.foodId,
-                                    currentQuantity: ing.quantityGrams,
-                                    name: ing.name,
-                                    categorySlug: ing.categorySlug,
-                                  })
-                                }
-                                onOpenDetail={() => setDetailFood(ing)}
-                              />
-                            ))}
                           </div>
-                        </div>
-                      ),
-                    )
+                        ),
+                      )}
+                    </div>
                   )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                </div>
+              );
+            })}
+          </div>
         </TabsContent>
 
         <TabsContent value="semana" className="flex flex-col gap-3 pt-4">
@@ -560,22 +568,14 @@ function FoodRow({
     food.householdUnitName,
     food.householdUnitGrams,
   );
+  // Sin caja ni borde: es una fila plana de lista, separada de la
+  // siguiente por la línea del divide-y del contenedor padre.
   return (
-    <div
-      className={
-        nested
-          ? "flex items-center gap-1"
-          : "flex items-center gap-1 rounded-lg border pr-1"
-      }
-    >
+    <div className={cn("flex items-center gap-1", nested ? "py-2" : "py-2.5")}>
       <button
         type="button"
         onClick={onOpenDetail}
-        className={
-          nested
-            ? "flex min-w-0 flex-1 items-center gap-2.5 rounded-lg py-1 text-left hover:bg-accent"
-            : "flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 text-left hover:bg-accent"
-        }
+        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg py-1 text-left hover:bg-accent"
       >
         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
           {React.createElement(foodCategoryIcon(food.categorySlug), { className: "size-4" })}
