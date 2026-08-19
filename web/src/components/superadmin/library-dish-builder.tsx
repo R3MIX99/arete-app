@@ -402,7 +402,6 @@ function MacroStat({ label, value }: { label: string; value: string | number }) 
 }
 
 function DishImage({ dish }: { dish: DishInfo }) {
-  const Icon = mealTypeIcon(dish.meal_type);
   const imageUrl = dish.image_path
     ? createClient().storage.from("food-images").getPublicUrl(dish.image_path).data.publicUrl
     : null;
@@ -413,7 +412,11 @@ function DishImage({ dish }: { dish: DishInfo }) {
         <img src={imageUrl} alt={dish.name} className="h-full w-full object-cover" />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-primary">
-          <Icon className="size-10" />
+          {/* `mealTypeIcon` elige el ícono dinámicamente; se invoca con
+           * React.createElement (no como tag JSX <Icon/>) porque el ícono
+           * no es una referencia estable entre renders y usarlo como tag
+           * dispara "Cannot create components during render". */}
+          {React.createElement(mealTypeIcon(dish.meal_type), { className: "size-10" })}
         </div>
       )}
     </div>
@@ -429,6 +432,28 @@ function EditDishInfoDialog({
   onOpenChange: (open: boolean) => void;
   dish: DishInfo;
 }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar información</DialogTitle>
+        </DialogHeader>
+        {/* Se monta sólo mientras el diálogo está abierto: así el formulario
+         * siempre arranca con los valores actuales del platillo, sin
+         * necesitar un efecto que sincronice el estado al abrir. */}
+        {open && <EditDishInfoForm dish={dish} onOpenChange={onOpenChange} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditDishInfoForm({
+  dish,
+  onOpenChange,
+}: {
+  dish: DishInfo;
+  onOpenChange: (open: boolean) => void;
+}) {
   const router = useRouter();
   const [name, setName] = React.useState(dish.name);
   const [description, setDescription] = React.useState(dish.description ?? "");
@@ -438,16 +463,6 @@ function EditDishInfoDialog({
   const [saving, setSaving] = React.useState(false);
   const imageInputRef = React.useRef<HTMLInputElement>(null);
 
-  React.useEffect(() => {
-    if (open) {
-      setName(dish.name);
-      setDescription(dish.description ?? "");
-      setMealType(dish.meal_type);
-      setImagePath(dish.image_path);
-    }
-  }, [open, dish]);
-
-  const MealIcon = mealTypeIcon(mealType);
   const imageUrl = imagePath
     ? createClient().storage.from("food-images").getPublicUrl(imagePath).data.publicUrl
     : null;
@@ -495,86 +510,83 @@ function EditDishInfoDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar información</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label>Imagen (opcional)</Label>
-            <div className="flex items-center gap-3">
-              <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary/12 text-primary">
-                {imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <MealIcon className="size-6" />
-                )}
-                {imagePath && (
-                  <button
-                    type="button"
-                    aria-label="Quitar imagen"
-                    onClick={() => setImagePath(null)}
-                    className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-black/60 text-white"
-                  >
-                    <X className="size-2.5" />
-                  </button>
-                )}
-              </div>
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageSelected}
-              />
-              <Button
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label>Imagen (opcional)</Label>
+        <div className="flex items-center gap-3">
+          <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary/12 text-primary">
+            {imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              // `mealTypeIcon` elige el ícono dinámicamente; se invoca con
+              // React.createElement (no como tag JSX) porque el ícono no
+              // es una referencia estable entre renders y usarlo como tag
+              // dispara "Cannot create components during render".
+              React.createElement(mealTypeIcon(mealType), { className: "size-6" })
+            )}
+            {imagePath && (
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
-                disabled={uploadingImage}
-                onClick={() => imageInputRef.current?.click()}
+                aria-label="Quitar imagen"
+                onClick={() => setImagePath(null)}
+                className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-black/60 text-white"
               >
-                {uploadingImage ? <Loader2 className="animate-spin" /> : <ImagePlus />}
-                {imageUrl ? "Cambiar imagen" : "Subir imagen"}
-              </Button>
-            </div>
+                <X className="size-2.5" />
+              </button>
+            )}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_name">Nombre</Label>
-            <Input id="edit_name" required value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_meal_type">Tipo de comida</Label>
-            <Select value={mealType} onValueChange={(v) => setMealType(v as MealType)}>
-              <SelectTrigger id="edit_meal_type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MEAL_TYPE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_description">Descripción (opcional)</Label>
-            <Textarea
-              id="edit_description"
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          <Button type="submit" disabled={saving} className="w-fit">
-            {saving ? <Loader2 className="animate-spin" /> : null}
-            Guardar cambios
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageSelected}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={uploadingImage}
+            onClick={() => imageInputRef.current?.click()}
+          >
+            {uploadingImage ? <Loader2 className="animate-spin" /> : <ImagePlus />}
+            {imageUrl ? "Cambiar imagen" : "Subir imagen"}
           </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_name">Nombre</Label>
+        <Input id="edit_name" required value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_meal_type">Tipo de comida</Label>
+        <Select value={mealType} onValueChange={(v) => setMealType(v as MealType)}>
+          <SelectTrigger id="edit_meal_type">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {MEAL_TYPE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_description">Descripción (opcional)</Label>
+        <Textarea
+          id="edit_description"
+          rows={2}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+      <Button type="submit" disabled={saving} className="w-fit">
+        {saving ? <Loader2 className="animate-spin" /> : null}
+        Guardar cambios
+      </Button>
+    </form>
   );
 }

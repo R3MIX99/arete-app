@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Pencil } from "lucide-react";
+import * as React from "react";
 
 import { householdMeasureFor } from "@/lib/format";
 import { foodCategoryIcon } from "@/lib/food-icons";
@@ -10,7 +11,6 @@ import { Button } from "@/components/ui/button";
 
 export function FoodDetailSheet({ food }: { food: FoodOption }) {
   const measure = householdMeasureFor(100, food.household_unit_name, food.household_unit_grams);
-  const Icon = foodCategoryIcon(food.category_slug);
   const imageUrl = food.image_path
     ? createClient().storage.from("food-images").getPublicUrl(food.image_path).data.publicUrl
     : null;
@@ -25,7 +25,11 @@ export function FoodDetailSheet({ food }: { food: FoodOption }) {
         />
       ) : (
         <div className="flex h-40 w-full items-center justify-center rounded-lg bg-primary/12 text-primary">
-          <Icon className="size-10" />
+          {/* `foodCategoryIcon` elige el ícono dinámicamente; se invoca con
+           * React.createElement (no como tag JSX <Icon/>) porque el ícono
+           * no es una referencia estable entre renders y usarlo como tag
+           * dispara "Cannot create components during render". */}
+          {React.createElement(foodCategoryIcon(food.category_slug), { className: "size-10" })}
         </div>
       )}
 

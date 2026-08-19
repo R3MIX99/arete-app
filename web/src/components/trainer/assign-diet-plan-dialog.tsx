@@ -49,20 +49,48 @@ export function AssignDietPlanDialog({
   alreadyAssignedClientIds: string[];
   onAssigned: () => void;
 }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* Se monta sólo mientras el diálogo está abierto: así siempre
+       * arranca en el paso "select" con la selección limpia, sin
+       * necesitar un efecto que sincronice el estado al abrir. */}
+      {open && (
+        <AssignDietPlanDialogBody
+          trainerId={trainerId}
+          dietPlanId={dietPlanId}
+          dailyCalorieTarget={dailyCalorieTarget}
+          clients={clients}
+          alreadyAssignedClientIds={alreadyAssignedClientIds}
+          onAssigned={onAssigned}
+          onOpenChange={onOpenChange}
+        />
+      )}
+    </Dialog>
+  );
+}
+
+function AssignDietPlanDialogBody({
+  trainerId,
+  dietPlanId,
+  dailyCalorieTarget,
+  clients,
+  alreadyAssignedClientIds,
+  onAssigned,
+  onOpenChange,
+}: {
+  trainerId: string;
+  dietPlanId: string;
+  dailyCalorieTarget: number | null;
+  clients: ClientProfile[];
+  alreadyAssignedClientIds: string[];
+  onAssigned: () => void;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [step, setStep] = React.useState<"select" | "scale">("select");
   const [query, setQuery] = React.useState("");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [clientTarget, setClientTarget] = React.useState<number | "">("");
   const [saving, setSaving] = React.useState(false);
-
-  React.useEffect(() => {
-    if (open) {
-      setStep("select");
-      setQuery("");
-      setSelected(new Set());
-      setClientTarget("");
-    }
-  }, [open]);
 
   const alreadySet = React.useMemo(
     () => new Set(alreadyAssignedClientIds),
@@ -137,77 +165,74 @@ export function AssignDietPlanDialog({
 
   if (step === "scale") {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Ajustar porciones</DialogTitle>
-            <DialogDescription>
-              El plan está pensado para {dailyCalorieTarget} kcal/día. Si la meta calórica
-              del cliente es distinta, las porciones se pueden escalar automáticamente.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="client_target">Meta calórica del cliente (kcal/día)</Label>
-              <Input
-                id="client_target"
-                type="number"
-                min={1}
-                autoFocus
-                value={clientTarget}
-                onChange={(e) =>
-                  setClientTarget(e.target.value === "" ? "" : Number(e.target.value))
-                }
-                placeholder={String(dailyCalorieTarget)}
-              />
-            </div>
-            {clientTarget !== "" && (
-              <p className="text-sm text-muted-foreground">
-                Las porciones se ajustan al{" "}
-                <span className="font-medium text-foreground">
-                  {scalePercent >= 0 ? "+" : ""}
-                  {scalePercent}%
-                </span>{" "}
-                de lo indicado en el plan.
-              </p>
-            )}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                disabled={saving}
-                onClick={() => submit(1, null)}
-              >
-                {saving ? <Loader2 className="animate-spin" /> : null}
-                Asignar sin ajustar
-              </Button>
-              <Button
-                type="button"
-                className="flex-1"
-                disabled={saving || clientTarget === ""}
-                onClick={() => submit(scaleFactor, Number(clientTarget))}
-              >
-                {saving ? <Loader2 className="animate-spin" /> : null}
-                Continuar
-              </Button>
-            </div>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Ajustar porciones</DialogTitle>
+          <DialogDescription>
+            El plan está pensado para {dailyCalorieTarget} kcal/día. Si la meta calórica
+            del cliente es distinta, las porciones se pueden escalar automáticamente.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="client_target">Meta calórica del cliente (kcal/día)</Label>
+            <Input
+              id="client_target"
+              type="number"
+              min={1}
+              autoFocus
+              value={clientTarget}
+              onChange={(e) =>
+                setClientTarget(e.target.value === "" ? "" : Number(e.target.value))
+              }
+              placeholder={String(dailyCalorieTarget)}
+            />
           </div>
-        </DialogContent>
-      </Dialog>
+          {clientTarget !== "" && (
+            <p className="text-sm text-muted-foreground">
+              Las porciones se ajustan al{" "}
+              <span className="font-medium text-foreground">
+                {scalePercent >= 0 ? "+" : ""}
+                {scalePercent}%
+              </span>{" "}
+              de lo indicado en el plan.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              disabled={saving}
+              onClick={() => submit(1, null)}
+            >
+              {saving ? <Loader2 className="animate-spin" /> : null}
+              Asignar sin ajustar
+            </Button>
+            <Button
+              type="button"
+              className="flex-1"
+              disabled={saving || clientTarget === ""}
+              onClick={() => submit(scaleFactor, Number(clientTarget))}
+            >
+              {saving ? <Loader2 className="animate-spin" /> : null}
+              Continuar
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Asignar a clientes</DialogTitle>
-          <DialogDescription>
-            Elige los clientes que recibirán este plan — empieza a verlo hoy mismo, en cuanto lo
-            asignes.
-          </DialogDescription>
-        </DialogHeader>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Asignar a clientes</DialogTitle>
+        <DialogDescription>
+          Elige los clientes que recibirán este plan — empieza a verlo hoy mismo, en cuanto lo
+          asignes.
+        </DialogDescription>
+      </DialogHeader>
 
         <div className="flex flex-col gap-4">
           <div className="relative">
@@ -271,10 +296,11 @@ export function AssignDietPlanDialog({
           </div>
 
           <Button type="button" disabled={selected.size === 0} onClick={goToNextStep}>
-            {dailyCalorieTarget ? "Continuar" : `Asignar a ${selected.size} ${selected.size === 1 ? "cliente" : "clientes"}`}
+            {dailyCalorieTarget
+              ? "Continuar"
+              : `Asignar a ${selected.size} ${selected.size === 1 ? "cliente" : "clientes"}`}
           </Button>
         </div>
       </DialogContent>
-    </Dialog>
-  );
-}
+    );
+  }

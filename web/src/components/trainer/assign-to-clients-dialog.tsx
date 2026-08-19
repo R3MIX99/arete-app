@@ -47,18 +47,52 @@ export function AssignToClientsDialog({
   programId: string;
   onAssigned: () => void;
 }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Asignar a clientes</DialogTitle>
+          <DialogDescription>
+            Elige la fecha de inicio y los clientes que recibirán esto.
+          </DialogDescription>
+        </DialogHeader>
+        {/* Se monta sólo mientras el diálogo está abierto: así siempre
+         * arranca con la selección limpia, sin necesitar un efecto que
+         * sincronice el estado al abrir. */}
+        {open && (
+          <AssignToClientsDialogBody
+            trainerId={trainerId}
+            clients={clients}
+            alreadyAssignedClientIds={alreadyAssignedClientIds}
+            programId={programId}
+            onAssigned={onAssigned}
+            onOpenChange={onOpenChange}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AssignToClientsDialogBody({
+  trainerId,
+  clients,
+  alreadyAssignedClientIds,
+  programId,
+  onAssigned,
+  onOpenChange,
+}: {
+  trainerId: string;
+  clients: ClientProfile[];
+  alreadyAssignedClientIds: string[];
+  programId: string;
+  onAssigned: () => void;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [query, setQuery] = React.useState("");
   const [startDate, setStartDate] = React.useState(todayIso());
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [saving, setSaving] = React.useState(false);
-
-  React.useEffect(() => {
-    if (open) {
-      setQuery("");
-      setStartDate(todayIso());
-      setSelected(new Set());
-    }
-  }, [open]);
 
   const alreadySet = React.useMemo(
     () => new Set(alreadyAssignedClientIds),
@@ -119,92 +153,81 @@ export function AssignToClientsDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Asignar a clientes</DialogTitle>
-          <DialogDescription>
-            Elige la fecha de inicio y los clientes que recibirán esto.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="start_date">Empieza el</Label>
+        <Input
+          id="start_date"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
+      </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="start_date">Empieza el</Label>
-            <Input
-              id="start_date"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
+      <div className="relative">
+        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar cliente por nombre o correo"
+          className="pl-9"
+        />
+      </div>
+
+      <div className="flex max-h-64 flex-col gap-1 overflow-y-auto">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
+            <UserX className="size-6" />
+            <p className="text-sm">Ningún cliente activo coincide con la búsqueda.</p>
           </div>
+        ) : (
+          filtered.map((client) => {
+            const isAssigned = alreadySet.has(client.id);
+            const isSelected = selected.has(client.id);
+            return (
+              <button
+                key={client.id}
+                type="button"
+                disabled={isAssigned}
+                onClick={() => toggle(client.id)}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors",
+                  isAssigned
+                    ? "cursor-not-allowed opacity-50"
+                    : "hover:border-border hover:bg-accent",
+                )}
+              >
+                <Avatar className="size-8">
+                  <AvatarFallback className="text-xs">
+                    {initialsOf(client.full_name) || "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{client.full_name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {isAssigned ? "Ya asignado" : client.email}
+                  </p>
+                </div>
+                <div
+                  className={cn(
+                    "flex size-5 shrink-0 items-center justify-center rounded-full border",
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input",
+                  )}
+                >
+                  {isSelected && <Check className="size-3.5" />}
+                </div>
+              </button>
+            );
+          })
+        )}
+      </div>
 
-          <div className="relative">
-            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar cliente por nombre o correo"
-              className="pl-9"
-            />
-          </div>
-
-          <div className="flex max-h-64 flex-col gap-1 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
-                <UserX className="size-6" />
-                <p className="text-sm">Ningún cliente activo coincide con la búsqueda.</p>
-              </div>
-            ) : (
-              filtered.map((client) => {
-                const isAssigned = alreadySet.has(client.id);
-                const isSelected = selected.has(client.id);
-                return (
-                  <button
-                    key={client.id}
-                    type="button"
-                    disabled={isAssigned}
-                    onClick={() => toggle(client.id)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors",
-                      isAssigned
-                        ? "cursor-not-allowed opacity-50"
-                        : "hover:border-border hover:bg-accent",
-                    )}
-                  >
-                    <Avatar className="size-8">
-                      <AvatarFallback className="text-xs">
-                        {initialsOf(client.full_name) || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{client.full_name}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {isAssigned ? "Ya asignado" : client.email}
-                      </p>
-                    </div>
-                    <div
-                      className={cn(
-                        "flex size-5 shrink-0 items-center justify-center rounded-full border",
-                        isSelected
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-input",
-                      )}
-                    >
-                      {isSelected && <Check className="size-3.5" />}
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-
-          <Button type="button" disabled={saving || selected.size === 0} onClick={handleSubmit}>
-            {saving ? <Loader2 className="animate-spin" /> : null}
-            Asignar a {selected.size} {selected.size === 1 ? "cliente" : "clientes"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      <Button type="button" disabled={saving || selected.size === 0} onClick={handleSubmit}>
+        {saving ? <Loader2 className="animate-spin" /> : null}
+        Asignar a {selected.size} {selected.size === 1 ? "cliente" : "clientes"}
+      </Button>
+    </div>
   );
 }

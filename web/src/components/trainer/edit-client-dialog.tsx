@@ -41,6 +41,28 @@ export function EditClientDialog({
   onOpenChange: (open: boolean) => void;
   client: ClientProfile;
 }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar información</DialogTitle>
+        </DialogHeader>
+        {/* Se monta sólo mientras el diálogo está abierto: así el formulario
+         * siempre arranca con los valores actuales del cliente, sin
+         * necesitar un efecto que sincronice el estado al abrir. */}
+        {open && <EditClientForm client={client} onOpenChange={onOpenChange} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditClientForm({
+  client,
+  onOpenChange,
+}: {
+  client: ClientProfile;
+  onOpenChange: (open: boolean) => void;
+}) {
   const router = useRouter();
   const [fullName, setFullName] = React.useState(client.full_name);
   const [phone, setPhone] = React.useState(client.phone ?? "");
@@ -48,16 +70,6 @@ export function EditClientDialog({
   const [healthNotes, setHealthNotes] = React.useState(client.health_notes ?? "");
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (open) {
-      setFullName(client.full_name);
-      setPhone(client.phone ?? "");
-      setGoal(client.goal ?? "");
-      setHealthNotes(client.health_notes ?? "");
-      setError(null);
-    }
-  }, [open, client]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -88,68 +100,61 @@ export function EditClientDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar información</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="full_name">Nombre</Label>
-            <Input
-              id="full_name"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Opcional"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="goal">Objetivo</Label>
-            <Select value={goal} onValueChange={setGoal}>
-              <SelectTrigger id="goal">
-                <SelectValue placeholder="Sin definir" />
-              </SelectTrigger>
-              <SelectContent>
-                {GOAL_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="health_notes">Notas de salud</Label>
-            <Textarea
-              id="health_notes"
-              value={healthNotes}
-              onChange={(e) => setHealthNotes(e.target.value)}
-              rows={3}
-              placeholder="Lesiones, condiciones médicas, restricciones..."
-            />
-          </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="full_name">Nombre</Label>
+        <Input
+          id="full_name"
+          required
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="phone">Teléfono</Label>
+        <Input
+          id="phone"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Opcional"
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="goal">Objetivo</Label>
+        <Select value={goal} onValueChange={setGoal}>
+          <SelectTrigger id="goal">
+            <SelectValue placeholder="Sin definir" />
+          </SelectTrigger>
+          <SelectContent>
+            {GOAL_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="health_notes">Notas de salud</Label>
+        <Textarea
+          id="health_notes"
+          value={healthNotes}
+          onChange={(e) => setHealthNotes(e.target.value)}
+          rows={3}
+          placeholder="Lesiones, condiciones médicas, restricciones..."
+        />
+      </div>
 
-          {error ? (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
 
-          <Button type="submit" disabled={saving} className="w-fit">
-            {saving ? <Loader2 className="animate-spin" /> : null}
-            Guardar cambios
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <Button type="submit" disabled={saving} className="w-fit">
+        {saving ? <Loader2 className="animate-spin" /> : null}
+        Guardar cambios
+      </Button>
+    </form>
   );
 }

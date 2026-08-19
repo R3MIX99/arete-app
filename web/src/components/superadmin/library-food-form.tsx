@@ -53,7 +53,6 @@ export function LibraryFoodForm({
   const imageInputRef = React.useRef<HTMLInputElement>(null);
 
   const categorySlug = categories.find((c) => c.id === categoryId)?.slug ?? null;
-  const CategoryIcon = foodCategoryIcon(categorySlug);
   const imageUrl = imagePath
     ? createClient().storage.from("food-images").getPublicUrl(imagePath).data.publicUrl
     : null;
@@ -184,7 +183,11 @@ export function LibraryFoodForm({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={imageUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <CategoryIcon className="size-8" />
+                    // `foodCategoryIcon` elige el ícono dinámicamente; se invoca con
+                    // React.createElement (no como tag JSX <Icon/>) porque el ícono
+                    // no es una referencia estable entre renders y usarlo como tag
+                    // dispara "Cannot create components during render".
+                    React.createElement(foodCategoryIcon(categorySlug), { className: "size-8" })
                   )}
                   {imagePath && (
                     <button

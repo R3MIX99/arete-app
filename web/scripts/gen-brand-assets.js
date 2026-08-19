@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- script CommonJS standalone (no forma parte del build de Next) */
 const sharp = require("sharp");
 const path = require("path");
 

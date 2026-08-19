@@ -29,27 +29,52 @@ export function EditMeasurementDialog({
   measurement: ProgressMeasurement | null;
   onSaved: () => void;
 }) {
-  const router = useRouter();
-  const [entryDate, setEntryDate] = React.useState("");
-  const [value, setValue] = React.useState("");
-  const [saving, setSaving] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (open && measurement) {
-      setEntryDate(measurement.entry_date);
-      setValue(String(measurement.value));
-      setError(null);
-    }
-  }, [open, measurement]);
-
   const field = measurement
     ? MEASUREMENT_FIELDS.find((f) => f.key === measurement.metric_key)
     : null;
 
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Editar {field?.label.toLowerCase()}</DialogTitle>
+        </DialogHeader>
+        {/* Se monta sólo mientras el diálogo está abierto (con la medición
+         * lista): así el formulario siempre arranca con sus valores
+         * actuales, sin necesitar un efecto que sincronice el estado al
+         * abrir. */}
+        {open && measurement && (
+          <EditMeasurementForm
+            measurement={measurement}
+            field={field}
+            onOpenChange={onOpenChange}
+            onSaved={onSaved}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditMeasurementForm({
+  measurement,
+  field,
+  onOpenChange,
+  onSaved,
+}: {
+  measurement: ProgressMeasurement;
+  field: (typeof MEASUREMENT_FIELDS)[number] | null | undefined;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const router = useRouter();
+  const [entryDate, setEntryDate] = React.useState(measurement.entry_date);
+  const [value, setValue] = React.useState(String(measurement.value));
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!measurement) return;
     if (!value.trim() || Number(value) <= 0) {
       setError("Ingresa un valor válido.");
       return;
@@ -77,48 +102,41 @@ export function EditMeasurementDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Editar {field?.label.toLowerCase()}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_entry_date">Fecha</Label>
-            <Input
-              id="edit_entry_date"
-              type="date"
-              value={entryDate}
-              onChange={(e) => setEntryDate(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_value">
-              {field?.label} ({field?.unit})
-            </Label>
-            <Input
-              id="edit_value"
-              type="number"
-              min={0}
-              step="0.1"
-              autoFocus
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-            />
-          </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_entry_date">Fecha</Label>
+        <Input
+          id="edit_entry_date"
+          type="date"
+          value={entryDate}
+          onChange={(e) => setEntryDate(e.target.value)}
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_value">
+          {field?.label} ({field?.unit})
+        </Label>
+        <Input
+          id="edit_value"
+          type="number"
+          min={0}
+          step="0.1"
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+      </div>
 
-          {error ? (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
 
-          <Button type="submit" disabled={saving} className="w-fit">
-            {saving ? <Loader2 className="animate-spin" /> : null}
-            Guardar cambios
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <Button type="submit" disabled={saving} className="w-fit">
+        {saving ? <Loader2 className="animate-spin" /> : null}
+        Guardar cambios
+      </Button>
+    </form>
   );
 }

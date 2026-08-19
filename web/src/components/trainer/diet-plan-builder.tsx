@@ -819,6 +819,28 @@ function EditDietPlanInfoDialog({
   onOpenChange: (open: boolean) => void;
   plan: PlanInfo;
 }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar información</DialogTitle>
+        </DialogHeader>
+        {/* Se monta sólo mientras el diálogo está abierto: así el formulario
+         * siempre arranca con los valores actuales del plan, sin necesitar
+         * un efecto que sincronice el estado al abrir. */}
+        {open && <EditDietPlanInfoForm plan={plan} onOpenChange={onOpenChange} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditDietPlanInfoForm({
+  plan,
+  onOpenChange,
+}: {
+  plan: PlanInfo;
+  onOpenChange: (open: boolean) => void;
+}) {
   const router = useRouter();
   const [name, setName] = React.useState(plan.name);
   const [goalLabel, setGoalLabel] = React.useState(plan.goal_label ?? "");
@@ -826,14 +848,6 @@ function EditDietPlanInfoDialog({
     plan.daily_calorie_target ?? "",
   );
   const [saving, setSaving] = React.useState(false);
-
-  React.useEffect(() => {
-    if (open) {
-      setName(plan.name);
-      setGoalLabel(plan.goal_label ?? "");
-      setDailyCalorieTarget(plan.daily_calorie_target ?? "");
-    }
-  }, [open, plan]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -858,42 +872,35 @@ function EditDietPlanInfoDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar información</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_name">Nombre</Label>
-            <Input id="edit_name" required value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_goal_label">Objetivo (opcional)</Label>
-            <Input
-              id="edit_goal_label"
-              value={goalLabel}
-              onChange={(e) => setGoalLabel(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit_daily_calorie_target">Meta calórica diaria (opcional)</Label>
-            <Input
-              id="edit_daily_calorie_target"
-              type="number"
-              min={1}
-              value={dailyCalorieTarget}
-              onChange={(e) =>
-                setDailyCalorieTarget(e.target.value === "" ? "" : Number(e.target.value))
-              }
-            />
-          </div>
-          <Button type="submit" disabled={saving} className="w-fit">
-            {saving ? <Loader2 className="animate-spin" /> : null}
-            Guardar cambios
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_name">Nombre</Label>
+        <Input id="edit_name" required value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_goal_label">Objetivo (opcional)</Label>
+        <Input
+          id="edit_goal_label"
+          value={goalLabel}
+          onChange={(e) => setGoalLabel(e.target.value)}
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit_daily_calorie_target">Meta calórica diaria (opcional)</Label>
+        <Input
+          id="edit_daily_calorie_target"
+          type="number"
+          min={1}
+          value={dailyCalorieTarget}
+          onChange={(e) =>
+            setDailyCalorieTarget(e.target.value === "" ? "" : Number(e.target.value))
+          }
+        />
+      </div>
+      <Button type="submit" disabled={saving} className="w-fit">
+        {saving ? <Loader2 className="animate-spin" /> : null}
+        Guardar cambios
+      </Button>
+    </form>
   );
 }
