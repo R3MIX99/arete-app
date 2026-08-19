@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, Flame, RotateCcw, Repeat, ShoppingCart } from "lucide-react";
+import { ChevronDown, Copy, Flame, RotateCcw, Repeat, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -25,7 +25,6 @@ import type {
   ShoppingListItem,
 } from "@/lib/types/client-nutrition";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -433,7 +432,10 @@ export function ClientNutritionView({
           </div>
         </TabsContent>
 
-        <TabsContent value="semana" className="flex flex-col gap-3 pt-4">
+        {/* Sin tarjetas: cada día es una fila que abre/cierra, igual que
+            los bloques de "Hoy" — se deja el mismo padding a los lados
+            (px-5) que tenía la tarjeta, solo se le quita el fondo/borde. */}
+        <TabsContent value="semana" className="flex flex-col pt-4">
           {weekDates().map((date, index) => {
             // Hoy lleva además las sustituciones puntuales de hoy; los
             // demás días muestran el plan con las permanentes aplicadas,
@@ -442,7 +444,7 @@ export function ClientNutritionView({
             const totals = roundTotals(planTotals(dayPlan));
             const isOpen = expandedDays.has(date);
             return (
-              <Card key={date} className="overflow-hidden py-0">
+              <div key={date}>
                 <button
                   type="button"
                   className="flex w-full items-center gap-3 px-5 py-3.5 text-left"
@@ -472,7 +474,7 @@ export function ClientNutritionView({
                 </button>
 
                 {isOpen && (
-                  <CardContent className="flex flex-col gap-3 border-t pt-4 pb-5">
+                  <div className="flex flex-col gap-3 px-5 pt-1 pb-5">
                     {dayPlan.blocks.map((block) => {
                       const blockTotalsRounded = roundTotals(blockTotals(block));
                       return (
@@ -516,9 +518,9 @@ export function ClientNutritionView({
                         </div>
                       );
                     })}
-                  </CardContent>
+                  </div>
                 )}
-              </Card>
+              </div>
             );
           })}
         </TabsContent>
@@ -677,6 +679,22 @@ function FoodDetailDrawer({
   );
 }
 
+/** Misma lista, en texto plano — para el botón de copiar. Cada línea:
+ * "- Nombre: 450 g (≈ 3 piezas)", lista para pegar en un chat o enviar. */
+function shoppingListToText(items: ShoppingListItem[]): string {
+  return items
+    .map((item) => {
+      const equivalence =
+        item.householdUnitName && item.householdUnitQuantity
+          ? ` (≈ ${item.householdUnitQuantity} ${
+              item.householdUnitQuantity === 1 ? item.householdUnitName : `${item.householdUnitName}s`
+            })`
+          : "";
+      return `- ${item.name}: ${item.totalGrams} g${equivalence}`;
+    })
+    .join("\n");
+}
+
 function ShoppingListDialog({
   open,
   onOpenChange,
@@ -686,8 +704,36 @@ function ShoppingListDialog({
   onOpenChange: (open: boolean) => void;
   items: ShoppingListItem[];
 }) {
+  async function handleCopy() {
+    if (items.length === 0) return;
+    try {
+      await navigator.clipboard.writeText(shoppingListToText(items));
+      toast.success("Lista copiada");
+    } catch {
+      toast.error("No se pudo copiar la lista");
+    }
+  }
+
   return (
-    <ResponsiveDialog open={open} onOpenChange={onOpenChange} title="Lista de compras de la semana">
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={
+        <span className="flex w-full items-center justify-between gap-2">
+          Lista de compras de la semana
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              aria-label="Copiar lista de compras como texto"
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <Copy className="size-4" />
+            </button>
+          )}
+        </span>
+      }
+    >
       <div className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">
           Lo que necesitas comprar para cumplir tu dieta los próximos 7 días — tu plan se repite a
@@ -698,12 +744,9 @@ function ShoppingListDialog({
             Todavía no hay alimentos en tu plan para armar una lista.
           </p>
         ) : (
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col">
             {items.map((item) => (
-              <div
-                key={item.foodId}
-                className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5"
-              >
+              <div key={item.foodId} className="flex items-center gap-2.5 py-2.5">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
                   {React.createElement(foodCategoryIcon(item.categorySlug), { className: "size-4" })}
                 </div>
