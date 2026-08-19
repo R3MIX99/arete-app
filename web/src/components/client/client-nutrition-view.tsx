@@ -433,8 +433,10 @@ export function ClientNutritionView({
         </TabsContent>
 
         {/* Sin tarjetas: cada día es una fila que abre/cierra, igual que
-            los bloques de "Hoy" — se deja el mismo padding a los lados
-            (px-5) que tenía la tarjeta, solo se le quita el fondo/borde. */}
+            los bloques de "Hoy" — sin padding propio a los lados, para
+            que llegue exactamente a la misma orilla que "Hoy" y el botón
+            de "Lista de compras" (ese padding ya lo da el contenedor de
+            toda la página). */}
         <TabsContent value="semana" className="flex flex-col pt-4">
           {weekDates().map((date, index) => {
             // Hoy lleva además las sustituciones puntuales de hoy; los
@@ -447,7 +449,7 @@ export function ClientNutritionView({
               <div key={date}>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-3 px-5 py-3.5 text-left"
+                  className="flex w-full items-center gap-3 py-3.5 text-left"
                   onClick={() =>
                     setExpandedDays((prev) => {
                       const next = new Set(prev);
@@ -474,7 +476,7 @@ export function ClientNutritionView({
                 </button>
 
                 {isOpen && (
-                  <div className="flex flex-col gap-3 px-5 pt-1 pb-5">
+                  <div className="flex flex-col gap-3 pt-1 pb-5">
                     {dayPlan.blocks.map((block) => {
                       const blockTotalsRounded = roundTotals(blockTotals(block));
                       return (
