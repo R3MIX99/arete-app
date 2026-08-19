@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { youtubeThumbnails } from "@/lib/youtube";
 import { ClientTrainingTabs } from "@/components/client/client-training-tabs";
 import type { CompletedSessionRow, ClientExerciseProgress } from "@/lib/types/client-panel";
 import type { ProgressMeasurement, ProgressPhotoEntry } from "@/lib/types/progress";
@@ -16,6 +17,8 @@ interface SessionRow {
 interface ExerciseRef {
   name: string;
   muscle_group: string;
+  image_path: string | null;
+  video_url: string | null;
 }
 
 interface SetLogRow {
@@ -50,12 +53,15 @@ export default async function ClientTrainingPage() {
   ] = await Promise.all([
       supabase
         .from("client_sessions")
+        // 200 en vez de 40: con los filtros por rango de fechas del
+        // Historial (3/6 meses, personalizado) 40 se quedaba corto para
+        // un cliente que entrena seguido.
         .select("id, session_date, finished_at, duration_seconds, routines(name)")
         .eq("client_id", user.id)
         .eq("status", "completed")
         .order("session_date", { ascending: false })
         .order("finished_at", { ascending: false })
-        .limit(40),
+        .limit(200),
       supabase
         .from("progress_measurements")
         .select("id, entry_date, metric_key, value, notes")
@@ -69,7 +75,9 @@ export default async function ClientTrainingPage() {
         .order("entry_date"),
       supabase
         .from("client_set_logs")
-        .select("session_date, actual_weight, actual_reps, exercise_id, exercises(name, muscle_group)")
+        .select(
+          "session_date, actual_weight, actual_reps, exercise_id, exercises(name, muscle_group, image_path, video_url)",
+        )
         .eq("client_id", user.id)
         .eq("is_completed", true)
         .order("session_date"),
@@ -111,6 +119,13 @@ export default async function ClientTrainingPage() {
       logs: [],
       currentWeight: null,
       currentReps: null,
+      lastDate: null,
+      // Misma regla que la vista previa de una rutina: foto propia si
+      // hay, si no la miniatura del video — mejor que un ícono genérico.
+      imageUrl: exercise.image_path
+        ? supabase.storage.from("exercise-images").getPublicUrl(exercise.image_path).data.publicUrl
+        : (youtubeThumbnails(exercise.video_url)?.primary ?? null),
+      imageFallbackUrl: exercise.image_path ? null : (youtubeThumbnails(exercise.video_url)?.fallback ?? null),
     };
     if (row.actual_weight !== null) {
       const existingForDate = existing.logs.find((l) => l.date === row.session_date);
@@ -136,6 +151,7 @@ export default async function ClientTrainingPage() {
         logs: sortedLogs,
         currentWeight: latest?.weight ?? null,
         currentReps: latest?.reps ?? null,
+        lastDate: latest?.date ?? null,
       };
     })
     .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));

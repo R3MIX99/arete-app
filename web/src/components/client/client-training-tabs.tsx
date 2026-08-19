@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarClock, ChevronRight, Dumbbell } from "lucide-react";
+import { CalendarClock, ChevronRight, Dumbbell, Search } from "lucide-react";
 
 import { formatDate } from "@/lib/format";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/lib/types/progress";
 import type { ClientExerciseProgress, CompletedSessionRow } from "@/lib/types/client-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -24,6 +25,7 @@ import {
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { ProgressPhotoThumbnail } from "@/components/trainer/progress-photo-thumbnail";
 import { ClientExerciseEvolution } from "@/components/client/client-exercise-evolution";
+import { DateRangeFilter, type SessionDateRange } from "@/components/client/date-range-filter";
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return "";
@@ -46,6 +48,23 @@ export function ClientTrainingTabs({
   exerciseProgress: ClientExerciseProgress[];
 }) {
   const [metric, setMetric] = useState<MeasurementKey>("weight_kg");
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyDateRange, setHistoryDateRange] = useState<SessionDateRange | null>(null);
+
+  const filteredSessions = useMemo(() => {
+    const query = historySearch.trim().toLowerCase();
+    return completedSessions.filter((session) => {
+      if (query && !session.routineName.toLowerCase().includes(query)) return false;
+      if (historyDateRange) {
+        // session_date es 'YYYY-MM-DD' — se compara como fecha local a
+        // medianoche, para que el día del filtro incluya toda la fecha
+        // sin importar la hora exacta de la sesión.
+        const sessionDate = new Date(`${session.sessionDate}T00:00:00`);
+        if (sessionDate < historyDateRange.from || sessionDate > historyDateRange.to) return false;
+      }
+      return true;
+    });
+  }, [completedSessions, historySearch, historyDateRange]);
 
   const activeField = MEASUREMENT_FIELDS.find((f) => f.key === metric)!;
   const measurementPoints = useMemo(
@@ -79,7 +98,7 @@ export function ClientTrainingTabs({
           <TabsTrigger value="evolucion">Evolución</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="historial" className="mt-4">
+        <TabsContent value="historial" className="mt-4 flex flex-col gap-3">
           {completedSessions.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 text-center">
               <CalendarClock className="size-8 text-muted-foreground" />
@@ -89,35 +108,54 @@ export function ClientTrainingTabs({
               </p>
             </div>
           ) : (
-            // Sin tarjetas: lista plana, una fila compacta por sesión —
-            // el chip de series completadas es el insight rápido, sin
-            // tener que abrir el detalle.
-            <div className="flex flex-col">
-              {completedSessions.map((session) => (
-                <Link
-                  key={session.id}
-                  href={`/cliente/entrenamiento/sesion/${session.id}`}
-                  className="flex items-center gap-3 py-2.5 transition-colors hover:bg-accent/40"
-                >
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Dumbbell className="size-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{session.routineName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(session.sessionDate)}
-                      {session.durationSeconds ? ` · ${formatDuration(session.durationSeconds)}` : ""}
-                    </p>
-                  </div>
-                  {session.completedSets > 0 && (
-                    <span className="shrink-0 rounded-full bg-primary/12 px-2.5 py-1 text-xs tabular-nums text-primary">
-                      {session.completedSets} series
-                    </span>
-                  )}
-                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                </Link>
-              ))}
-            </div>
+            <>
+              <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    placeholder="Buscar rutina"
+                    className="pl-9"
+                  />
+                </div>
+                <DateRangeFilter value={historyDateRange} onChange={setHistoryDateRange} />
+              </div>
+
+              {filteredSessions.length === 0 ? (
+                <p className="py-10 text-center text-sm text-muted-foreground">Sin resultados.</p>
+              ) : (
+                // Sin tarjetas: lista plana, una fila compacta por sesión
+                // — el chip de series completadas es el insight rápido,
+                // sin tener que abrir el detalle.
+                <div className="flex flex-col">
+                  {filteredSessions.map((session) => (
+                    <Link
+                      key={session.id}
+                      href={`/cliente/entrenamiento/sesion/${session.id}`}
+                      className="flex items-center gap-3 py-3.5 transition-colors hover:bg-accent/40"
+                    >
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <Dumbbell className="size-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{session.routineName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(session.sessionDate)}
+                          {session.durationSeconds ? ` · ${formatDuration(session.durationSeconds)}` : ""}
+                        </p>
+                      </div>
+                      {session.completedSets > 0 && (
+                        <span className="shrink-0 rounded-full bg-primary/12 px-2.5 py-1 text-xs tabular-nums text-primary">
+                          {session.completedSets} series
+                        </span>
+                      )}
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </TabsContent>
 

@@ -59,6 +59,11 @@ export interface ClientExerciseProgress {
    * registrada (p. ej. si solo se hizo con series de cardio). */
   currentWeight: number | null;
   currentReps: number | null;
+  /** Fecha del registro más reciente (mismo día que currentWeight/
+   * currentReps) — se muestra abajo del peso en la lista de Evolución. */
+  lastDate: string | null;
+  imageUrl: string | null;
+  imageFallbackUrl: string | null;
 }
 
 /** Reseña que el cliente deja al terminar una sesión — campos de cardio

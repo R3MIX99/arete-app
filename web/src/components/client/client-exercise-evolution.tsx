@@ -4,12 +4,13 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
 
-import { muscleGroupLabel } from "@/lib/format";
+import { formatDate, muscleGroupLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ClientExerciseProgress } from "@/lib/types/client-panel";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { ThumbnailImage } from "@/components/client/thumbnail-image";
 
 export function ClientExerciseEvolution({
   exerciseProgress,
@@ -111,28 +112,48 @@ export function ClientExerciseEvolution({
       {filtered.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">Sin resultados.</p>
       ) : (
-        // Sin tarjetas: lista plana, una fila compacta por ejercicio — el
-        // chip muestra el peso y las reps de la serie más reciente, así
-        // se ve "en qué vas" sin entrar al detalle de cada uno.
+        // Sin tarjetas, pero con la misma pinta que la vista previa de un
+        // ejercicio de rutina: foto a la izquierda, nombre arriba, peso y
+        // reps de la serie más reciente debajo, y la fecha de ese
+        // registro abajo en gris clarito.
         <div className="flex flex-col">
           {filtered.map((exercise) => (
             <Link
               key={exercise.exerciseId}
               href={`/cliente/entrenamiento/evolucion/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&muscle=${encodeURIComponent(exercise.muscleGroup)}`}
-              className="flex items-center gap-3 py-2.5 transition-colors hover:bg-accent/40"
+              className="flex items-center gap-3 py-3.5 transition-colors hover:bg-accent/40"
             >
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <TrendingUp className="size-4" />
+              <div className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-primary/10">
+                {exercise.imageUrl ? (
+                  <ThumbnailImage
+                    src={exercise.imageUrl}
+                    fallbackSrc={exercise.imageFallbackUrl}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-primary">
+                    <TrendingUp className="size-5" />
+                  </div>
+                )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{exercise.exerciseName}</p>
-                <p className="text-xs text-muted-foreground">{muscleGroupLabel(exercise.muscleGroup)}</p>
+                <p className="truncate text-sm font-semibold">{exercise.exerciseName}</p>
+                {exercise.currentWeight !== null ? (
+                  <p className="mt-0.5 truncate text-sm font-medium text-primary tabular-nums">
+                    {exercise.currentWeight} kg
+                    {exercise.currentReps !== null ? ` × ${exercise.currentReps} reps` : ""}
+                  </p>
+                ) : (
+                  <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                    {muscleGroupLabel(exercise.muscleGroup)}
+                  </p>
+                )}
+                {exercise.lastDate ? (
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
+                    {formatDate(exercise.lastDate)}
+                  </p>
+                ) : null}
               </div>
-              {exercise.currentWeight !== null && (
-                <span className="shrink-0 rounded-full bg-primary/12 px-2.5 py-1 text-xs tabular-nums text-primary">
-                  {exercise.currentWeight} kg{exercise.currentReps !== null ? ` × ${exercise.currentReps}` : ""}
-                </span>
-              )}
               <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
             </Link>
           ))}
