@@ -276,7 +276,11 @@ export function ExercisesBrowser({
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        // Grid en vez de una sola columna: en pantallas grandes las
+        // tarjetas quedaban estiradas de punta a punta, ilegibles. Con
+        // un ancho mínimo por tarjeta caben ~3 por fila en desktop y
+        // se acomodan solas en pantallas más chicas.
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((exercise) => {
             const hasVideo = Boolean(exercise.video_url);
             const uploadedImageUrl = exercise.image_path
