@@ -21,7 +21,7 @@ import type { CommunityExerciseOption, MuscleGroup, Equipment } from "@/lib/type
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ThumbnailImage } from "@/components/client/thumbnail-image";
 import {
@@ -353,56 +353,70 @@ export function ExerciseCommunityBrowser({
               : null;
             const thumbs = uploadedImageUrl ? null : youtubeThumbnails(exercise.video_url);
             return (
-              // Clic en cualquier parte de la tarjeta abre el detalle —
-              // antes solo se podía agregar a ciegas, sin ver el video
-              // ni la descripción del ejercicio.
-              <button
+              <Card
                 key={exercise.id}
-                type="button"
-                onClick={() => setDetailExercise(exercise)}
-                className="text-left"
+                className="card-hover-glow gap-0 overflow-hidden py-0 transition-colors hover:border-primary/40"
               >
-                <Card className="card-hover-glow gap-0 overflow-hidden py-0 transition-colors hover:border-primary/40">
-                  <CardContent className="flex items-center gap-3 p-1.5 pr-3">
-                    <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-primary/12">
-                      {uploadedImageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={uploadedImageUrl}
-                          alt=""
-                          className="absolute inset-0 h-full w-full object-cover"
-                        />
-                      ) : thumbs ? (
-                        <ThumbnailImage
-                          src={thumbs.primary}
-                          fallbackSrc={thumbs.fallback}
-                          className="absolute inset-0 h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                          <Dumbbell className="size-6" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1 py-1">
-                      <p className="truncate text-sm font-semibold">{exercise.name}</p>
-                      <p className="truncate text-[11px] text-muted-foreground">Por {exercise.creator_name}</p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <Badge variant="secondary">{muscleGroupLabel(exercise.muscle_group)}</Badge>
-                        <Badge variant="secondary">{equipmentLabel(exercise.equipment)}</Badge>
+                {/* Clic en la imagen/texto abre el detalle — el botón de
+                    agregar de abajo es aparte, para poder sumarlo sin
+                    tener que pasar por el detalle si ya sabes qué es. */}
+                <button
+                  type="button"
+                  onClick={() => setDetailExercise(exercise)}
+                  className="flex w-full items-center gap-3 p-1.5 pr-3 text-left"
+                >
+                  <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-primary/12">
+                    {uploadedImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={uploadedImageUrl}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : thumbs ? (
+                      <ThumbnailImage
+                        src={thumbs.primary}
+                        fallbackSrc={thumbs.fallback}
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                        <Dumbbell className="size-6" />
                       </div>
-                      {exercise.in_my_library && (
-                        <Badge
-                          variant="secondary"
-                          className="mt-1.5 w-fit gap-1 border-transparent bg-indigo-500/15 text-[10px] text-indigo-600 dark:text-indigo-400"
-                        >
-                          <Check className="size-3" /> En tu biblioteca
-                        </Badge>
-                      )}
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 py-1">
+                    <p className="truncate text-sm font-semibold">{exercise.name}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">Por {exercise.creator_name}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <Badge variant="secondary">{muscleGroupLabel(exercise.muscle_group)}</Badge>
+                      <Badge variant="secondary">{equipmentLabel(exercise.equipment)}</Badge>
                     </div>
-                  </CardContent>
-                </Card>
-              </button>
+                    {exercise.in_my_library && (
+                      <Badge
+                        variant="secondary"
+                        className="mt-1.5 w-fit gap-1 border-transparent bg-indigo-500/15 text-[10px] text-indigo-600 dark:text-indigo-400"
+                      >
+                        <Check className="size-3" /> En tu biblioteca
+                      </Badge>
+                    )}
+                  </div>
+                </button>
+
+                {!exercise.in_my_library && (
+                  <div className="flex justify-end border-t px-3 py-2.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={addingId === exercise.id}
+                      onClick={() => addToLibrary(exercise)}
+                    >
+                      <Plus className="size-3.5" /> Agregar a tu biblioteca
+                    </Button>
+                  </div>
+                )}
+              </Card>
             );
           })}
         </div>
