@@ -16,12 +16,14 @@ import { toast } from "sonner";
 
 import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
+import { youtubeThumbnails, youtubeVideoId } from "@/lib/youtube";
 import type { CommunityExerciseOption, MuscleGroup, Equipment } from "@/lib/types/exercise";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { ThumbnailImage } from "@/components/client/thumbnail-image";
 import {
   Select,
   SelectContent,
@@ -83,6 +85,7 @@ export function ExerciseCommunityBrowser({
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [sortOpen, setSortOpen] = React.useState(false);
   const [addingId, setAddingId] = React.useState<string | null>(null);
+  const [detailExercise, setDetailExercise] = React.useState<CommunityExerciseOption | null>(null);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -148,6 +151,7 @@ export function ExerciseCommunityBrowser({
         return;
       }
       toast.success(`"${exercise.name}" agregado a tu biblioteca`);
+      setDetailExercise(null);
       router.refresh();
       return;
     }
@@ -167,6 +171,7 @@ export function ExerciseCommunityBrowser({
       return;
     }
     toast.success(`"${exercise.name}" agregado a tu biblioteca`);
+    setDetailExercise(null);
     router.refresh();
   }
 
@@ -340,59 +345,151 @@ export function ExerciseCommunityBrowser({
           <p className="text-sm">Ningún ejercicio coincide con la búsqueda o los filtros.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="flex flex-col gap-3">
           {filtered.map((exercise) => {
-            const imageUrl = exercise.image_path
+            const uploadedImageUrl = exercise.image_path
               ? createClient().storage.from("exercise-images").getPublicUrl(exercise.image_path)
                   .data.publicUrl
               : null;
+            const thumbs = uploadedImageUrl ? null : youtubeThumbnails(exercise.video_url);
             return (
-            <Card key={exercise.id} className="h-full overflow-hidden gap-0 py-0">
-              {imageUrl ? (
-                <div className="h-28 w-full overflow-hidden bg-primary/12">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-                </div>
-              ) : null}
-              <CardContent className="flex h-full flex-col gap-3 py-4">
-                {!imageUrl && (
-                  <div className="flex size-10 items-center justify-center rounded-full bg-foreground/[0.06] text-muted-foreground">
-                    <Dumbbell className="size-[18px]" />
-                  </div>
-                )}
-                <div className="mt-auto flex flex-col gap-1">
-                  <p className="truncate text-sm font-semibold">{exercise.name}</p>
-                  <p className="truncate text-[11px] text-muted-foreground">Por {exercise.creator_name}</p>
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    <Badge variant="secondary">{muscleGroupLabel(exercise.muscle_group)}</Badge>
-                    <Badge variant="secondary">{equipmentLabel(exercise.equipment)}</Badge>
-                  </div>
-                  {exercise.in_my_library ? (
-                    <Badge
-                      variant="secondary"
-                      className="mt-1 w-fit gap-1 border-transparent bg-indigo-500/15 text-[10px] text-indigo-600 dark:text-indigo-400"
-                    >
-                      <Check className="size-3" /> En tu biblioteca
-                    </Badge>
-                  ) : (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="mt-1 w-fit"
-                      disabled={addingId === exercise.id}
-                      onClick={() => addToLibrary(exercise)}
-                    >
-                      <Plus className="size-3.5" /> Agregar
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              // Clic en cualquier parte de la tarjeta abre el detalle —
+              // antes solo se podía agregar a ciegas, sin ver el video
+              // ni la descripción del ejercicio.
+              <button
+                key={exercise.id}
+                type="button"
+                onClick={() => setDetailExercise(exercise)}
+                className="text-left"
+              >
+                <Card className="card-hover-glow gap-0 overflow-hidden py-0 transition-colors hover:border-primary/40">
+                  <CardContent className="flex items-center gap-3 p-1.5 pr-3">
+                    <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-primary/12">
+                      {uploadedImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={uploadedImageUrl}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : thumbs ? (
+                        <ThumbnailImage
+                          src={thumbs.primary}
+                          fallbackSrc={thumbs.fallback}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                          <Dumbbell className="size-6" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 py-1">
+                      <p className="truncate text-sm font-semibold">{exercise.name}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">Por {exercise.creator_name}</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <Badge variant="secondary">{muscleGroupLabel(exercise.muscle_group)}</Badge>
+                        <Badge variant="secondary">{equipmentLabel(exercise.equipment)}</Badge>
+                      </div>
+                      {exercise.in_my_library && (
+                        <Badge
+                          variant="secondary"
+                          className="mt-1.5 w-fit gap-1 border-transparent bg-indigo-500/15 text-[10px] text-indigo-600 dark:text-indigo-400"
+                        >
+                          <Check className="size-3" /> En tu biblioteca
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </button>
             );
           })}
         </div>
       )}
+
+      {/* Detalle del ejercicio de la comunidad: video, descripción,
+          equipo/grupo muscular — y el botón de agregar vive aquí adentro
+          en vez de en la tarjeta, así antes de sumarlo a la biblioteca
+          propia se puede ver de verdad qué es y cómo se hace. En
+          teléfono sale como drawer y en computadora como modal (los
+          maneja ResponsiveDialog solo). */}
+      <ResponsiveDialog
+        open={detailExercise !== null}
+        onOpenChange={(open) => !open && setDetailExercise(null)}
+        title={detailExercise?.name ?? ""}
+      >
+        {detailExercise && (
+          <div className="flex flex-col gap-4">
+            {(() => {
+              const videoId = detailExercise.video_url ? youtubeVideoId(detailExercise.video_url) : null;
+              const uploadedImageUrl = detailExercise.image_path
+                ? createClient().storage.from("exercise-images").getPublicUrl(detailExercise.image_path)
+                    .data.publicUrl
+                : null;
+              const thumbs = uploadedImageUrl ? null : youtubeThumbnails(detailExercise.video_url);
+              if (videoId) {
+                return (
+                  <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
+                    <iframe
+                      className="size-full"
+                      src={`https://www.youtube.com/embed/${videoId}`}
+                      title={detailExercise.name}
+                      allowFullScreen
+                    />
+                  </div>
+                );
+              }
+              if (uploadedImageUrl || thumbs) {
+                return (
+                  <div className="aspect-video w-full overflow-hidden rounded-lg bg-primary/12">
+                    <ThumbnailImage
+                      src={uploadedImageUrl ?? thumbs!.primary}
+                      fallbackSrc={thumbs?.fallback ?? null}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                );
+              }
+              return (
+                <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-primary/12 text-muted-foreground">
+                  <Dumbbell className="size-8" />
+                </div>
+              );
+            })()}
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge variant="secondary">{muscleGroupLabel(detailExercise.muscle_group)}</Badge>
+              <Badge variant="secondary">{equipmentLabel(detailExercise.equipment)}</Badge>
+            </div>
+
+            <p className="text-xs text-muted-foreground">Por {detailExercise.creator_name}</p>
+
+            {detailExercise.description ? (
+              <p className="text-sm text-muted-foreground">{detailExercise.description}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">Sin descripción.</p>
+            )}
+
+            {detailExercise.in_my_library ? (
+              <Badge
+                variant="secondary"
+                className="w-fit gap-1 border-transparent bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
+              >
+                <Check className="size-3.5" /> Ya está en tu biblioteca
+              </Badge>
+            ) : (
+              <Button
+                type="button"
+                disabled={addingId === detailExercise.id}
+                onClick={() => addToLibrary(detailExercise)}
+              >
+                <Plus /> Agregar a mi biblioteca
+              </Button>
+            )}
+          </div>
+        )}
+      </ResponsiveDialog>
     </div>
   );
 }
