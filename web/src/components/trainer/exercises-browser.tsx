@@ -6,11 +6,13 @@ import { Search, Plus, Dumbbell, PlayCircle, SlidersHorizontal, FilterX } from "
 
 import { createClient } from "@/lib/supabase/client";
 import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
+import { youtubeThumbnails } from "@/lib/youtube";
 import type { ExerciseSummary, MuscleGroup, Equipment } from "@/lib/types/exercise";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ThumbnailImage } from "@/components/client/thumbnail-image";
 import {
   Select,
   SelectContent,
@@ -277,21 +279,34 @@ export function ExercisesBrowser({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((exercise) => {
             const hasVideo = Boolean(exercise.video_url);
-            const imageUrl = exercise.image_path
+            const uploadedImageUrl = exercise.image_path
               ? createClient().storage.from("exercise-images").getPublicUrl(exercise.image_path)
                   .data.publicUrl
               : null;
+            // Sin foto propia, la miniatura del video es mejor que un
+            // ícono genérico — mismo criterio que ya se usa en las
+            // tarjetas de ejercicio del panel de cliente.
+            const thumbs = uploadedImageUrl ? null : youtubeThumbnails(exercise.video_url);
+            const hasImage = Boolean(uploadedImageUrl || thumbs);
             return (
               <Link key={exercise.id} href={`/entrenador/ejercicios/${exercise.id}`}>
                 <Card className="h-full overflow-hidden card-hover-glow transition-colors hover:border-primary/40 gap-0 py-0">
-                  {imageUrl ? (
+                  {uploadedImageUrl ? (
                     <div className="h-28 w-full overflow-hidden bg-primary/12">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                      <img src={uploadedImageUrl} alt="" className="h-full w-full object-cover" />
+                    </div>
+                  ) : thumbs ? (
+                    <div className="h-28 w-full overflow-hidden bg-primary/12">
+                      <ThumbnailImage
+                        src={thumbs.primary}
+                        fallbackSrc={thumbs.fallback}
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                   ) : null}
                   <CardContent className="flex h-full flex-col gap-3 py-4">
-                    {!imageUrl && (
+                    {!hasImage && (
                       <div
                         className={
                           hasVideo
