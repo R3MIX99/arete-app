@@ -60,6 +60,23 @@ function emptyLog(): LogState[string] {
   return { actual_reps: "", actual_weight: "", actual_minutes: "", actual_level: "", is_completed: false };
 }
 
+/** Arma el state de `logs` a partir de las filas que llegaron del
+ * servidor — se usa tanto en el primer render como cada vez que
+ * `initialLogs` cambia de referencia (tras un router.refresh()). */
+function buildLogState(initialLogs: SessionSetLog[]): LogState {
+  const state: LogState = {};
+  for (const log of initialLogs) {
+    state[log.routine_exercise_set_id] = {
+      actual_reps: log.actual_reps?.toString() ?? "",
+      actual_weight: log.actual_weight?.toString() ?? "",
+      actual_minutes: log.actual_minutes?.toString() ?? "",
+      actual_level: log.actual_level?.toString() ?? "",
+      is_completed: log.is_completed,
+    };
+  }
+  return state;
+}
+
 /** Resumen del objetivo del ejercicio ("3 series x 10-12 reps") a partir
  * de su primera serie — se muestra siempre, incluso con la pestaña
  * cerrada, para que el cliente sepa qué le toca sin tener que abrirla. */
@@ -136,19 +153,35 @@ export function WorkoutSessionView({
   const [startedAt] = useState<number>(() => Date.now());
   const startedAtRef = useRef<number>(startedAt);
 
-  const [logs, setLogs] = useState<LogState>(() => {
-    const state: LogState = {};
-    for (const log of initialLogs) {
-      state[log.routine_exercise_set_id] = {
-        actual_reps: log.actual_reps?.toString() ?? "",
-        actual_weight: log.actual_weight?.toString() ?? "",
-        actual_minutes: log.actual_minutes?.toString() ?? "",
-        actual_level: log.actual_level?.toString() ?? "",
-        is_completed: log.is_completed,
-      };
-    }
-    return state;
-  });
+  const [logs, setLogs] = useState<LogState>(() => buildLogState(initialLogs));
+  // Referencia al `initialLogs` ya aplicado, para no volver a pisar
+  // `logs` con el mismo array en cada render (solo cuando el servidor
+  // manda una referencia nueva, es decir, datos de verdad distintos).
+  const appliedInitialLogsRef = useRef(initialLogs);
+
+  // Next.js guarda en caché (Router Cache) la última vez que se
+  // renderizó esta pantalla y la reutiliza al volver con "atrás" o con
+  // navegación entre pestañas del panel de cliente (p. ej. ir a
+  // Configuración y regresar) — así que sin esto se podían ver los
+  // campos vacíos/desactualizados aunque ya estuvieran guardados en la
+  // base de datos, hasta recargar la página entera. router.refresh()
+  // fuerza a volver a pedir los datos reales del servidor cada vez que
+  // se entra a esta pantalla, sin perder el estado de la sesión en
+  // curso (cronómetro, expandido, etc.).
+  useEffect(() => {
+    router.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Cuando el refresh de arriba trae `initialLogs` actualizados (nueva
+  // referencia = datos distintos), se resincroniza el state local con
+  // lo que de verdad hay guardado — así vuelve a mostrar el peso/reps
+  // que sí se habían guardado antes de salir de esta pantalla.
+  useEffect(() => {
+    if (initialLogs === appliedInitialLogsRef.current) return;
+    appliedInitialLogsRef.current = initialLogs;
+    setLogs(buildLogState(initialLogs));
+  }, [initialLogs]);
 
   // Crea la sesión si aún no existe (primera vez que el cliente abre esta rutina hoy).
   useEffect(() => {
