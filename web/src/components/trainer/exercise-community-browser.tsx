@@ -404,11 +404,10 @@ export function ExerciseCommunityBrowser({
                 </button>
 
                 {!exercise.in_my_library && (
-                  <div className="flex justify-end border-t px-3 py-2.5">
+                  <div className="flex justify-end px-3 pb-3">
                     <Button
                       type="button"
                       size="sm"
-                      variant="outline"
                       disabled={addingId === exercise.id}
                       onClick={() => addToLibrary(exercise)}
                     >
