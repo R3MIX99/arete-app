@@ -52,7 +52,7 @@ export function LibraryExercisesBrowser({ exercises }: { exercises: ExerciseSumm
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="flex flex-col gap-3">
           {filtered.map((exercise) => {
             const hasVideo = Boolean(exercise.video_url);
             const uploadedImageUrl = exercise.image_path
@@ -63,37 +63,42 @@ export function LibraryExercisesBrowser({ exercises }: { exercises: ExerciseSumm
             // ícono genérico — mismo criterio que ya se usa en las
             // tarjetas de ejercicio del panel de cliente.
             const thumbs = uploadedImageUrl ? null : youtubeThumbnails(exercise.video_url);
-            const hasImage = Boolean(uploadedImageUrl || thumbs);
             return (
               <Link key={exercise.id} href={`/superadmin/biblioteca/ejercicios/${exercise.id}`}>
-                <Card className="h-full overflow-hidden card-hover-glow transition-colors hover:border-primary/40 gap-0 py-0">
-                  {uploadedImageUrl ? (
-                    <div className="h-28 w-full overflow-hidden bg-primary/12">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={uploadedImageUrl} alt="" className="h-full w-full object-cover" />
+                {/* Horizontal en vez de imagen arriba/texto abajo: la
+                    imagen es un cuadro grande a la izquierda (mismo
+                    tratamiento que la vista previa de rutina), el texto
+                    a la derecha — se ve mejor que una franja angosta
+                    arriba de la tarjeta. */}
+                <Card className="card-hover-glow gap-0 overflow-hidden py-0 transition-colors hover:border-primary/40">
+                  <CardContent className="flex items-center gap-3 p-1.5 pr-3">
+                    <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-primary/12">
+                      {uploadedImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={uploadedImageUrl}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : thumbs ? (
+                        <ThumbnailImage
+                          src={thumbs.primary}
+                          fallbackSrc={thumbs.fallback}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className={
+                            hasVideo
+                              ? "absolute inset-0 flex items-center justify-center text-primary"
+                              : "absolute inset-0 flex items-center justify-center text-muted-foreground"
+                          }
+                        >
+                          {hasVideo ? <PlayCircle className="size-6" /> : <Dumbbell className="size-6" />}
+                        </div>
+                      )}
                     </div>
-                  ) : thumbs ? (
-                    <div className="h-28 w-full overflow-hidden bg-primary/12">
-                      <ThumbnailImage
-                        src={thumbs.primary}
-                        fallbackSrc={thumbs.fallback}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ) : null}
-                  <CardContent className="flex h-full flex-col gap-3 py-4">
-                    {!hasImage && (
-                      <div
-                        className={
-                          hasVideo
-                            ? "flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary"
-                            : "flex size-10 items-center justify-center rounded-full bg-foreground/[0.06] text-muted-foreground"
-                        }
-                      >
-                        {hasVideo ? <PlayCircle className="size-[18px]" /> : <Dumbbell className="size-[18px]" />}
-                      </div>
-                    )}
-                    <div className="mt-auto">
+                    <div className="min-w-0 flex-1 py-1">
                       <p className="truncate text-sm font-semibold">{exercise.name}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         <Badge variant="secondary">{muscleGroupLabel(exercise.muscle_group)}</Badge>
