@@ -12,6 +12,7 @@ import {
   Pencil,
   Plus,
   UserCheck,
+  UserMinus,
   UserX,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -55,6 +56,7 @@ import { EditMeasurementDialog } from "@/components/trainer/edit-measurement-dia
 import { MeasurementEntriesTable } from "@/components/trainer/measurement-entries-table";
 import { TrainerSessionDetailSheetContent } from "@/components/trainer/trainer-session-detail-sheet-content";
 import { TrainerExerciseHistorySheetContent } from "@/components/trainer/trainer-exercise-history-sheet-content";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return "";
@@ -86,6 +88,8 @@ export function ClientProfile({
   const isMobile = useIsMobile();
   const [status, setStatus] = React.useState(client.status);
   const [togglingStatus, setTogglingStatus] = React.useState(false);
+  const [removeOpen, setRemoveOpen] = React.useState(false);
+  const [removing, setRemoving] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
   const [addMeasurementOpen, setAddMeasurementOpen] = React.useState(false);
   const [editingMeasurement, setEditingMeasurement] =
@@ -134,6 +138,26 @@ export function ClientProfile({
     router.refresh();
   }
 
+  // "Desactivar" solo apaga un badge — el cliente sigue siendo tuyo y
+  // no puede unirse a otro entrenador. Esto de verdad lo suelta: se
+  // borran la rutina/programa y el plan nutricional que le tenías
+  // asignados (su historial de sesiones/progreso se queda intacto, es
+  // suyo) y trainer_id vuelve a null, para que un enlace de invitación
+  // de OTRO entrenador ya lo pueda tomar.
+  async function handleUnassign() {
+    setRemoving(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("unassign_client", { p_client_id: client.id });
+    setRemoving(false);
+    if (error) {
+      toast.error("No se pudo quitar al cliente. Intenta de nuevo.");
+      return;
+    }
+    toast.success("Cliente removido — ya puede unirse a otro entrenador");
+    router.push("/entrenador/clientes");
+    router.refresh();
+  }
+
   const activeField = MEASUREMENT_FIELDS.find((f) => f.key === metric)!;
   const chartPoints = React.useMemo(
     () =>
@@ -178,6 +202,16 @@ export function ClientProfile({
             <span className="hidden md:inline">
               {status === "active" ? "Desactivar cliente" : "Reactivar cliente"}
             </span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Quitar cliente"
+            onClick={() => setRemoveOpen(true)}
+            className="text-destructive hover:text-destructive"
+          >
+            <UserMinus />
+            <span className="hidden md:inline">Quitar cliente</span>
           </Button>
         </div>
       </div>
@@ -401,6 +435,16 @@ export function ClientProfile({
           </Tabs>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        title={`¿Quitar a ${client.full_name}?`}
+        description="Deja de ser tu cliente y ya no vas a ver su información aquí. Se borran la rutina/programa y el plan nutricional que le tienes asignados — su historial de sesiones, progreso y fotos se conserva, es suyo. Va a poder unirse a otro entrenador con un nuevo enlace de invitación. Esta acción no se puede deshacer."
+        confirmLabel="Quitar cliente"
+        loading={removing}
+        onConfirm={handleUnassign}
+      />
 
       <EditClientDialog open={editOpen} onOpenChange={setEditOpen} client={client} />
 
