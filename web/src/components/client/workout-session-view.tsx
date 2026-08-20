@@ -154,34 +154,37 @@ export function WorkoutSessionView({
   const startedAtRef = useRef<number>(startedAt);
 
   const [logs, setLogs] = useState<LogState>(() => buildLogState(initialLogs));
-  // Referencia al `initialLogs` ya aplicado, para no volver a pisar
-  // `logs` con el mismo array en cada render (solo cuando el servidor
-  // manda una referencia nueva, es decir, datos de verdad distintos).
-  const appliedInitialLogsRef = useRef(initialLogs);
 
-  // Next.js guarda en caché (Router Cache) la última vez que se
-  // renderizó esta pantalla y la reutiliza al volver con "atrás" o con
-  // navegación entre pestañas del panel de cliente (p. ej. ir a
-  // Configuración y regresar) — así que sin esto se podían ver los
-  // campos vacíos/desactualizados aunque ya estuvieran guardados en la
-  // base de datos, hasta recargar la página entera. router.refresh()
-  // fuerza a volver a pedir los datos reales del servidor cada vez que
-  // se entra a esta pantalla, sin perder el estado de la sesión en
-  // curso (cronómetro, expandido, etc.).
+  // Next.js guarda en caché (Router Cache) el último render de esta
+  // pantalla y lo reutiliza al volver con "atrás" o al navegar entre
+  // pestañas del panel de cliente (p. ej. ir a Configuración y volver)
+  // — así que sin esto se podían ver los campos vacíos/desactualizados
+  // aunque ya estuvieran guardados, hasta recargar la página entera.
+  //
+  // En vez de pedirle a Next.js que vuelva a renderizar toda la página
+  // en el servidor (router.refresh() re-ejecuta el fetch de la rutina
+  // completa + sesión + logs en NUESTRO servidor, en cada entrada a la
+  // pantalla — con muchos clientes entrenando al mismo tiempo eso suma
+  // carga innecesaria ahí), se pide directo a Supabase, desde el
+  // navegador, solo los logs de esta sesión — una consulta liviana e
+  // indexada por session_id que ni siquiera pasa por nuestro servidor
+  // Next.js. Igual de "datos de verdad", con mucho menos costo.
   useEffect(() => {
-    router.refresh();
+    if (!sessionId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("client_set_logs")
+        .select("routine_exercise_set_id, actual_reps, actual_weight, actual_minutes, actual_level, is_completed")
+        .eq("session_id", sessionId);
+      if (cancelled || !data) return;
+      setLogs(buildLogState(data as SessionSetLog[]));
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Cuando el refresh de arriba trae `initialLogs` actualizados (nueva
-  // referencia = datos distintos), se resincroniza el state local con
-  // lo que de verdad hay guardado — así vuelve a mostrar el peso/reps
-  // que sí se habían guardado antes de salir de esta pantalla.
-  useEffect(() => {
-    if (initialLogs === appliedInitialLogsRef.current) return;
-    appliedInitialLogsRef.current = initialLogs;
-    setLogs(buildLogState(initialLogs));
-  }, [initialLogs]);
+  }, [sessionId]);
 
   // Crea la sesión si aún no existe (primera vez que el cliente abre esta rutina hoy).
   useEffect(() => {
