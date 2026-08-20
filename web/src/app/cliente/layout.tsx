@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ClientBottomNavGate } from "@/components/client/client-bottom-nav-gate";
 import { ClientTopBar } from "@/components/client/client-top-bar";
+import { LargeTextSync } from "@/components/client/large-text-sync";
 
 export default async function ClientLayout({
   children,
@@ -28,6 +29,7 @@ export default async function ClientLayout({
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
+      <LargeTextSync />
       <ClientTopBar userName={profile?.full_name || user.email || "Mi cuenta"} />
       <main className="flex-1 pb-20">{children}</main>
       <ClientBottomNavGate />

@@ -13,10 +13,12 @@ import {
   Sparkles,
   Trash2,
   User,
+  ZoomIn,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { clientGoalLabels, formatDate } from "@/lib/format";
+import { getLargeTextPref, setLargeTextPref } from "@/lib/large-text";
 import {
   MEASUREMENT_FIELDS,
   type MeasurementKey,
@@ -70,6 +72,12 @@ export function ClientProfileView({
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [requestingDeletion, setRequestingDeletion] = React.useState(false);
+
+  // Preferencia de este dispositivo (localStorage, no la cuenta). Con
+  // inicializador perezoso en vez de un efecto que llame a setState: la
+  // función solo corre en el cliente (getLargeTextPref ya chequea
+  // `typeof window`), así que basta con leerla directo al montar.
+  const [largeText, setLargeText] = React.useState(() => getLargeTextPref());
 
   const activeField = MEASUREMENT_FIELDS.find((f) => f.key === metric)!;
   const points = React.useMemo(
@@ -356,6 +364,33 @@ export function ClientProfileView({
               onCheckedChange={(checked) => {
                 setMealReminders(checked);
                 void updateNotifications({ workout: workoutReminders, meal: checked });
+              }}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Accesibilidad</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <ZoomIn className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Aumentar tamaño de texto</p>
+                <p className="text-xs text-muted-foreground">
+                  Agranda el texto y los botones de toda la app en este dispositivo — útil si te
+                  cuesta leer los números al anotar tus series.
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={largeText}
+              onCheckedChange={(checked) => {
+                setLargeText(checked);
+                setLargeTextPref(checked);
               }}
             />
           </div>

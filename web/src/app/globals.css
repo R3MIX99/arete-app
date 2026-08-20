@@ -3,6 +3,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Texto grande (accesibilidad, panel de cliente) — ver
+ * lib/large-text.ts. Escala el html completo: casi todo en la app usa
+ * rem de Tailwind, así que esto agranda texto Y espaciados a la vez, de
+ * forma consistente, sin tener que tocar componente por componente. */
+html.text-scale-lg {
+  font-size: 120%;
+}
+
 /* ---------------------------------------------------------------------
  * Tokens de Aretia — misma paleta que ya se usó en la app de Flutter
  * (ver app/lib/core/theme/app_colors.dart), portada a variables CSS para

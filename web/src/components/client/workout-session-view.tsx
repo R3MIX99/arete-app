@@ -21,6 +21,7 @@ import {
   Target,
   Timer,
   X,
+  ZoomIn,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -121,6 +122,10 @@ export function WorkoutSessionView({
   // animación de salida.
   const [restLeaving, setRestLeaving] = useState(false);
   const [historyExercise, setHistoryExercise] = useState<SessionExerciseInfo | null>(null);
+  // Drawer de "lupa" (accesibilidad) — mismo ejercicio, pero con inputs
+  // gigantes para clientes mayores a quienes les cuesta ver los números
+  // chicos al anotar sus series. Reutiliza logs/updateField/toggleComplete.
+  const [zoomExercise, setZoomExercise] = useState<SessionExerciseInfo | null>(null);
   // Clic en el cuadro del video: se abre en grande en un popup, ya no se
   // reproduce ahí mismo en el cuadrito chico (se veía muy pequeño).
   const [videoModalExercise, setVideoModalExercise] = useState<SessionExerciseInfo | null>(null);
@@ -637,6 +642,18 @@ export function WorkoutSessionView({
                     >
                       <Calculator className="size-4.5" />
                     </button>
+                    {/* Un poco más grande que los otros dos — pensado para
+                        clientes mayores, así resalta como la opción de
+                        "ver esto en grande". Abre el drawer con inputs
+                        gigantes para anotar las series más fácil. */}
+                    <button
+                      type="button"
+                      onClick={() => setZoomExercise(exercise)}
+                      className="flex size-10 items-center justify-center rounded-full bg-muted text-primary"
+                      aria-label="Ver series en grande"
+                    >
+                      <ZoomIn className="size-5" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -804,6 +821,107 @@ export function WorkoutSessionView({
       >
         {historyExercise ? (
           <ExerciseHistoryList exercise={historyExercise} cardio={isCardio(historyExercise.muscle_group)} />
+        ) : null}
+      </ResponsiveDialog>
+
+      {/* Drawer de accesibilidad ("lupa"): mismas series del ejercicio,
+          pero con inputs enormes — pensado para clientes mayores a
+          quienes les cuesta leer/anotar los números chicos de la tabla
+          normal. Reutiliza logs/updateField/toggleComplete tal cual. */}
+      <ResponsiveDialog
+        open={zoomExercise !== null}
+        onOpenChange={(open) => !open && setZoomExercise(null)}
+        title={zoomExercise ? zoomExercise.exercise_name : ""}
+        contentClassName="sm:max-w-lg"
+      >
+        {zoomExercise ? (
+          <div className="flex flex-col gap-5 pb-2">
+            {zoomExercise.sets.map((set) => {
+              const cardio = isCardio(zoomExercise.muscle_group);
+              const log = logs[set.id] ?? emptyLog();
+              return (
+                <div key={set.id} className="flex items-center gap-3 border-b pb-5 last:border-b-0 last:pb-0">
+                  <span className="w-8 shrink-0 text-2xl font-semibold text-muted-foreground">
+                    {set.set_number}
+                  </span>
+                  <div className="grid flex-1 grid-cols-2 gap-3">
+                    {cardio ? (
+                      <>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-sm font-medium text-muted-foreground">Minutos</span>
+                          <input
+                            inputMode="decimal"
+                            placeholder={set.target_minutes?.toString() ?? "-"}
+                            value={log.actual_minutes}
+                            onChange={(e) =>
+                              updateField(set.id, "actual_minutes", e.target.value, true, set.rest_seconds)
+                            }
+                            className="w-full rounded-lg border-2 border-input bg-transparent px-3 py-3 text-center text-3xl font-semibold tabular-nums outline-none placeholder:text-muted-foreground/50 focus:border-primary"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-sm font-medium text-muted-foreground">Nivel</span>
+                          <input
+                            inputMode="numeric"
+                            placeholder={set.target_level?.toString() ?? "-"}
+                            value={log.actual_level}
+                            onChange={(e) =>
+                              updateField(set.id, "actual_level", e.target.value, true, set.rest_seconds)
+                            }
+                            className="w-full rounded-lg border-2 border-input bg-transparent px-3 py-3 text-center text-3xl font-semibold tabular-nums outline-none placeholder:text-muted-foreground/50 focus:border-primary"
+                          />
+                        </label>
+                      </>
+                    ) : (
+                      <>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-sm font-medium text-muted-foreground">Peso</span>
+                          <input
+                            inputMode="decimal"
+                            placeholder={set.suggested_weight?.toString() ?? "kg"}
+                            value={log.actual_weight}
+                            onChange={(e) =>
+                              updateField(set.id, "actual_weight", e.target.value, false, set.rest_seconds)
+                            }
+                            className="w-full rounded-lg border-2 border-input bg-transparent px-3 py-3 text-center text-3xl font-semibold tabular-nums outline-none placeholder:text-muted-foreground/50 focus:border-primary"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-sm font-medium text-muted-foreground">Reps</span>
+                          <input
+                            inputMode="numeric"
+                            placeholder={
+                              set.target_reps_min && set.target_reps_max
+                                ? `${set.target_reps_min}-${set.target_reps_max}`
+                                : "reps"
+                            }
+                            value={log.actual_reps}
+                            onChange={(e) =>
+                              updateField(set.id, "actual_reps", e.target.value, false, set.rest_seconds)
+                            }
+                            className="w-full rounded-lg border-2 border-input bg-transparent px-3 py-3 text-center text-3xl font-semibold tabular-nums outline-none placeholder:text-muted-foreground/50 focus:border-primary"
+                          />
+                        </label>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleComplete(set.id, cardio, set.rest_seconds)}
+                    className={cn(
+                      "flex size-11 shrink-0 items-center justify-center rounded-full transition-colors",
+                      log.is_completed
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground/50 hover:bg-accent hover:text-foreground",
+                    )}
+                    aria-label="Marcar serie completada"
+                  >
+                    <Check className="size-6" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         ) : null}
       </ResponsiveDialog>
 
