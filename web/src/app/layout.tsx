@@ -46,6 +46,20 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
+  // El zoom táctil (pellizco) del navegador escala toda la página con
+  // una transformación que Chrome/WebView en Android a veces no vuelve
+  // a recortar bien en las esquinas redondeadas — deja un triángulo sin
+  // repintar (confirmado con una grabación de pantalla: aparece justo
+  // durante el pellizco, en cualquier tarjeta o píldora, no es un bug
+  // de un componente en particular). Además, para una app empaquetada
+  // como esta, hacer zoom de toda la página no es una interacción que
+  // se busque — el pellizco accidental durante un entrenamiento es más
+  // un estorbo que una ayuda. Quien necesita texto más grande ya tiene
+  // el interruptor de accesibilidad de Configuración (ver
+  // lib/large-text.ts), que agranda toda la app de forma controlada sin
+  // depender del zoom del navegador.
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
 };
 
