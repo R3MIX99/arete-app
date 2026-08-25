@@ -10,20 +10,19 @@ Documento de fases de desarrollo: `Fases-Desarrollo-App-Gym.md` (en la raíz o c
 
 ## Stack técnico
 
-- **App:** Flutter (Dart), gestión de estado con Riverpod, enrutamiento con go_router.
+- **App:** Next.js (App Router, TypeScript, Tailwind v4, shadcn/ui), empaquetada con Capacitor para Android/iOS como wrapper delgado que carga la web real por `server.url` (no lleva el build de Next.js adentro).
 - **Backend:** Supabase (Postgres, Auth, Storage, Edge Functions, Realtime, extensión pgvector).
-- **IA:** API de Claude (Anthropic), invocada únicamente desde Edge Functions (nunca desde el cliente, para no exponer la API key). El prompt de sistema usado en todas las llamadas a la IA vive en `ai/system.md` y debe cargarse siempre, no reescribirse dentro de cada función.
+- **IA:** API de Claude (Anthropic), invocada únicamente desde Edge Functions (nunca desde el cliente, para no exponer la API key).
 - **Pagos:** Stripe, gestionado desde el sitio web externo (no dentro de la app). La app solo lee el estado de la suscripción desde Supabase.
 - **Video:** enlaces de YouTube (no se almacena video propio).
-- **Notificaciones:** Firebase Cloud Messaging.
-- **Repositorio:** monorepo con `app/` (Flutter), `supabase/` (migraciones, políticas RLS, Edge Functions), `ai/` (prompt de sistema y utilidades de IA), `docs/`.
+- **Repositorio:** `web/` (Next.js + Capacitor + `web/supabase/` con migraciones, políticas RLS y Edge Functions), `docs/`.
 
 ## Reglas no negociables
 
 1. **Sin emojis en ningún lugar**: ni en la interfaz, ni en textos generados por IA, ni en notificaciones, ni en commits o nombres de archivos visibles al usuario. Usar únicamente íconos del sistema de diseño definido en la Fase 0.
 2. **Idioma:** todo texto visible al usuario debe estar en español correcto para Latinoamérica (es-419), con acentos y ortografía revisados. Usar "tú", no "vos", salvo instrucción explícita en contrario. El código (nombres de variables, funciones, archivos) va en inglés.
 3. **Seguridad de datos:** toda tabla nueva en Supabase debe llevar políticas de Row Level Security antes de considerarse terminada. Un entrenador solo accede a sus propios clientes y contenido; un cliente solo accede a su propia información; el superadmin accede a todo.
-4. **IA solo desde el backend:** ninguna llamada directa a la API de Claude desde la app Flutter. Siempre a través de Edge Functions.
+4. **IA solo desde el backend:** ninguna llamada directa a la API de Claude desde la app. Siempre a través de Edge Functions.
 5. **Pagos fuera de la app:** ningún flujo de cobro ni mención de precios ocurre dentro de la interfaz de la app. Los botones relacionados con el plan abren el navegador del sistema hacia el sitio web.
 6. **No diagnosticar ni prescribir medicina:** la app y la IA generan rutinas y planes de alimentación con fines de entrenamiento general. Cualquier texto generado que toque temas de salud debe evitar lenguaje de diagnóstico médico y, cuando el contexto lo amerite (lesiones, condiciones médicas declaradas por el cliente), sugerir consultar a un profesional de la salud.
 7. **Consistencia visual:** respetar el sistema de diseño (paleta, tipografía, iconografía) definido en la Fase 0; no introducir componentes o estilos nuevos sin necesidad.
@@ -55,7 +54,7 @@ Este es el esquema de referencia para todo lo relacionado con nutrición. La sus
 
 ## Dirección visual del diseño
 
-Referencia aprobada por el cliente del proyecto: estética minimalista tipo shadcn/ui — tarjetas con bordes redondeados suaves, mucho espacio en blanco, tipografía clara con jerarquía marcada (títulos grandes, texto secundario en gris), íconos delgados de un solo trazo (sin emojis), sombras muy sutiles en vez de bordes duros, gráficas simples e integradas en tarjetas (no como elementos separados y recargados), y barra de navegación inferior de cuatro o cinco íconos con el ítem activo resaltado. En Flutter esto se traduce en Material 3 con estilo personalizado, no en componentes shadcn literales (esa librería es de React). La paleta de colores exacta (tonos, modo oscuro o claro) todavía no está definida y se debe confirmar antes de aplicar colores finales; hasta entonces, usar una paleta neutra provisional (blancos, grises, un color de acento) que pueda reemplazarse sin rehacer la estructura de los componentes.
+Referencia aprobada por el cliente del proyecto: estética minimalista tipo shadcn/ui — tarjetas con bordes redondeados suaves, mucho espacio en blanco, tipografía clara con jerarquía marcada (títulos grandes, texto secundario en gris), íconos delgados de un solo trazo (sin emojis), sombras muy sutiles en vez de bordes duros, gráficas simples e integradas en tarjetas (no como elementos separados y recargados), y barra de navegación inferior de cuatro o cinco íconos con el ítem activo resaltado. Se implementa con componentes reales de shadcn/ui sobre Tailwind, no una imitación. La paleta de colores exacta (tonos, modo oscuro o claro) todavía no está definida y se debe confirmar antes de aplicar colores finales; hasta entonces, usar una paleta neutra provisional (blancos, grises, un color de acento) que pueda reemplazarse sin rehacer la estructura de los componentes.
 
 ## Patrón de UX para la sesión de entrenamiento del cliente
 
