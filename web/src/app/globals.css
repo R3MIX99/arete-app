@@ -300,37 +300,16 @@ html.text-scale-lg {
   }
 }
 
-/* ---------------------------------------------------------------------
- * Arreglo de esquina "despegada" en Chrome/WebView de Android — segundo
- * intento. El primero (recortar con -webkit-mask-image) no lo resolvió;
- * quedó descartado.
- *
- * Con el reporte más detallado, el patrón real es: aparece justo cuando
- * una <img> real termina de cargar (por red) DENTRO de una caja que ya
- * tiene overflow-hidden + border-radius pintada — el historial de
- * entrenamiento no usa fotos reales (solo un ícono fijo) y nunca
- * muestra el bug; progreso, evolución y nutrición sí cargan fotos y son
- * justo donde aparece. El recorte por overflow-hidden + border-radius
- * usa una ruta de compositing en Chromium que a veces no vuelve a
- * recortar bien cuando llega contenido nuevo (la imagen) después del
- * primer pintado. clip-path usa una ruta de recorte distinta (basada en
- * geometría, no en una capa compuesta aparte) que no tiene ese bug.
- *
- * Los valores de radio están calcados de --radius-sm/md/lg/xl (arriba)
- * y de la escala por defecto de Tailwind para 2xl/xs, que este proyecto
- * no sobreescribe.
+/* Nota: se probaron dos arreglos CSS para una esquina "despegada" que
+ * aparece en elementos redondeados en Android (mask-image, luego
+ * clip-path) — ninguno de los dos cambió nada en el dispositivo real, y
+ * el patrón de en qué pestañas aparece resultó contradictorio entre un
+ * reporte y otro. Se revierten ambos: seguir adivinando con CSS sin
+ * poder ver el dispositivo no es un camino confiable. Antes de tocar
+ * esto de nuevo, hace falta diagnosticar con datos reales del teléfono
+ * (chrome://inspect por USB o una grabación de pantalla), no otra
+ * suposición basada en la descripción.
  * ------------------------------------------------------------------- */
-.rounded-full { clip-path: inset(0 round 9999px); }
-.rounded-xl { clip-path: inset(0 round var(--radius-xl)); }
-.rounded-lg { clip-path: inset(0 round var(--radius-lg)); }
-.rounded-md { clip-path: inset(0 round var(--radius-md)); }
-.rounded-sm { clip-path: inset(0 round var(--radius-sm)); }
-.rounded-2xl { clip-path: inset(0 round 1rem); }
-.rounded-xs { clip-path: inset(0 round 0.125rem); }
-.rounded-t-2xl { clip-path: inset(0 round 1rem 1rem 0 0); }
-.rounded-b-2xl { clip-path: inset(0 round 0 0 1rem 1rem); }
-.rounded-l-full { clip-path: inset(0 round 9999px 0 0 9999px); }
-.rounded-r-full { clip-path: inset(0 round 0 9999px 9999px 0); }
 
 /* ---------------------------------------------------------------------
  * Scrollbar minimalista global: una línea delgada gris, sin flechas ni
