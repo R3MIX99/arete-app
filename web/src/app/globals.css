@@ -301,6 +301,22 @@ html.text-scale-lg {
 }
 
 /* ---------------------------------------------------------------------
+ * Arreglo de esquina "despegada" en Chrome/WebView de Android: al
+ * recomponer un elemento con esquinas redondeadas (típicamente tras una
+ * transición de página) el navegador a veces deja sin repintar un
+ * triángulo del recorte anterior en una esquina — se corrige solo al
+ * próximo repintado (por eso "se arregla si vuelves a entrar"). Es un
+ * bug de compositing de Chromium, no del CSS en sí, pero forzar el
+ * recorte por máscara en vez de por el clip normal de border-radius
+ * evita que aparezca. Cubre las esquinas redondeadas de shadcn/Tailwind
+ * (tarjetas, imágenes, círculos, píldoras) sin tocar componente por
+ * componente.
+ * ------------------------------------------------------------------- */
+[class*="rounded-"] {
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+}
+
+/* ---------------------------------------------------------------------
  * Scrollbar minimalista global: una línea delgada gris, sin flechas ni
  * relleno — para Chromium/WebKit (Firefox usa el equivalente nativo
  * "thin"). Aplica a toda la app, no solo a un contenedor.
