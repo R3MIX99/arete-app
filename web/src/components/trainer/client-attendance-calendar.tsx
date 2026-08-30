@@ -130,7 +130,10 @@ export function ClientAttendanceCalendar({
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-1.5">
+        {/* grid-cols con minmax(0, 2rem) en vez de 1fr: las celdas se
+            quedan chicas (cuadritos de calendario, no botones) y no se
+            estiran a ocupar todo el ancho de la tarjeta. */}
+        <div className="grid gap-1 [grid-template-columns:repeat(7,minmax(0,2rem))]">
           {Array.from({ length: leadingBlanks }, (_, i) => (
             <div key={`blank-${i}`} />
           ))}
@@ -150,7 +153,7 @@ export function ClientAttendanceCalendar({
                       : missingLabel ?? "rutina incompleta"
                 }`}
                 className={cn(
-                  "flex aspect-square items-center justify-center rounded-md text-[11px] font-medium tabular-nums transition-colors",
+                  "flex aspect-square items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors",
                   attendance === null
                     ? "bg-muted/50 text-muted-foreground/60"
                     : attendance.complete
