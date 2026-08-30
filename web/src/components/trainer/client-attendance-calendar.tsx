@@ -75,10 +75,6 @@ export function ClientAttendanceCalendar({
     [daysInMonth, cursor.year, cursor.month, byDate, today],
   );
 
-  // Relleno para que el día 1 caiga en su columna real de la semana
-  // (lunes primero) en vez de siempre empezar en la primera columna.
-  const leadingBlanks = (new Date(cursor.year, cursor.month - 1, 1).getDay() + 6) % 7;
-
   function shiftMonth(delta: number) {
     setCursor((c) => {
       const zeroBased = c.month - 1 + delta;
@@ -130,13 +126,11 @@ export function ClientAttendanceCalendar({
           </div>
         </div>
 
-        {/* grid-cols con minmax(0, 2rem) en vez de 1fr: las celdas se
-            quedan chicas (cuadritos de calendario, no botones) y no se
-            estiran a ocupar todo el ancho de la tarjeta. */}
-        <div className="grid gap-1 [grid-template-columns:repeat(7,minmax(0,2rem))]">
-          {Array.from({ length: leadingBlanks }, (_, i) => (
-            <div key={`blank-${i}`} />
-          ))}
+        {/* flex-wrap, no grid de 7 columnas: los cuadritos van seguidos
+            de izquierda a derecha (sin alinearse al día de la semana) y
+            saltan de línea solos en cuanto ya no caben más — no una fila
+            fija de 7 por semana. */}
+        <div className="flex flex-wrap gap-1">
           {days.map((day) => {
             const attendance = day.attendance;
             const missingLabel = attendance && !attendance.complete
@@ -153,7 +147,7 @@ export function ClientAttendanceCalendar({
                       : missingLabel ?? "rutina incompleta"
                 }`}
                 className={cn(
-                  "flex aspect-square items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors",
+                  "flex size-8 shrink-0 items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors",
                   attendance === null
                     ? "bg-muted/50 text-muted-foreground/60"
                     : attendance.complete
