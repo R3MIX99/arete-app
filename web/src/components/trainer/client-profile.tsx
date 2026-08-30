@@ -125,13 +125,26 @@ export function ClientProfile({
     const next = status === "active" ? "inactive" : "active";
     setTogglingStatus(true);
     const supabase = createClient();
-    const { error } = await supabase
+    let { error } = await supabase
       .from("profiles")
       .update({ status: next })
       .eq("id", client.id);
+    // Si la pestaña estuvo abierta y sin foco un rato, el token de
+    // sesión pudo expirar (Supabase solo lo refresca solo mientras la
+    // pestaña está visible) — se refresca a mano y se reintenta una vez
+    // antes de darlo por fallido de verdad.
+    if (error && (error.code === "PGRST301" || /JWT|token/i.test(error.message))) {
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (!refreshError) {
+        ({ error } = await supabase
+          .from("profiles")
+          .update({ status: next })
+          .eq("id", client.id));
+      }
+    }
     setTogglingStatus(false);
     if (error) {
-      toast.error("No se pudo actualizar el estado");
+      toast.error("No se pudo actualizar el estado — recarga la página e intenta de nuevo");
       return;
     }
     setStatus(next);

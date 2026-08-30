@@ -77,13 +77,27 @@ export function ClientsBrowser({
     const next = client.status === "active" ? "inactive" : "active";
     setTogglingId(client.id);
     const supabase = createClient();
-    const { error } = await supabase
+    let { error } = await supabase
       .from("profiles")
       .update({ status: next })
       .eq("id", client.id);
+    // Si dejaste la pestaña abierta y sin foco un rato, el token de
+    // sesión pudo haber expirado (Supabase solo lo refresca solo cuando
+    // la pestaña está visible) — un PATCH que cae justo en ese momento
+    // sale con 401 aunque el permiso sea correcto. Se refresca la sesión
+    // a mano y se reintenta una vez antes de darlo por fallido de verdad.
+    if (error && (error.code === "PGRST301" || /JWT|token/i.test(error.message))) {
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (!refreshError) {
+        ({ error } = await supabase
+          .from("profiles")
+          .update({ status: next })
+          .eq("id", client.id));
+      }
+    }
     setTogglingId(null);
     if (error) {
-      toast.error("No se pudo actualizar el estado");
+      toast.error("No se pudo actualizar el estado — recarga la página e intenta de nuevo");
       return;
     }
     setItems((prev) =>
