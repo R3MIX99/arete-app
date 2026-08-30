@@ -211,8 +211,11 @@ export function ExerciseCommunityBrowser({
 
         <div className="hidden items-center gap-2 md:flex">
           <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
-            <SelectTrigger className="w-[200px]">
-              <ArrowUpDown className="size-3.5 text-muted-foreground" />
+            {/* Ancho al contenido en vez de un w-[200px] fijo: "No
+                agregados primero" (la etiqueta más larga) no cabía y se
+                partía en dos renglones, dejando el selector torcido. */}
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
+              <ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
