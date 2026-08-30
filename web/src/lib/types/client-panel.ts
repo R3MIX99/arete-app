@@ -46,6 +46,15 @@ export interface CompletedSessionRow {
   /** Series marcadas como completadas en esta sesión — insight rápido
    * en la lista de Historial, sin tener que abrir el detalle. */
   completedSets: number;
+  /** Series totales que el cliente registró en esta sesión (completadas
+   * o no) — junto con `completedSets`, define si la sesión quedó
+   * completa o a medias. */
+  totalSets: number;
+  /** Nombres (en español, ya listos para mostrar) de los grupos
+   * musculares que quedaron con al menos una serie sin completar — p.
+   * ej. ["Cardio"] si el cliente hizo toda la fuerza pero se saltó el
+   * cardio. Vacío si la sesión se completó entera. */
+  incompleteMuscleGroups: string[];
 }
 
 export interface ClientExerciseProgress {

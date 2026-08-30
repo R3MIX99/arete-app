@@ -9,6 +9,7 @@ import type {
 } from "@/lib/types/client";
 import type { ExerciseProgressSummary, ProgressMeasurement } from "@/lib/types/progress";
 import type { CompletedSessionRow } from "@/lib/types/client-panel";
+import { muscleGroupLabel } from "@/lib/format";
 
 interface ExerciseRef {
   name: string;
@@ -23,8 +24,10 @@ interface SetLogRow {
   exercises: ExerciseRef | ExerciseRef[] | null;
 }
 
-interface CompletedSetSessionRow {
+interface SessionSetLogRow {
   session_id: string;
+  is_completed: boolean;
+  exercises: { muscle_group: string } | { muscle_group: string }[] | null;
 }
 
 function one<T>(value: T | T[] | null): T | null {
@@ -50,7 +53,7 @@ export default async function ClientDetailPage({
     { data: sessionRows },
     { data: trainingAssignmentRows },
     { data: dietPlanAssignmentRows },
-    { data: completedSetSessionRows },
+    { data: sessionSetLogRows },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -94,12 +97,31 @@ export default async function ClientDetailPage({
       .select("id, start_date, diet_plan_id, diet_plans(id, name)")
       .eq("client_id", id)
       .order("start_date", { ascending: false }),
-    supabase.from("client_set_logs").select("session_id").eq("client_id", id).eq("is_completed", true),
+    supabase
+      .from("client_set_logs")
+      .select("session_id, is_completed, exercises(muscle_group)")
+      .eq("client_id", id),
   ]);
 
+  // Por sesión: series totales, series completadas y grupos musculares
+  // que se quedaron con al menos una serie sin terminar (p. ej. cardio
+  // saltado en una rutina de fuerza + cardio) — así el entrenador ve no
+  // solo si el cliente asistió, sino si le faltó algo puntual.
   const completedSetsBySession = new Map<string, number>();
-  for (const row of (completedSetSessionRows ?? []) as CompletedSetSessionRow[]) {
-    completedSetsBySession.set(row.session_id, (completedSetsBySession.get(row.session_id) ?? 0) + 1);
+  const totalSetsBySession = new Map<string, number>();
+  const incompleteGroupsBySession = new Map<string, Set<string>>();
+  for (const row of (sessionSetLogRows ?? []) as unknown as SessionSetLogRow[]) {
+    totalSetsBySession.set(row.session_id, (totalSetsBySession.get(row.session_id) ?? 0) + 1);
+    if (row.is_completed) {
+      completedSetsBySession.set(row.session_id, (completedSetsBySession.get(row.session_id) ?? 0) + 1);
+    } else {
+      const muscleGroup = one(row.exercises)?.muscle_group;
+      if (muscleGroup) {
+        const set = incompleteGroupsBySession.get(row.session_id) ?? new Set<string>();
+        set.add(muscleGroup);
+        incompleteGroupsBySession.set(row.session_id, set);
+      }
+    }
   }
 
   if (!client) notFound();
@@ -161,6 +183,10 @@ export default async function ClientDetailPage({
     routineName: one(row.routines)?.name ?? "Rutina",
     durationSeconds: row.duration_seconds,
     completedSets: completedSetsBySession.get(row.id) ?? 0,
+    totalSets: totalSetsBySession.get(row.id) ?? 0,
+    incompleteMuscleGroups: Array.from(incompleteGroupsBySession.get(row.id) ?? []).map(
+      muscleGroupLabel,
+    ),
   }));
 
   interface TrainingAssignmentRow {

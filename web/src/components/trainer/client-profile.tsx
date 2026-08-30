@@ -55,6 +55,7 @@ import { AddMeasurementDialog } from "@/components/trainer/add-measurement-dialo
 import { EditMeasurementDialog } from "@/components/trainer/edit-measurement-dialog";
 import { MeasurementEntriesTable } from "@/components/trainer/measurement-entries-table";
 import { TrainerSessionDetailSheetContent } from "@/components/trainer/trainer-session-detail-sheet-content";
+import { ClientAttendanceCalendar } from "@/components/trainer/client-attendance-calendar";
 import { TrainerExerciseHistorySheetContent } from "@/components/trainer/trainer-exercise-history-sheet-content";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -346,6 +347,7 @@ export function ClientProfile({
           <Tabs defaultValue="historial">
             <TabsList>
               <TabsTrigger value="historial">Historial</TabsTrigger>
+              <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
               <TabsTrigger value="evolucion">Evolución</TabsTrigger>
             </TabsList>
 
@@ -365,6 +367,7 @@ export function ClientProfile({
                         <th className="px-3 py-2 font-medium">Rutina</th>
                         <th className="px-3 py-2 font-medium">Fecha</th>
                         <th className="px-3 py-2 font-medium">Duración</th>
+                        <th className="px-3 py-2 font-medium">Estado</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -379,12 +382,28 @@ export function ClientProfile({
                           <td className="px-3 py-2 tabular-nums text-muted-foreground">
                             {session.durationSeconds ? formatDuration(session.durationSeconds) : "—"}
                           </td>
+                          <td className="px-3 py-2">
+                            {session.incompleteMuscleGroups.length === 0 ? (
+                              <Badge variant="secondary">Completa</Badge>
+                            ) : (
+                              <Badge
+                                variant="warning"
+                                title={`Le faltó: ${session.incompleteMuscleGroups.join(", ")}`}
+                              >
+                                Le faltó {session.incompleteMuscleGroups.join(", ")}
+                              </Badge>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="asistencia" className="mt-3">
+              <ClientAttendanceCalendar completedSessions={completedSessions} />
             </TabsContent>
 
             <TabsContent value="evolucion" className="mt-3">

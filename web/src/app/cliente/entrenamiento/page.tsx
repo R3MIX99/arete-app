@@ -101,6 +101,11 @@ export default async function ClientTrainingPage() {
     routineName: one(row.routines)?.name ?? "Rutina",
     durationSeconds: row.duration_seconds,
     completedSets: completedSetsBySession.get(row.id) ?? 0,
+    // Esta vista (la del propio cliente) no distingue rutina completa vs
+    // a medias — eso solo se muestra en el panel del entrenador — así
+    // que no vale la pena otra consulta aquí para calcularlo.
+    totalSets: completedSetsBySession.get(row.id) ?? 0,
+    incompleteMuscleGroups: [],
   }));
 
   // La lista de "Evolución" solo necesita el nombre y el grupo muscular
