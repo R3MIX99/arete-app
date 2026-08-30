@@ -231,7 +231,7 @@ export function ExerciseCommunityBrowser({
             value={muscleGroup ?? "all"}
             onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
               <SelectValue placeholder="Grupo muscular" />
             </SelectTrigger>
             <SelectContent>
@@ -248,7 +248,7 @@ export function ExerciseCommunityBrowser({
             value={equipment ?? "all"}
             onValueChange={(v) => setEquipment(v === "all" ? null : (v as Equipment))}
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
               <SelectValue placeholder="Equipo" />
             </SelectTrigger>
             <SelectContent>

@@ -136,7 +136,10 @@ export function ExercisesBrowser({
         {/* Computadora: selectores de filtro visibles en la misma barra. */}
         <div className="hidden items-center gap-2 md:flex">
           <Select value={origin} onValueChange={(v) => setOrigin(v as OriginFilter)}>
-            <SelectTrigger className="w-[140px]">
+            {/* Ancho al contenido, no fijo: con w-[Npx] el texto más
+                largo de cada Select se partía en dos renglones y el
+                selector quedaba torcido. */}
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -152,7 +155,7 @@ export function ExercisesBrowser({
             value={muscleGroup ?? "all"}
             onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
               <SelectValue placeholder="Grupo muscular" />
             </SelectTrigger>
             <SelectContent>
@@ -169,7 +172,7 @@ export function ExercisesBrowser({
             value={equipment ?? "all"}
             onValueChange={(v) => setEquipment(v === "all" ? null : (v as Equipment))}
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
               <SelectValue placeholder="Equipo" />
             </SelectTrigger>
             <SelectContent>

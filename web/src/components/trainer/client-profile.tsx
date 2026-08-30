@@ -331,7 +331,7 @@ export function ClientProfile({
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <Select value={metric} onValueChange={(v) => setMetric(v as MeasurementKey)}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

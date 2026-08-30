@@ -306,7 +306,7 @@ export function ClientProfileView({
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-sm">Peso y medidas</CardTitle>
           <Select value={metric} onValueChange={(v) => setMetric(v as MeasurementKey)}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

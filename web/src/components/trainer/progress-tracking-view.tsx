@@ -173,7 +173,7 @@ export function ProgressTrackingView({
               <CardHeader className="flex-row items-center justify-between">
                 <CardTitle className="text-sm">Medidas</CardTitle>
                 <Select value={metric} onValueChange={(v) => setMetric(v as MeasurementKey)}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
