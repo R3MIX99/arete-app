@@ -8,6 +8,7 @@ import {
   fetchSubstitutionsForDate,
 } from "@/lib/server/client-nutrition-data";
 import { ClientHomeToday } from "@/components/client/client-home-today";
+import { ClientDeactivatedNotice } from "@/components/client/client-deactivated-notice";
 import { fetchRoutineCardMeta } from "@/lib/server/routine-card-meta";
 import type { PersonalRecord, WeightPoint } from "@/components/client/client-highlights";
 import type {
@@ -90,9 +91,20 @@ export default async function ClientHomePage() {
   // muestran grandes arriba de la pantalla de inicio).
   const { data: ownProfile } = await supabase
     .from("profiles")
-    .select("full_name, trainer_id")
+    .select("full_name, trainer_id, status")
     .eq("id", user.id)
     .single();
+
+  // Entrenador desactivó al cliente: se le corta el "en vivo" (rutina de
+  // hoy, plan nutricional) sin tocar el Historial, que sigue siendo
+  // suyo sin importar si su entrenador lo está atendiendo ahora mismo.
+  if (ownProfile?.status === "inactive") {
+    return (
+      <div className="mx-auto flex max-w-md flex-col gap-5 p-4">
+        <ClientDeactivatedNotice description="Por ahora no puedes ver tu entrenamiento de hoy ni tu plan nutricional. Tu historial sigue disponible en la pestaña Historial — contacta a tu entrenador si crees que es un error." />
+      </div>
+    );
+  }
 
   const [
     { data: profile },

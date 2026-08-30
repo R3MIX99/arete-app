@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchRoutineCardMeta } from "@/lib/server/routine-card-meta";
 import { ClientAgenda } from "@/components/client/client-agenda";
+import { ClientDeactivatedNotice } from "@/components/client/client-deactivated-notice";
 import type { CalendarAssignment } from "@/lib/calendar-logic";
 
 interface ProgramRoutineRow {
@@ -39,6 +40,20 @@ export default async function ClientAgendaPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const { data: ownProfile } = await supabase
+    .from("profiles")
+    .select("status")
+    .eq("id", user.id)
+    .single();
+  if (ownProfile?.status === "inactive") {
+    return (
+      <div className="mx-auto flex max-w-md flex-col gap-4 p-4 pb-24">
+        <h1 className="text-xl font-semibold">Agenda</h1>
+        <ClientDeactivatedNotice description="Por ahora no puedes ver tu agenda. Contacta a tu entrenador si crees que es un error." />
+      </div>
+    );
+  }
 
   const [
     { data: assignmentRows },
