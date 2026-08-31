@@ -416,7 +416,10 @@ export function ClientProfile({
             </TabsContent>
 
             <TabsContent value="asistencia" className="mt-3">
-              <ClientAttendanceCalendar completedSessions={completedSessions} />
+              <ClientAttendanceCalendar
+                completedSessions={completedSessions}
+                onSessionClick={handleSessionClick}
+              />
             </TabsContent>
 
             <TabsContent value="evolucion" className="mt-3">

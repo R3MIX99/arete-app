@@ -31,17 +31,24 @@ const MONTH_NAMES = [
  * la fuerza pero se saltó el cardio (ámbar, con el detalle de qué grupo
  * quedó pendiente en el tooltip). Si un día tiene más de una sesión, se
  * marca incompleto en cuanto alguna de las dos lo esté.
+ *
+ * Al hacer clic en un día con sesión, se muestra debajo la lista de
+ * rutinas hechas ese día; al hacer clic en una de ellas se abre su
+ * historial de detalle (mismo comportamiento que la lista de Historial).
  */
 export function ClientAttendanceCalendar({
   completedSessions,
+  onSessionClick,
 }: {
   completedSessions: CompletedSessionRow[];
+  onSessionClick?: (session: CompletedSessionRow) => void;
 }) {
   const today = useMemo(() => todayKey(), []);
   const [cursor, setCursor] = useState(() => {
     const [y, m] = today.split("-").map(Number);
     return { year: y, month: m };
   });
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const monthStart = toKey(cursor.year, cursor.month, 1);
   const daysInMonth = useMemo(
@@ -63,8 +70,20 @@ export function ClientAttendanceCalendar({
     return map;
   }, [completedSessions, monthStart, monthEnd]);
 
+  const sessionsByDate = useMemo(() => {
+    const map = new Map<string, CompletedSessionRow[]>();
+    for (const session of completedSessions) {
+      if (session.sessionDate < monthStart || session.sessionDate > monthEnd) continue;
+      const list = map.get(session.sessionDate) ?? [];
+      list.push(session);
+      map.set(session.sessionDate, list);
+    }
+    return map;
+  }, [completedSessions, monthStart, monthEnd]);
+
   const monthCompletedCount = byDate.size;
   const monthPartialCount = Array.from(byDate.values()).filter((d) => !d.complete).length;
+  const selectedSessions = selectedDate ? sessionsByDate.get(selectedDate) ?? [] : [];
 
   const days = useMemo(
     () =>
@@ -136,9 +155,15 @@ export function ClientAttendanceCalendar({
             const missingLabel = attendance && !attendance.complete
               ? `Le faltó: ${Array.from(attendance.missing).join(", ")}`
               : null;
+            const hasSession = attendance !== null;
             return (
-              <div
+              <button
                 key={day.date}
+                type="button"
+                disabled={!hasSession}
+                onClick={() =>
+                  setSelectedDate((current) => (current === day.date ? null : day.date))
+                }
                 title={`${day.dayNumber} — ${
                   attendance === null
                     ? "sin sesión registrada"
@@ -148,19 +173,45 @@ export function ClientAttendanceCalendar({
                 }`}
                 className={cn(
                   "flex size-8 shrink-0 items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors",
+                  hasSession ? "cursor-pointer" : "cursor-default",
                   attendance === null
                     ? "bg-muted/50 text-muted-foreground/60"
                     : attendance.complete
                       ? "bg-primary text-primary-foreground"
                       : "bg-warning/14 text-warning border border-warning/50",
                   day.isToday && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                  selectedDate === day.date && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
                 )}
               >
                 {day.dayNumber}
-              </div>
+              </button>
             );
           })}
         </div>
+
+        {selectedDate && selectedSessions.length > 0 ? (
+          <div className="flex flex-col gap-1.5 rounded-lg border bg-muted/30 p-3">
+            <p className="text-xs font-medium text-muted-foreground">
+              Rutina{selectedSessions.length > 1 ? "s" : ""} del {Number(selectedDate.split("-")[2])} de{" "}
+              {MONTH_NAMES[cursor.month - 1]}
+            </p>
+            <div className="flex flex-col gap-1">
+              {selectedSessions.map((session) => (
+                <button
+                  key={session.id}
+                  type="button"
+                  onClick={() => onSessionClick?.(session)}
+                  className="flex items-center justify-between gap-2 rounded-md bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+                >
+                  <span className="min-w-0 truncate font-medium">{session.routineName}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {session.incompleteMuscleGroups.length === 0 ? "Completa" : "Incompleta"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1.5">
