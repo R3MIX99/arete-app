@@ -27,6 +27,15 @@ export default function RecoverPasswordPage() {
   const [loading, setLoading] = React.useState(false);
   const [sent, setSent] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // Se llega aquí con ?expired=1 cuando /auth/confirm no pudo canjear el
+  // enlace del correo (vencido, ya usado, o abierto en otro navegador/
+  // dispositivo del que se pidió). Se lee con un inicializador perezoso
+  // (guardado con typeof window, porque esta página también se renderiza
+  // en el servidor) en vez de useSearchParams, para no forzar un
+  // <Suspense> solo por esto.
+  const [expiredNotice] = React.useState(
+    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("expired") === "1",
+  );
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -53,6 +62,12 @@ export default function RecoverPasswordPage() {
           <AuthBrandIcon />
           <p className="text-sm text-muted-foreground">Recupera el acceso a tu cuenta</p>
         </div>
+
+        {expiredNotice && !sent ? (
+          <p className="mb-4 rounded-lg border border-warning/50 bg-warning/14 px-3 py-2 text-sm text-warning">
+            Ese enlace ya venció o ya fue usado. Pide uno nuevo abajo.
+          </p>
+        ) : null}
 
         {sent ? (
           <Card>
