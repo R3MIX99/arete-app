@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/client";
+import { createRecoveryClient } from "@/lib/supabase/recovery-client";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
@@ -12,10 +12,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { AuthBrandIcon } from "@/components/auth/auth-brand-icon";
 
 /**
- * Página a la que llega el enlace del correo de /recuperar. El cliente
- * de Supabase detecta solo el token que trae la URL (hash
+ * Página a la que llega el enlace del correo de /recuperar. Usa el
+ * mismo cliente "de recuperación" (createRecoveryClient, flowType
+ * implicit) que /recuperar — no el cliente normal de la app, que fuerza
+ * pkce y rechazaría este enlace de plano (ver el comentario en
+ * recovery-client.ts). Una sola instancia para toda la página (useMemo):
+ * como es persistSession: false, la sesión de recuperación solo vive en
+ * la memoria de esa instancia — si se creara un cliente nuevo en el
+ * submit, no tendría la sesión que detectó el efecto de abajo.
+ *
+ * El cliente detecta solo el token que trae la URL (hash
  * #access_token=...&type=recovery) y dispara el evento
- * PASSWORD_RECOVERY con una sesión temporal — de ahí sale el permiso
+ * PASSWORD_RECOVERY con esa sesión temporal — de ahí sale el permiso
  * para llamar updateUser({ password }), sin necesitar la contraseña
  * anterior. Se escucha ese evento (onAuthStateChange) en vez de solo
  * revisar la sesión al montar, porque el token tarda un instante en
@@ -23,6 +31,7 @@ import { AuthBrandIcon } from "@/components/auth/auth-brand-icon";
  */
 export default function UpdatePasswordPage() {
   const router = useRouter();
+  const supabase = React.useMemo(() => createRecoveryClient(), []);
   const [ready, setReady] = React.useState(false);
   const [invalidLink, setInvalidLink] = React.useState(false);
   const [password, setPassword] = React.useState("");
@@ -32,8 +41,6 @@ export default function UpdatePasswordPage() {
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const supabase = createClient();
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event: string) => {
@@ -63,7 +70,7 @@ export default function UpdatePasswordPage() {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, []);
+  }, [supabase]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -75,7 +82,6 @@ export default function UpdatePasswordPage() {
     }
 
     setLoading(true);
-    const supabase = createClient();
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) {
       setError("No se pudo actualizar tu contraseña. Intenta de nuevo.");

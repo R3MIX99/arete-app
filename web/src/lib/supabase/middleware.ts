@@ -36,11 +36,7 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/registro") ||
-    request.nextUrl.pathname.startsWith("/recuperar") ||
-    // El enlace de "olvidé mi contraseña" del correo cae aquí antes de
-    // que exista sesión — necesita quedar fuera del bloqueo igual que
-    // /login y /recuperar.
-    request.nextUrl.pathname.startsWith("/auth/confirm");
+    request.nextUrl.pathname.startsWith("/recuperar");
   const isPublicAsset = request.nextUrl.pathname.startsWith("/_next");
 
   if (!user && !isAuthRoute && !isPublicAsset && request.nextUrl.pathname !== "/") {
