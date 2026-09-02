@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity } from "@/lib/log-activity";
 import { initialsOf, goalLabel, formatDate } from "@/lib/format";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 import { isCardioGroup } from "@/lib/client-exercise-target";
@@ -144,10 +145,29 @@ export function ClientProfile({
     }
     setTogglingStatus(false);
     if (error) {
+      logActivity({
+        action: "trainer.client_status_change_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo ${next === "active" ? "reactivar" : "desactivar"} a ${client.full_name}`,
+        targetType: "profile",
+        targetId: client.id,
+        targetLabel: client.full_name,
+        context: { attemptedStatus: next, errorCode: error.code, reason: error.message },
+      });
       toast.error("No se pudo actualizar el estado — recarga la página e intenta de nuevo");
       return;
     }
     setStatus(next);
+    logActivity({
+      action: next === "active" ? "trainer.client_reactivated" : "trainer.client_deactivated",
+      category: "trainer",
+      severity: "success",
+      message: `${next === "active" ? "Reactivó" : "Desactivó"} a ${client.full_name}`,
+      targetType: "profile",
+      targetId: client.id,
+      targetLabel: client.full_name,
+    });
     toast.success(next === "active" ? "Cliente reactivado" : "Cliente desactivado");
     router.refresh();
   }
@@ -164,9 +184,28 @@ export function ClientProfile({
     const { error } = await supabase.rpc("unassign_client", { p_client_id: client.id });
     setRemoving(false);
     if (error) {
+      logActivity({
+        action: "trainer.client_unassign_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo quitar a ${client.full_name}`,
+        targetType: "profile",
+        targetId: client.id,
+        targetLabel: client.full_name,
+        context: { reason: error.message },
+      });
       toast.error("No se pudo quitar al cliente. Intenta de nuevo.");
       return;
     }
+    logActivity({
+      action: "trainer.client_unassigned",
+      category: "trainer",
+      severity: "warning",
+      message: `Quitó a ${client.full_name} (se le borraron rutina y plan nutricional asignados)`,
+      targetType: "profile",
+      targetId: client.id,
+      targetLabel: client.full_name,
+    });
     toast.success("Cliente removido — ya puede unirse a otro entrenador");
     router.push("/entrenador/clientes");
     router.refresh();

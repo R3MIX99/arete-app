@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { createRecoveryClient } from "@/lib/supabase/recovery-client";
+import { logActivity } from "@/lib/log-activity";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
@@ -61,7 +62,15 @@ export default function UpdatePasswordPage() {
     // se avisa en vez de dejar el formulario ahí sin decir nada.
     const timeout = setTimeout(() => {
       setReady((currentReady) => {
-        if (!currentReady) setInvalidLink(true);
+        if (!currentReady) {
+          setInvalidLink(true);
+          logActivity({
+            action: "auth.password_reset_link_invalid",
+            category: "auth",
+            severity: "warning",
+            message: "Enlace de recuperación vencido, ya usado, o abierto sin sesión de recuperación",
+          });
+        }
         return currentReady;
       });
     }, 3000);
@@ -82,12 +91,32 @@ export default function UpdatePasswordPage() {
     }
 
     setLoading(true);
+    // El correo de la sesión de recuperación (para dejarlo en el log
+    // aunque el actor quede como 'anon' — logActivity() usa el cliente
+    // normal de la app, que no tiene esta sesión temporal, así que no
+    // hay actor_id que asociar).
+    const recoveringEmail = (await supabase.auth.getUser()).data.user?.email ?? null;
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) {
+      logActivity({
+        action: "auth.password_reset_failed",
+        category: "auth",
+        severity: "error",
+        message: "No se pudo actualizar una contraseña desde el enlace de recuperación",
+        context: { email: recoveringEmail, reason: updateError.message },
+      });
       setError("No se pudo actualizar tu contraseña. Intenta de nuevo.");
       setLoading(false);
       return;
     }
+
+    logActivity({
+      action: "auth.password_reset_completed",
+      category: "auth",
+      severity: "success",
+      message: `Se actualizó la contraseña de ${recoveringEmail ?? "un usuario"}`,
+      context: { email: recoveringEmail },
+    });
 
     // Se cierra la sesión temporal de recuperación a propósito — que
     // vuelva a entrar con su contraseña nueva desde /login, en vez de

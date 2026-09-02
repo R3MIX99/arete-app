@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { isAlreadyRegisteredSignUp } from "@/lib/auth-errors";
+import { logActivity } from "@/lib/log-activity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -58,6 +59,13 @@ export default function TrainerSignUpPage() {
     }
 
     if (signUpError || !data.user) {
+      logActivity({
+        action: "auth.trainer_signup_failed",
+        category: "auth",
+        severity: "error",
+        message: `No se pudo crear la cuenta de entrenador para ${email}`,
+        context: { email, reason: signUpError?.message ?? "sin usuario" },
+      });
       setError("No se pudo crear tu cuenta. Intenta de nuevo.");
       setLoading(false);
       return;
@@ -70,6 +78,14 @@ export default function TrainerSignUpPage() {
       setLoading(false);
       return;
     }
+
+    logActivity({
+      action: "auth.trainer_signup",
+      category: "auth",
+      severity: "success",
+      message: `Nueva cuenta de entrenador: ${fullName}`,
+      context: { email },
+    });
 
     router.replace("/onboarding/entrenador");
     router.refresh();

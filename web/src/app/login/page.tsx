@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity } from "@/lib/log-activity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -31,6 +32,17 @@ export default function LoginPage() {
     });
 
     if (signInError || !data.user) {
+      // Sin sesión todavía (signInError), así que esto se loguea como
+      // 'anon' — no hay forma de saber si el correo existe sin filtrar
+      // esa información, por eso solo se guarda el correo que se
+      // intentó, no un actor real.
+      logActivity({
+        action: "auth.login_failed",
+        category: "auth",
+        severity: "warning",
+        message: `Inicio de sesión fallido para ${email}`,
+        context: { email, reason: signInError?.message ?? "sin usuario" },
+      });
       setError("Correo o contraseña incorrectos. Intenta de nuevo.");
       setLoading(false);
       return;
@@ -48,6 +60,15 @@ export default function LoginPage() {
         : profile?.role === "superadmin"
           ? "/superadmin"
           : "/entrenador";
+
+    logActivity({
+      action: "auth.login",
+      category: "auth",
+      severity: "success",
+      message: "Inicio de sesión",
+      context: { destination },
+    });
+
     router.replace(destination);
     router.refresh();
   }

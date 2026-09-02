@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity } from "@/lib/log-activity";
 import { initialsOf, goalLabel } from "@/lib/format";
 import type { ClientProfile, PendingInvitation } from "@/lib/types/client";
 import { Input } from "@/components/ui/input";
@@ -97,12 +98,31 @@ export function ClientsBrowser({
     }
     setTogglingId(null);
     if (error) {
+      logActivity({
+        action: "trainer.client_status_change_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo ${next === "active" ? "reactivar" : "desactivar"} a ${client.full_name}`,
+        targetType: "profile",
+        targetId: client.id,
+        targetLabel: client.full_name,
+        context: { attemptedStatus: next, errorCode: error.code, reason: error.message },
+      });
       toast.error("No se pudo actualizar el estado — recarga la página e intenta de nuevo");
       return;
     }
     setItems((prev) =>
       prev.map((c) => (c.id === client.id ? { ...c, status: next } : c)),
     );
+    logActivity({
+      action: next === "active" ? "trainer.client_reactivated" : "trainer.client_deactivated",
+      category: "trainer",
+      severity: "success",
+      message: `${next === "active" ? "Reactivó" : "Desactivó"} a ${client.full_name}`,
+      targetType: "profile",
+      targetId: client.id,
+      targetLabel: client.full_name,
+    });
     toast.success(next === "active" ? "Cliente reactivado" : "Cliente desactivado");
   }
 

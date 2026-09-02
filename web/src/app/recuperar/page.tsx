@@ -4,6 +4,7 @@ import * as React from "react";
 import { Loader2, MailCheck } from "lucide-react";
 
 import { createRecoveryClient } from "@/lib/supabase/recovery-client";
+import { logActivity } from "@/lib/log-activity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,9 +41,24 @@ export default function RecoverPasswordPage() {
     setLoading(false);
 
     if (resetError) {
+      logActivity({
+        action: "auth.password_reset_request_failed",
+        category: "auth",
+        severity: "error",
+        message: `No se pudo mandar el correo de recuperación a ${email}`,
+        context: { email, reason: resetError.message },
+      });
       setError("No se pudo enviar el correo. Intenta de nuevo en unos minutos.");
       return;
     }
+
+    logActivity({
+      action: "auth.password_reset_requested",
+      category: "auth",
+      severity: "info",
+      message: `Se pidió recuperar la contraseña de ${email}`,
+      context: { email },
+    });
     setSent(true);
   }
 
