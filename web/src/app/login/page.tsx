@@ -69,7 +69,7 @@ export default function LoginPage() {
       severity: "success",
       message: "Inicio de sesión",
       startedAt,
-      context: { destination },
+      context: { path: destination },
     });
 
     router.replace(destination);
