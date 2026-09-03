@@ -46,6 +46,7 @@ import {
   FloatingSheetDescription,
   FloatingSheetBody,
 } from "@/components/ui/floating-sheet";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SEVERITY_RANK: Record<ActivityLogSeverity, number> = {
   critical: 4,
@@ -435,12 +436,19 @@ export function ActivityLogsBrowser({ logs }: { logs: ActivityLogRow[] }) {
                             </p>
                           </div>
                           {DeviceIcon ? (
-                            <DeviceIcon
-                              className="size-3.5 shrink-0 text-muted-foreground/60"
-                              aria-label={`${client?.device} · ${client?.os} · ${client?.browser}`}
-                            >
-                              <title>{`${client?.device} · ${client?.os} · ${client?.browser}`}</title>
-                            </DeviceIcon>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DeviceIcon className="size-3.5 shrink-0 text-muted-foreground/60" />
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <div className="flex flex-col gap-0.5 text-center">
+                                  <span className="font-semibold">{client?.device}</span>
+                                  <span className="text-background/70">
+                                    {client?.os} · {client?.browser}
+                                  </span>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
                           ) : null}
                         </div>
                       </td>
@@ -521,7 +529,7 @@ function ActivityLogDetail({ log }: { log: ActivityLogRow }) {
         <Badge variant="outline">{CATEGORY_LABELS[log.category]}</Badge>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 rounded-xl border p-4">
+      <div className="grid grid-cols-2 gap-4 border-b pb-4">
         <DetailRow label="Fecha y hora">{formatFull(log.created_at)}</DetailRow>
         <DetailRow label="Acción">
           <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{log.action}</code>
@@ -540,7 +548,7 @@ function ActivityLogDetail({ log }: { log: ActivityLogRow }) {
       </div>
 
       {log.target_type || log.target_label ? (
-        <div className="rounded-xl border p-4">
+        <div className="border-b pb-4">
           <DetailRow label="Sobre qué actuó">
             {log.target_label || "—"}
             {log.target_type ? (
@@ -551,7 +559,7 @@ function ActivityLogDetail({ log }: { log: ActivityLogRow }) {
       ) : null}
 
       {client || durationMs !== undefined ? (
-        <div className="grid grid-cols-2 gap-4 rounded-xl border p-4">
+        <div className="grid grid-cols-2 gap-4 border-b pb-4">
           {client ? (
             <>
               <DetailRow label="Navegador">{client.browser || "—"}</DetailRow>
@@ -576,7 +584,7 @@ function ActivityLogDetail({ log }: { log: ActivityLogRow }) {
       ) : null}
 
       {client?.userAgent ? (
-        <div className="rounded-xl border p-4">
+        <div className="border-b pb-4">
           <DetailRow label="User agent completo">
             <span className="flex items-start gap-1.5 text-xs text-muted-foreground">
               <Globe className="mt-0.5 size-3.5 shrink-0" />
@@ -586,7 +594,7 @@ function ActivityLogDetail({ log }: { log: ActivityLogRow }) {
         </div>
       ) : null}
 
-      <div className="rounded-xl border p-4">
+      <div className="border-b pb-4">
         <DetailRow label="Mensaje">{log.message}</DetailRow>
       </div>
 
