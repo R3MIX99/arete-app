@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { goalLabel, weekdayLabel, formatDate, initialsOf } from "@/lib/format";
 import type { ProgramAssignment, ProgramSlot, RoutineOption, SlotOverride } from "@/lib/types/program";
 import type { ClientGoal, ClientProfile } from "@/lib/types/client";
@@ -321,15 +322,37 @@ export function ProgramBuilder({
   }
 
   async function handleDeleteProgram() {
+    const startedAt = startTiming();
     setDeleting(true);
     const supabase = createClient();
     const { error } = await supabase.from("programs").delete().eq("id", program.id);
     if (error) {
+      logActivity({
+        action: "trainer.program_delete_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo eliminar el programa "${program.name}"`,
+        targetType: "program",
+        targetId: program.id,
+        targetLabel: program.name,
+        startedAt,
+        context: { reason: error.message },
+      });
       toast.error("No se pudo eliminar el programa");
       setDeleting(false);
       setDeleteOpen(false);
       return;
     }
+    logActivity({
+      action: "trainer.program_deleted",
+      category: "trainer",
+      severity: "warning",
+      message: `Eliminó el programa "${program.name}"`,
+      targetType: "program",
+      targetId: program.id,
+      targetLabel: program.name,
+      startedAt,
+    });
     toast.success("Programa eliminado");
     router.push("/entrenador/programas");
     router.refresh();
@@ -337,6 +360,7 @@ export function ProgramBuilder({
 
   async function handleUnassign() {
     if (!unassignTarget) return;
+    const startedAt = startTiming();
     setUnassigning(true);
     const supabase = createClient();
     const { error } = await supabase
@@ -345,9 +369,31 @@ export function ProgramBuilder({
       .eq("id", unassignTarget.id);
     setUnassigning(false);
     if (error) {
+      logActivity({
+        action: "trainer.program_unassign_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo desasignar a ${unassignTarget.client_name} del programa "${program.name}"`,
+        targetType: "profile",
+        targetId: unassignTarget.client_id,
+        targetLabel: unassignTarget.client_name,
+        startedAt,
+        context: { programId: program.id, programName: program.name, reason: error.message },
+      });
       toast.error("No se pudo desasignar al cliente");
       return;
     }
+    logActivity({
+      action: "trainer.program_unassigned",
+      category: "trainer",
+      severity: "warning",
+      message: `Desasignó a ${unassignTarget.client_name} del programa "${program.name}"`,
+      targetType: "profile",
+      targetId: unassignTarget.client_id,
+      targetLabel: unassignTarget.client_name,
+      startedAt,
+      context: { programId: program.id, programName: program.name },
+    });
     toast.success(`Se desasignó a ${unassignTarget.client_name}`);
     setUnassignTarget(null);
     router.refresh();
@@ -731,6 +777,7 @@ export function ProgramBuilder({
         clients={clients}
         alreadyAssignedClientIds={assignedClientIds}
         programId={program.id}
+        programName={program.name}
         onAssigned={() => router.refresh()}
       />
 

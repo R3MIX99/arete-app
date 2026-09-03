@@ -5,6 +5,7 @@ import { Check, Loader2, Search, UserX } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { initialsOf } from "@/lib/format";
 import type { ClientProfile } from "@/lib/types/client";
 import {
@@ -37,6 +38,7 @@ export function AssignToClientsDialog({
   clients,
   alreadyAssignedClientIds,
   programId,
+  programName,
   onAssigned,
 }: {
   open: boolean;
@@ -45,6 +47,7 @@ export function AssignToClientsDialog({
   clients: ClientProfile[];
   alreadyAssignedClientIds: string[];
   programId: string;
+  programName: string;
   onAssigned: () => void;
 }) {
   return (
@@ -65,6 +68,7 @@ export function AssignToClientsDialog({
             clients={clients}
             alreadyAssignedClientIds={alreadyAssignedClientIds}
             programId={programId}
+            programName={programName}
             onAssigned={onAssigned}
             onOpenChange={onOpenChange}
           />
@@ -79,6 +83,7 @@ function AssignToClientsDialogBody({
   clients,
   alreadyAssignedClientIds,
   programId,
+  programName,
   onAssigned,
   onOpenChange,
 }: {
@@ -86,6 +91,7 @@ function AssignToClientsDialogBody({
   clients: ClientProfile[];
   alreadyAssignedClientIds: string[];
   programId: string;
+  programName: string;
   onAssigned: () => void;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -121,9 +127,11 @@ function AssignToClientsDialogBody({
 
   async function handleSubmit() {
     if (selected.size === 0) return;
+    const startedAt = startTiming();
     setSaving(true);
 
     const supabase = createClient();
+    const selectedClients = clients.filter((c) => selected.has(c.id));
     const rows = Array.from(selected).map((clientId) => ({
       trainer_id: trainerId,
       client_id: clientId,
@@ -139,9 +147,41 @@ function AssignToClientsDialogBody({
     setSaving(false);
 
     if (error) {
+      logActivity({
+        action: "trainer.program_assign_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo asignar el programa "${programName}" a ${rows.length} ${rows.length === 1 ? "cliente" : "clientes"}`,
+        targetType: "program",
+        targetId: programId,
+        targetLabel: programName,
+        startedAt,
+        context: {
+          startDate,
+          clients: selectedClients.map((c) => ({ id: c.id, name: c.full_name })),
+          reason: error.message,
+        },
+      });
       toast.error("No se pudo asignar a algunos clientes");
       return;
     }
+
+    logActivity({
+      action: "trainer.program_assigned",
+      category: "trainer",
+      severity: "success",
+      message: `Asignó el programa "${programName}" a ${count ?? rows.length} ${
+        (count ?? rows.length) === 1 ? "cliente" : "clientes"
+      }`,
+      targetType: "program",
+      targetId: programId,
+      targetLabel: programName,
+      startedAt,
+      context: {
+        startDate,
+        clients: selectedClients.map((c) => ({ id: c.id, name: c.full_name })),
+      },
+    });
 
     toast.success(
       `Asignado a ${count ?? rows.length} ${

@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import type { AiDietResult } from "@/lib/types/ai";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,7 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
     event.preventDefault();
     setLoading(true);
     setError(null);
+    const startedAt = startTiming();
 
     const supabase = createClient();
     const planId = await createPlan(supabase, {
@@ -49,6 +51,14 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
     });
 
     if (!planId) {
+      logActivity({
+        action: "trainer.diet_plan_create_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo crear el plan nutricional "${name}"`,
+        startedAt,
+        context: { name, usedAi: false },
+      });
       setError("No se pudo crear el plan. Intenta de nuevo.");
       toast.error("No se pudo crear el plan");
       setLoading(false);
@@ -64,6 +74,18 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
       { diet_plan_id: planId, name: "Snack", order_index: 3 },
     ]);
 
+    logActivity({
+      action: "trainer.diet_plan_created",
+      category: "trainer",
+      severity: "success",
+      message: `Creó el plan nutricional "${name}"`,
+      targetType: "diet_plan",
+      targetId: planId,
+      targetLabel: name,
+      startedAt,
+      context: { usedAi: false },
+    });
+
     toast.success("Plan creado");
     router.push(`/entrenador/nutricion/planes/${planId}`);
     router.refresh();
@@ -72,14 +94,24 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
   async function handleAiGenerated(result: AiDietResult) {
     setLoading(true);
     setError(null);
+    const startedAt = startTiming();
     const supabase = createClient();
 
+    const planName = name || result.name;
     const planId = await createPlan(supabase, {
-      name: name || result.name,
+      name: planName,
       goal_label: goalLabel || null,
       daily_calorie_target: dailyCalorieTarget === "" ? null : Number(dailyCalorieTarget),
     });
     if (!planId) {
+      logActivity({
+        action: "trainer.diet_plan_create_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo crear el plan nutricional "${planName}" (IA)`,
+        startedAt,
+        context: { name: planName, usedAi: true },
+      });
       setError("No se pudo crear el plan. Intenta de nuevo.");
       toast.error("No se pudo crear el plan");
       setLoading(false);
@@ -108,6 +140,18 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
         await supabase.from("diet_plan_meals").insert(items);
       }
     }
+
+    logActivity({
+      action: "trainer.diet_plan_created",
+      category: "trainer",
+      severity: "success",
+      message: `Creó el plan nutricional "${planName}" (con IA)`,
+      targetType: "diet_plan",
+      targetId: planId,
+      targetLabel: planName,
+      startedAt,
+      context: { usedAi: true, blockCount: result.blocks.length },
+    });
 
     toast.success("Plan generado con IA — revísalo antes de asignarlo");
     router.push(`/entrenador/nutricion/planes/${planId}`);

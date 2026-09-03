@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { formatDate, initialsOf } from "@/lib/format";
 import { compressImage } from "@/lib/image-compress";
 import type {
@@ -207,15 +208,37 @@ export function DietPlanBuilder({
   }
 
   async function handleDeletePlan() {
+    const startedAt = startTiming();
     setDeleting(true);
     const supabase = createClient();
     const { error } = await supabase.from("diet_plans").delete().eq("id", plan.id);
     if (error) {
+      logActivity({
+        action: "trainer.diet_plan_delete_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo eliminar el plan nutricional "${plan.name}"`,
+        targetType: "diet_plan",
+        targetId: plan.id,
+        targetLabel: plan.name,
+        startedAt,
+        context: { reason: error.message },
+      });
       toast.error("No se pudo eliminar el plan");
       setDeleting(false);
       setDeleteOpen(false);
       return;
     }
+    logActivity({
+      action: "trainer.diet_plan_deleted",
+      category: "trainer",
+      severity: "warning",
+      message: `Eliminó el plan nutricional "${plan.name}"`,
+      targetType: "diet_plan",
+      targetId: plan.id,
+      targetLabel: plan.name,
+      startedAt,
+    });
     toast.success("Plan eliminado");
     router.push("/entrenador/nutricion");
     router.refresh();
@@ -223,6 +246,7 @@ export function DietPlanBuilder({
 
   async function handleUnassign() {
     if (!unassignTarget) return;
+    const startedAt = startTiming();
     setUnassigning(true);
     const supabase = createClient();
     const { error } = await supabase
@@ -231,9 +255,31 @@ export function DietPlanBuilder({
       .eq("id", unassignTarget.id);
     setUnassigning(false);
     if (error) {
+      logActivity({
+        action: "trainer.diet_plan_unassign_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo desasignar a ${unassignTarget.client_name} del plan "${plan.name}"`,
+        targetType: "profile",
+        targetId: unassignTarget.client_id,
+        targetLabel: unassignTarget.client_name,
+        startedAt,
+        context: { dietPlanId: plan.id, dietPlanName: plan.name, reason: error.message },
+      });
       toast.error("No se pudo desasignar al cliente");
       return;
     }
+    logActivity({
+      action: "trainer.diet_plan_unassigned",
+      category: "trainer",
+      severity: "warning",
+      message: `Desasignó a ${unassignTarget.client_name} del plan "${plan.name}"`,
+      targetType: "profile",
+      targetId: unassignTarget.client_id,
+      targetLabel: unassignTarget.client_name,
+      startedAt,
+      context: { dietPlanId: plan.id, dietPlanName: plan.name },
+    });
     toast.success(`Se desasignó a ${unassignTarget.client_name}`);
     setUnassignTarget(null);
     router.refresh();
@@ -783,6 +829,7 @@ export function DietPlanBuilder({
         onOpenChange={setAssignOpen}
         trainerId={trainerId}
         dietPlanId={plan.id}
+        dietPlanName={plan.name}
         dailyCalorieTarget={plan.daily_calorie_target}
         clients={clients}
         alreadyAssignedClientIds={assignedClientIds}
@@ -852,6 +899,7 @@ function EditDietPlanInfoForm({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
+    const startedAt = startTiming();
     const supabase = createClient();
     const { error } = await supabase
       .from("diet_plans")
@@ -863,9 +911,30 @@ function EditDietPlanInfoForm({
       .eq("id", plan.id);
     setSaving(false);
     if (error) {
+      logActivity({
+        action: "trainer.diet_plan_edit_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudieron guardar los cambios de "${name}"`,
+        targetType: "diet_plan",
+        targetId: plan.id,
+        targetLabel: name,
+        startedAt,
+        context: { reason: error.message },
+      });
       toast.error("No se pudieron guardar los cambios");
       return;
     }
+    logActivity({
+      action: "trainer.diet_plan_edited",
+      category: "trainer",
+      severity: "success",
+      message: `Editó el plan nutricional "${name}"`,
+      targetType: "diet_plan",
+      targetId: plan.id,
+      targetLabel: name,
+      startedAt,
+    });
     toast.success("Cambios guardados");
     onOpenChange(false);
     router.refresh();

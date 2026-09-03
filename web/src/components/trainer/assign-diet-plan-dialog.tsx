@@ -5,6 +5,7 @@ import { Check, Loader2, Search, UserX } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { initialsOf } from "@/lib/format";
 import type { ClientProfile } from "@/lib/types/client";
 import {
@@ -35,6 +36,7 @@ export function AssignDietPlanDialog({
   onOpenChange,
   trainerId,
   dietPlanId,
+  dietPlanName,
   dailyCalorieTarget,
   clients,
   alreadyAssignedClientIds,
@@ -44,6 +46,7 @@ export function AssignDietPlanDialog({
   onOpenChange: (open: boolean) => void;
   trainerId: string;
   dietPlanId: string;
+  dietPlanName: string;
   dailyCalorieTarget: number | null;
   clients: ClientProfile[];
   alreadyAssignedClientIds: string[];
@@ -58,6 +61,7 @@ export function AssignDietPlanDialog({
         <AssignDietPlanDialogBody
           trainerId={trainerId}
           dietPlanId={dietPlanId}
+          dietPlanName={dietPlanName}
           dailyCalorieTarget={dailyCalorieTarget}
           clients={clients}
           alreadyAssignedClientIds={alreadyAssignedClientIds}
@@ -72,6 +76,7 @@ export function AssignDietPlanDialog({
 function AssignDietPlanDialogBody({
   trainerId,
   dietPlanId,
+  dietPlanName,
   dailyCalorieTarget,
   clients,
   alreadyAssignedClientIds,
@@ -80,6 +85,7 @@ function AssignDietPlanDialogBody({
 }: {
   trainerId: string;
   dietPlanId: string;
+  dietPlanName: string;
   dailyCalorieTarget: number | null;
   clients: ClientProfile[];
   alreadyAssignedClientIds: string[];
@@ -127,8 +133,10 @@ function AssignDietPlanDialogBody({
   }
 
   async function submit(scaleFactor: number, targetDailyCalories: number | null) {
+    const startedAt = startTiming();
     setSaving(true);
     const supabase = createClient();
+    const selectedClients = clients.filter((c) => selected.has(c.id));
     const rows = Array.from(selected).map((clientId) => ({
       trainer_id: trainerId,
       client_id: clientId,
@@ -146,9 +154,43 @@ function AssignDietPlanDialogBody({
     setSaving(false);
 
     if (error) {
+      logActivity({
+        action: "trainer.diet_plan_assign_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo asignar el plan "${dietPlanName}" a ${rows.length} ${rows.length === 1 ? "cliente" : "clientes"}`,
+        targetType: "diet_plan",
+        targetId: dietPlanId,
+        targetLabel: dietPlanName,
+        startedAt,
+        context: {
+          clients: selectedClients.map((c) => ({ id: c.id, name: c.full_name })),
+          scaleFactor,
+          targetDailyCalories,
+          reason: error.message,
+        },
+      });
       toast.error("No se pudo asignar a algunos clientes");
       return;
     }
+
+    logActivity({
+      action: "trainer.diet_plan_assigned",
+      category: "trainer",
+      severity: "success",
+      message: `Asignó el plan "${dietPlanName}" a ${count ?? rows.length} ${
+        (count ?? rows.length) === 1 ? "cliente" : "clientes"
+      }`,
+      targetType: "diet_plan",
+      targetId: dietPlanId,
+      targetLabel: dietPlanName,
+      startedAt,
+      context: {
+        clients: selectedClients.map((c) => ({ id: c.id, name: c.full_name })),
+        scaleFactor,
+        targetDailyCalories,
+      },
+    });
 
     toast.success(
       `Asignado a ${count ?? rows.length} ${

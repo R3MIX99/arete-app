@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +40,7 @@ export function NewProgramForm({ trainerId }: { trainerId: string }) {
     event.preventDefault();
     setLoading(true);
     setError(null);
+    const startedAt = startTiming();
 
     // El programa arranca con 1 semana — las siguientes se agregan
     // desde el constructor con "Agregar semana" o clonando una semana
@@ -57,11 +59,30 @@ export function NewProgramForm({ trainerId }: { trainerId: string }) {
       .single();
 
     if (insertError || !data) {
+      logActivity({
+        action: "trainer.program_create_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo crear el programa "${name}"`,
+        startedAt,
+        context: { name, reason: insertError?.message },
+      });
       setError("No se pudo crear el programa. Intenta de nuevo.");
       toast.error("No se pudo crear el programa");
       setLoading(false);
       return;
     }
+
+    logActivity({
+      action: "trainer.program_created",
+      category: "trainer",
+      severity: "success",
+      message: `Creó el programa "${name}"`,
+      targetType: "program",
+      targetId: data.id,
+      targetLabel: name,
+      startedAt,
+    });
 
     toast.success("Programa creado");
     router.push(`/entrenador/programas/${data.id}`);

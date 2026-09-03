@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { compressImage } from "@/lib/image-compress";
 import { youtubeVideoId } from "@/lib/youtube";
 import type {
@@ -115,6 +116,10 @@ export function RoutineForm({
   );
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [aiOpen, setAiOpen] = React.useState(false);
+  // Para diferenciar en el log si la rutina se armó con IA o a mano —
+  // se prende en cuanto se usa el generador aunque después se edite el
+  // resultado a mano, porque el punto de partida sí fue IA.
+  const [usedAi, setUsedAi] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -147,6 +152,7 @@ export function RoutineForm({
   }
 
   function handleAiGenerated(result: AiRoutineResult) {
+    setUsedAi(true);
     if (name.trim() === "") setName(result.name);
     if (description.trim() === "") setDescription(result.description);
 
@@ -286,6 +292,7 @@ export function RoutineForm({
     }
     setSaving(true);
     setError(null);
+    const startedAt = startTiming();
 
     const supabase = createClient();
 
@@ -307,6 +314,14 @@ export function RoutineForm({
         .select("id")
         .single();
       if (insertError || !data) {
+        logActivity({
+          action: "trainer.routine_create_failed",
+          category: "trainer",
+          severity: "error",
+          message: `No se pudo crear la rutina "${name}"`,
+          startedAt,
+          context: { name, usedAi, reason: insertError?.message },
+        });
         setError("No se pudo crear la rutina. Intenta de nuevo.");
         toast.error("No se pudo crear la rutina");
         setSaving(false);
@@ -319,6 +334,17 @@ export function RoutineForm({
         .update(routinePayload)
         .eq("id", routineId!);
       if (updateError) {
+        logActivity({
+          action: "trainer.routine_edit_failed",
+          category: "trainer",
+          severity: "error",
+          message: `No se pudieron guardar los cambios de "${name}"`,
+          targetType: "routine",
+          targetId: routineId,
+          targetLabel: name,
+          startedAt,
+          context: { reason: updateError.message },
+        });
         setError("No se pudieron guardar los cambios. Intenta de nuevo.");
         toast.error("No se pudieron guardar los cambios");
         setSaving(false);
@@ -373,6 +399,21 @@ export function RoutineForm({
       }
     }
 
+    logActivity({
+      action: mode === "create" ? "trainer.routine_created" : "trainer.routine_edited",
+      category: "trainer",
+      severity: "success",
+      message:
+        mode === "create"
+          ? `Creó la rutina "${name}"${usedAi ? " (con IA)" : ""}`
+          : `Editó la rutina "${name}"`,
+      targetType: "routine",
+      targetId: routineId,
+      targetLabel: name,
+      startedAt,
+      context: { usedAi, exerciseCount: exercises.length },
+    });
+
     toast.success(mode === "create" ? "Rutina creada" : "Cambios guardados");
     router.push("/entrenador/rutinas");
     router.refresh();
@@ -380,6 +421,7 @@ export function RoutineForm({
 
   async function handleDelete() {
     if (!routine) return;
+    const startedAt = startTiming();
     setDeleting(true);
     const supabase = createClient();
     const { error: deleteError } = await supabase
@@ -387,12 +429,33 @@ export function RoutineForm({
       .delete()
       .eq("id", routine.id);
     if (deleteError) {
+      logActivity({
+        action: "trainer.routine_delete_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo eliminar la rutina "${routine.name}"`,
+        targetType: "routine",
+        targetId: routine.id,
+        targetLabel: routine.name,
+        startedAt,
+        context: { reason: deleteError.message },
+      });
       setError("No se pudo eliminar la rutina.");
       toast.error("No se pudo eliminar la rutina");
       setDeleting(false);
       setConfirmOpen(false);
       return;
     }
+    logActivity({
+      action: "trainer.routine_deleted",
+      category: "trainer",
+      severity: "warning",
+      message: `Eliminó la rutina "${routine.name}"`,
+      targetType: "routine",
+      targetId: routine.id,
+      targetLabel: routine.name,
+      startedAt,
+    });
     toast.success("Rutina eliminada");
     router.push("/entrenador/rutinas");
     router.refresh();
