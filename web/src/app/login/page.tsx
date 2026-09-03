@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { logActivity } from "@/lib/log-activity";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -24,6 +24,7 @@ export default function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setError(null);
+    const startedAt = startTiming();
 
     const supabase = createClient();
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -41,6 +42,7 @@ export default function LoginPage() {
         category: "auth",
         severity: "warning",
         message: `Inicio de sesión fallido para ${email}`,
+        startedAt,
         context: { email, reason: signInError?.message ?? "sin usuario" },
       });
       setError("Correo o contraseña incorrectos. Intenta de nuevo.");
@@ -66,6 +68,7 @@ export default function LoginPage() {
       category: "auth",
       severity: "success",
       message: "Inicio de sesión",
+      startedAt,
       context: { destination },
     });
 

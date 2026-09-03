@@ -5,11 +5,16 @@ import {
   AlertOctagon,
   AlertTriangle,
   CheckCircle2,
+  Globe,
   Info,
+  Monitor,
   OctagonX,
   ScrollText,
   Search,
   ShieldCheck,
+  Smartphone,
+  Tablet,
+  Timer,
   UserRound,
   Users,
   FilterX,
@@ -370,6 +375,8 @@ export function ActivityLogsBrowser({ logs }: { logs: ActivityLogRow[] }) {
               <tbody>
                 {filtered.map((log) => {
                   const RoleIcon = ROLE_META[log.actor_role].icon;
+                  const client = log.context.client as ClientEnvironmentContext | undefined;
+                  const DeviceIcon = client?.device ? (DEVICE_ICONS[client.device] ?? Monitor) : null;
                   return (
                     <tr
                       key={log.id}
@@ -393,6 +400,14 @@ export function ActivityLogsBrowser({ logs }: { logs: ActivityLogRow[] }) {
                               {log.actor_name || log.actor_email || ROLE_META[log.actor_role].label}
                             </p>
                           </div>
+                          {DeviceIcon ? (
+                            <DeviceIcon
+                              className="size-3.5 shrink-0 text-muted-foreground/60"
+                              aria-label={`${client?.device} · ${client?.os} · ${client?.browser}`}
+                            >
+                              <title>{`${client?.device} · ${client?.os} · ${client?.browser}`}</title>
+                            </DeviceIcon>
+                          ) : null}
                         </div>
                       </td>
                       <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{log.action}</td>
@@ -438,9 +453,32 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
+const DEVICE_ICONS: Record<string, typeof Monitor> = {
+  Escritorio: Monitor,
+  Móvil: Smartphone,
+  Tablet: Tablet,
+};
+
+interface ClientEnvironmentContext {
+  browser?: string;
+  os?: string;
+  device?: string;
+  userAgent?: string;
+}
+
 function ActivityLogDetail({ log }: { log: ActivityLogRow }) {
   const RoleIcon = ROLE_META[log.actor_role].icon;
-  const hasContext = log.context && Object.keys(log.context).length > 0;
+
+  // "client" y "durationMs" se muestran aparte, ya traducidos — el
+  // resto del contexto (lo específico de cada acción: flujo, motivo del
+  // error, a qué se le hizo clic…) se queda en el JSON de abajo.
+  const client = log.context.client as ClientEnvironmentContext | undefined;
+  const durationMs = log.context.durationMs as number | undefined;
+  const restContext = Object.fromEntries(
+    Object.entries(log.context).filter(([key]) => key !== "client" && key !== "durationMs"),
+  );
+  const hasContext = Object.keys(restContext).length > 0;
+  const DeviceIcon = client?.device ? (DEVICE_ICONS[client.device] ?? Monitor) : Monitor;
 
   return (
     <div className="flex flex-col gap-4">
@@ -478,6 +516,42 @@ function ActivityLogDetail({ log }: { log: ActivityLogRow }) {
         </div>
       ) : null}
 
+      {client || durationMs !== undefined ? (
+        <div className="grid grid-cols-2 gap-4 rounded-xl border p-4">
+          {client ? (
+            <>
+              <DetailRow label="Navegador">{client.browser || "—"}</DetailRow>
+              <DetailRow label="Sistema operativo">{client.os || "—"}</DetailRow>
+              <DetailRow label="Dispositivo">
+                <div className="flex items-center gap-1.5">
+                  <DeviceIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span>{client.device || "—"}</span>
+                </div>
+              </DetailRow>
+            </>
+          ) : null}
+          {durationMs !== undefined ? (
+            <DetailRow label="Duración de la acción">
+              <div className="flex items-center gap-1.5 tabular-nums">
+                <Timer className="size-3.5 shrink-0 text-muted-foreground" />
+                <span>{durationMs < 1000 ? `${durationMs} ms` : `${(durationMs / 1000).toFixed(2)} s`}</span>
+              </div>
+            </DetailRow>
+          ) : null}
+        </div>
+      ) : null}
+
+      {client?.userAgent ? (
+        <div className="rounded-xl border p-4">
+          <DetailRow label="User agent completo">
+            <span className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              <Globe className="mt-0.5 size-3.5 shrink-0" />
+              <span className="break-all">{client.userAgent}</span>
+            </span>
+          </DetailRow>
+        </div>
+      ) : null}
+
       <div className="rounded-xl border p-4">
         <DetailRow label="Mensaje">{log.message}</DetailRow>
       </div>
@@ -488,7 +562,7 @@ function ActivityLogDetail({ log }: { log: ActivityLogRow }) {
             Detalle técnico (flujo, clic, estatus, motivo del error…)
           </p>
           <pre className="overflow-x-auto rounded-xl border bg-muted/40 p-3 text-xs">
-            {JSON.stringify(log.context, null, 2)}
+            {JSON.stringify(restContext, null, 2)}
           </pre>
         </div>
       ) : null}

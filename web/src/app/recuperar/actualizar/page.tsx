@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { createRecoveryClient } from "@/lib/supabase/recovery-client";
-import { logActivity } from "@/lib/log-activity";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
@@ -84,6 +84,7 @@ export default function UpdatePasswordPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    const startedAt = startTiming();
 
     if (password !== confirmPassword) {
       setError("Las contraseñas no coinciden.");
@@ -103,6 +104,7 @@ export default function UpdatePasswordPage() {
         category: "auth",
         severity: "error",
         message: "No se pudo actualizar una contraseña desde el enlace de recuperación",
+        startedAt,
         context: { email: recoveringEmail, reason: updateError.message },
       });
       setError("No se pudo actualizar tu contraseña. Intenta de nuevo.");
@@ -115,6 +117,7 @@ export default function UpdatePasswordPage() {
       category: "auth",
       severity: "success",
       message: `Se actualizó la contraseña de ${recoveringEmail ?? "un usuario"}`,
+      startedAt,
       context: { email: recoveringEmail },
     });
 

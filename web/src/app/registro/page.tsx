@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { isAlreadyRegisteredSignUp } from "@/lib/auth-errors";
-import { logActivity } from "@/lib/log-activity";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -42,6 +42,7 @@ export default function TrainerSignUpPage() {
     }
 
     setLoading(true);
+    const startedAt = startTiming();
     const supabase = createClient();
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -64,6 +65,7 @@ export default function TrainerSignUpPage() {
         category: "auth",
         severity: "error",
         message: `No se pudo crear la cuenta de entrenador para ${email}`,
+        startedAt,
         context: { email, reason: signUpError?.message ?? "sin usuario" },
       });
       setError("No se pudo crear tu cuenta. Intenta de nuevo.");
@@ -84,6 +86,7 @@ export default function TrainerSignUpPage() {
       category: "auth",
       severity: "success",
       message: `Nueva cuenta de entrenador: ${fullName}`,
+      startedAt,
       context: { email },
     });
 

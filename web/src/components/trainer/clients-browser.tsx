@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
-import { logActivity } from "@/lib/log-activity";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { initialsOf, goalLabel } from "@/lib/format";
 import type { ClientProfile, PendingInvitation } from "@/lib/types/client";
 import { Input } from "@/components/ui/input";
@@ -76,6 +76,7 @@ export function ClientsBrowser({
     event.preventDefault();
     event.stopPropagation();
     const next = client.status === "active" ? "inactive" : "active";
+    const startedAt = startTiming();
     setTogglingId(client.id);
     const supabase = createClient();
     let { error } = await supabase
@@ -106,6 +107,7 @@ export function ClientsBrowser({
         targetType: "profile",
         targetId: client.id,
         targetLabel: client.full_name,
+        startedAt,
         context: { attemptedStatus: next, errorCode: error.code, reason: error.message },
       });
       toast.error("No se pudo actualizar el estado — recarga la página e intenta de nuevo");
@@ -122,6 +124,7 @@ export function ClientsBrowser({
       targetType: "profile",
       targetId: client.id,
       targetLabel: client.full_name,
+      startedAt,
     });
     toast.success(next === "active" ? "Cliente reactivado" : "Cliente desactivado");
   }

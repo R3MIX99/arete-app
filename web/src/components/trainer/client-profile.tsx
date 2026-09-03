@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
-import { logActivity } from "@/lib/log-activity";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { initialsOf, goalLabel, formatDate } from "@/lib/format";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 import { isCardioGroup } from "@/lib/client-exercise-target";
@@ -124,6 +124,7 @@ export function ClientProfile({
 
   async function toggleStatus() {
     const next = status === "active" ? "inactive" : "active";
+    const startedAt = startTiming();
     setTogglingStatus(true);
     const supabase = createClient();
     let { error } = await supabase
@@ -153,6 +154,7 @@ export function ClientProfile({
         targetType: "profile",
         targetId: client.id,
         targetLabel: client.full_name,
+        startedAt,
         context: { attemptedStatus: next, errorCode: error.code, reason: error.message },
       });
       toast.error("No se pudo actualizar el estado — recarga la página e intenta de nuevo");
@@ -167,6 +169,7 @@ export function ClientProfile({
       targetType: "profile",
       targetId: client.id,
       targetLabel: client.full_name,
+      startedAt,
     });
     toast.success(next === "active" ? "Cliente reactivado" : "Cliente desactivado");
     router.refresh();
@@ -179,6 +182,7 @@ export function ClientProfile({
   // suyo) y trainer_id vuelve a null, para que un enlace de invitación
   // de OTRO entrenador ya lo pueda tomar.
   async function handleUnassign() {
+    const startedAt = startTiming();
     setRemoving(true);
     const supabase = createClient();
     const { error } = await supabase.rpc("unassign_client", { p_client_id: client.id });
@@ -192,6 +196,7 @@ export function ClientProfile({
         targetType: "profile",
         targetId: client.id,
         targetLabel: client.full_name,
+        startedAt,
         context: { reason: error.message },
       });
       toast.error("No se pudo quitar al cliente. Intenta de nuevo.");
@@ -205,6 +210,7 @@ export function ClientProfile({
       targetType: "profile",
       targetId: client.id,
       targetLabel: client.full_name,
+      startedAt,
     });
     toast.success("Cliente removido — ya puede unirse a otro entrenador");
     router.push("/entrenador/clientes");
