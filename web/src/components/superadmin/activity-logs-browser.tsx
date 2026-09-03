@@ -81,17 +81,47 @@ const CATEGORY_LABELS: Record<ActivityLogCategory, string> = {
   system: "Sistema",
 };
 
-type DateRangeOption = "today" | "week" | "month" | "all" | "custom";
+type DateRangeOption =
+  | "last30min"
+  | "lastHour"
+  | "last12h"
+  | "lastDay"
+  | "today"
+  | "week"
+  | "month"
+  | "all"
+  | "custom";
 
 type SortOption = "newest" | "oldest" | "most_critical" | "least_critical";
 
+// Los primeros cuatro son ventanas móviles en minutos (últimos 30 min,
+// última hora...), no días de calendario — por eso se calculan aparte,
+// contra la marca de tiempo exacta y no contra la fecha del día.
+const RECENT_MINUTES_BY_RANGE: Partial<Record<DateRangeOption, number>> = {
+  last30min: 30,
+  lastHour: 60,
+  last12h: 12 * 60,
+  lastDay: 24 * 60,
+};
+
 const DATE_RANGE_OPTIONS: { value: DateRangeOption; label: string }[] = [
+  { value: "last30min", label: "Últimos 30 minutos" },
+  { value: "lastHour", label: "Última hora" },
+  { value: "last12h", label: "Últimas 12 horas" },
+  { value: "lastDay", label: "Último día" },
   { value: "today", label: "Hoy" },
   { value: "week", label: "Esta semana" },
   { value: "month", label: "Este mes" },
   { value: "all", label: "Todo el historial" },
   { value: "custom", label: "Rango personalizado" },
 ];
+
+/** Envuelto aparte (en vez de Date.now() directo dentro del useMemo de
+ * abajo) porque el linter de hooks marca una llamada "impura" suelta
+ * dentro del cuerpo de un hook — igual que ya pasaba con todayKey(). */
+function nowMs(): number {
+  return Date.now();
+}
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "newest", label: "Más recientes primero" },
@@ -169,6 +199,8 @@ export function ActivityLogsBrowser({ logs }: { logs: ActivityLogRow[] }) {
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     const today = todayKey();
+    const recentMinutes = RECENT_MINUTES_BY_RANGE[dateRange];
+    const recentCutoffMs = recentMinutes !== undefined ? nowMs() - recentMinutes * 60_000 : null;
     const rangeStart =
       dateRange === "today"
         ? today
@@ -185,7 +217,9 @@ export function ActivityLogsBrowser({ logs }: { logs: ActivityLogRow[] }) {
       if (severity !== "all" && log.severity !== severity) return false;
       if (role !== "all" && log.actor_role !== role) return false;
       if (actorId !== "all" && log.actor_id !== actorId) return false;
-      if (dateRange !== "all" && rangeStart) {
+      if (recentCutoffMs !== null) {
+        if (new Date(log.created_at).getTime() < recentCutoffMs) return false;
+      } else if (dateRange !== "all" && rangeStart) {
         const day = log.created_at.slice(0, 10);
         if (day < rangeStart || day > rangeEnd) return false;
       }
