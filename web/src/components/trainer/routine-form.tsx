@@ -863,11 +863,11 @@ export function RoutineForm({
 
         {/* En computadora el botón de guardar queda fijo abajo, para que
             el entrenador no tenga que bajar hasta el final de una rutina
-            larga cada vez que quiere guardar. En vez de una línea divisoria,
-            un degradado hacia el fondo de la página lo despega del
-            contenido sin cortar visualmente. En teléfono se queda en su
-            lugar normal, al final del formulario. */}
-        <div className="mt-1 flex md:sticky md:bottom-0 md:-mx-8 md:justify-center md:bg-gradient-to-t md:from-background md:from-40% md:to-transparent md:px-8 md:pt-16 md:pb-4">
+            larga cada vez que quiere guardar. En vez de un borde o un
+            degradado, un contenedor alto con blur (sin línea ni fondo
+            sólido) lo despega del contenido de forma suave. En teléfono
+            se queda en su lugar normal, al final del formulario. */}
+        <div className="mt-1 flex md:sticky md:bottom-0 md:-mx-8 md:h-28 md:items-end md:justify-center md:bg-background/70 md:px-8 md:pb-6 md:backdrop-blur-md md:[mask-image:linear-gradient(to_bottom,transparent,black_40%)]">
           <Button type="submit" disabled={saving} className="w-fit">
             {saving ? <Loader2 className="animate-spin" /> : null}
             {mode === "create" ? "Crear rutina" : "Guardar cambios"}
