@@ -25,6 +25,7 @@ import { isCardioGroup } from "@/lib/client-exercise-target";
 import { MEASUREMENT_FIELDS, type MeasurementKey } from "@/lib/types/progress";
 import type { ExerciseProgressSummary, ProgressMeasurement } from "@/lib/types/progress";
 import type { CompletedSessionRow } from "@/lib/types/client-panel";
+import type { CalendarAssignment } from "@/lib/calendar-logic";
 import type {
   ClientProfile as ClientProfileType,
   ClientTrainingAssignment,
@@ -77,6 +78,7 @@ export function ClientProfile({
   completedSessions,
   trainingAssignments,
   dietPlanAssignments,
+  assignments,
 }: {
   trainerId: string;
   client: ClientProfileType;
@@ -85,6 +87,10 @@ export function ClientProfile({
   completedSessions: CompletedSessionRow[];
   trainingAssignments: ClientTrainingAssignment[];
   dietPlanAssignments: ClientDietPlanAssignment[];
+  /** Agenda completa del cliente (programa + semanas + reemplazos) —
+   * solo para la pestaña Asistencia, que necesita saber qué tenía
+   * programado cada día, no solo lo que completó. */
+  assignments: CalendarAssignment[];
 }) {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -462,8 +468,9 @@ export function ClientProfile({
 
             <TabsContent value="asistencia" className="mt-3">
               <ClientAttendanceCalendar
+                clientId={client.id}
                 completedSessions={completedSessions}
-                onSessionClick={handleSessionClick}
+                assignments={assignments}
               />
             </TabsContent>
 

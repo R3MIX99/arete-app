@@ -1,12 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarX } from "lucide-react";
 
-import { todayKey, toKey } from "@/lib/calendar-logic";
+import {
+  sessionsInRange,
+  todayKey,
+  toKey,
+  type CalendarAssignment,
+} from "@/lib/calendar-logic";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { TrainerSessionDetailSheetContent } from "@/components/trainer/trainer-session-detail-sheet-content";
 import type { CompletedSessionRow } from "@/lib/types/client-panel";
 
 const MONTH_NAMES = [
@@ -24,30 +30,36 @@ const MONTH_NAMES = [
   "diciembre",
 ];
 
+interface DayAttendance {
+  complete: boolean;
+  missing: Set<string>;
+  sessions: CompletedSessionRow[];
+}
+
 /**
  * Cuadrícula mensual de asistencia para el panel del entrenador: un
- * cuadrito por día con sesión completada, distinguiendo si el cliente
- * terminó toda la rutina (verde sólido) o se quedó a medias — p. ej. hizo
- * la fuerza pero se saltó el cardio (ámbar, con el detalle de qué grupo
- * quedó pendiente en el tooltip). Si un día tiene más de una sesión, se
- * marca incompleto en cuanto alguna de las dos lo esté.
+ * cuadrito por día, distinguiendo si el cliente terminó toda la rutina
+ * (verde sólido), se quedó a medias (ámbar), tenía algo programado y no
+ * lo hizo (borde punteado), o no tenía nada ese día. Al hacerle clic a
+ * cualquier día con información (con sesión o con algo programado), el
+ * detalle se abre hacia abajo, dentro de la misma tarjeta — no en un
+ * panel aparte — y si hubo más de una sesión ese día, se listan todas.
  */
 export function ClientAttendanceCalendar({
+  clientId,
   completedSessions,
-  onSessionClick,
+  assignments,
 }: {
+  clientId: string;
   completedSessions: CompletedSessionRow[];
-  /** Al hacerle clic a un día con sesión — abre el mismo detalle que ya
-   * se usa en Historial, para no duplicar esa vista. Si el día tuvo más
-   * de una sesión, abre la primera; es el caso raro, no vale la pena un
-   * selector aparte solo para eso. */
-  onSessionClick: (session: CompletedSessionRow) => void;
+  assignments: CalendarAssignment[];
 }) {
   const today = useMemo(() => todayKey(), []);
   const [cursor, setCursor] = useState(() => {
     const [y, m] = today.split("-").map(Number);
     return { year: y, month: m };
   });
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const monthStart = toKey(cursor.year, cursor.month, 1);
   const daysInMonth = useMemo(
@@ -57,10 +69,7 @@ export function ClientAttendanceCalendar({
   const monthEnd = toKey(cursor.year, cursor.month, daysInMonth);
 
   const byDate = useMemo(() => {
-    const map = new Map<
-      string,
-      { complete: boolean; missing: Set<string>; sessions: CompletedSessionRow[] }
-    >();
+    const map = new Map<string, DayAttendance>();
     for (const session of completedSessions) {
       if (session.sessionDate < monthStart || session.sessionDate > monthEnd) continue;
       const complete = session.incompleteMuscleGroups.length === 0;
@@ -77,6 +86,19 @@ export function ClientAttendanceCalendar({
     return map;
   }, [completedSessions, monthStart, monthEnd]);
 
+  // Lo que tenía programado cada día (nombre(s) de rutina), venga o no
+  // de completarse — así un día que se saltó por completo también se
+  // puede abrir para ver qué se perdió.
+  const scheduledByDate = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const session of sessionsInRange(assignments, monthStart, monthEnd)) {
+      const list = map.get(session.date) ?? [];
+      list.push(session.routineName);
+      map.set(session.date, list);
+    }
+    return map;
+  }, [assignments, monthStart, monthEnd]);
+
   const monthCompletedCount = byDate.size;
   const monthPartialCount = Array.from(byDate.values()).filter((d) => !d.complete).length;
 
@@ -84,10 +106,18 @@ export function ClientAttendanceCalendar({
     () =>
       Array.from({ length: daysInMonth }, (_, i) => {
         const date = toKey(cursor.year, cursor.month, i + 1);
-        return { date, dayNumber: i + 1, attendance: byDate.get(date) ?? null, isToday: date === today };
+        return {
+          date,
+          dayNumber: i + 1,
+          attendance: byDate.get(date) ?? null,
+          scheduled: scheduledByDate.get(date) ?? null,
+          isToday: date === today,
+        };
       }),
-    [daysInMonth, cursor.year, cursor.month, byDate, today],
+    [daysInMonth, cursor.year, cursor.month, byDate, scheduledByDate, today],
   );
+
+  const selectedDay = selectedDate ? days.find((d) => d.date === selectedDate) : undefined;
 
   function shiftMonth(delta: number) {
     setCursor((c) => {
@@ -96,6 +126,7 @@ export function ClientAttendanceCalendar({
       const month = ((zeroBased % 12) + 12) % 12 + 1;
       return { year, month };
     });
+    setSelectedDate(null);
   }
 
   return (
@@ -147,6 +178,8 @@ export function ClientAttendanceCalendar({
         <div className="flex flex-wrap gap-1">
           {days.map((day) => {
             const attendance = day.attendance;
+            const missedScheduled = !attendance && day.scheduled !== null;
+            const clickable = attendance !== null || missedScheduled;
             const missingLabel = attendance && !attendance.complete
               ? `Le faltó: ${Array.from(attendance.missing).join(", ")}`
               : null;
@@ -154,11 +187,13 @@ export function ClientAttendanceCalendar({
               <button
                 key={day.date}
                 type="button"
-                disabled={attendance === null}
-                onClick={() => attendance && onSessionClick(attendance.sessions[0])}
+                disabled={!clickable}
+                onClick={() => setSelectedDate((prev) => (prev === day.date ? null : day.date))}
                 title={`${day.dayNumber} — ${
                   attendance === null
-                    ? "sin sesión registrada"
+                    ? missedScheduled
+                      ? `no hizo: ${day.scheduled!.join(", ")}`
+                      : "sin sesión registrada"
                     : attendance.complete
                       ? "rutina completa"
                       : missingLabel ?? "rutina incompleta"
@@ -166,11 +201,14 @@ export function ClientAttendanceCalendar({
                 className={cn(
                   "flex size-8 shrink-0 items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors",
                   attendance === null
-                    ? "bg-muted/50 text-muted-foreground/60 cursor-default"
+                    ? missedScheduled
+                      ? "border border-dashed border-muted-foreground/50 text-muted-foreground cursor-pointer hover:bg-accent"
+                      : "bg-muted/50 text-muted-foreground/60 cursor-default"
                     : attendance.complete
                       ? "bg-primary text-primary-foreground cursor-pointer hover:opacity-85"
                       : "bg-warning/14 text-warning border border-warning/50 cursor-pointer hover:opacity-85",
                   day.isToday && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                  selectedDate === day.date && "outline outline-2 outline-offset-1 outline-foreground",
                 )}
               >
                 {day.dayNumber}
@@ -187,9 +225,37 @@ export function ClientAttendanceCalendar({
             <span className="size-2.5 rounded-sm border border-warning/50 bg-warning/20" /> Le faltó algo (ej. cardio)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-sm bg-muted/50" /> Sin sesión
+            <span className="size-2.5 rounded-sm border border-dashed border-muted-foreground/50" /> No hizo lo programado
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-sm bg-muted/50" /> Sin nada programado
           </span>
         </div>
+
+        {selectedDay ? (
+          <div className="flex flex-col gap-3 rounded-xl border p-4">
+            <p className="text-sm font-semibold">
+              {selectedDay.dayNumber} de {MONTH_NAMES[cursor.month - 1]}
+            </p>
+
+            {selectedDay.attendance ? (
+              selectedDay.attendance.sessions.map((session) => (
+                <div key={session.id} className="flex flex-col gap-2 border-t pt-3 first:border-t-0 first:pt-0">
+                  <p className="text-sm font-medium">{session.routineName}</p>
+                  <TrainerSessionDetailSheetContent clientId={clientId} sessionId={session.id} />
+                </div>
+              ))
+            ) : (
+              <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                <CalendarX className="mt-0.5 size-4 shrink-0" />
+                <p>
+                  Tenía programado <span className="font-medium text-foreground">{selectedDay.scheduled?.join(", ")}</span> —
+                  no quedó registrado como hecho ese día.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
