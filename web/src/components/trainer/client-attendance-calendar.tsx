@@ -234,26 +234,30 @@ export function ClientAttendanceCalendar({
 
         {selectedDay ? (
           <div className="flex flex-col gap-4 border-t pt-4">
-            <p className="text-base font-semibold">
-              {selectedDay.dayNumber} de {MONTH_NAMES[cursor.month - 1]}
-            </p>
-
             {selectedDay.attendance ? (
               selectedDay.attendance.sessions.map((session, sessionIndex) => (
                 <div
                   key={session.id}
-                  className={cn("flex flex-col gap-3", sessionIndex > 0 && "border-t pt-4")}
+                  className={cn(sessionIndex > 0 && "border-t pt-4")}
                 >
-                  <p className="text-sm font-medium text-muted-foreground">{session.routineName}</p>
-                  <TrainerSessionDetailSheetContent clientId={clientId} sessionId={session.id} />
+                  <TrainerSessionDetailSheetContent
+                    clientId={clientId}
+                    sessionId={session.id}
+                    title={session.routineName}
+                    subtitle={`${selectedDay.dayNumber} de ${MONTH_NAMES[cursor.month - 1]}`}
+                  />
                 </div>
               ))
             ) : (
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <CalendarX className="mt-0.5 size-4 shrink-0" />
                 <p>
-                  Tenía programado <span className="font-medium text-foreground">{selectedDay.scheduled?.join(", ")}</span> —
-                  no quedó registrado como hecho ese día.
+                  <span className="font-medium text-foreground">
+                    {selectedDay.dayNumber} de {MONTH_NAMES[cursor.month - 1]}
+                  </span>
+                  {" — "}
+                  tenía programado <span className="font-medium text-foreground">{selectedDay.scheduled?.join(", ")}</span>, no
+                  quedó registrado como hecho ese día.
                 </p>
               </div>
             )}
