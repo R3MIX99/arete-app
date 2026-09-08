@@ -69,35 +69,38 @@ export function TrainerSessionDetailSheetContent({
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 divide-x rounded-xl border">
-        <div className="flex flex-col items-center gap-1 px-4 py-3">
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center gap-8 border-b pb-4">
+        <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Clock className="size-3.5" />
             <span className="text-[11px] font-medium uppercase tracking-wide">Duración</span>
           </div>
-          <p className="text-lg font-semibold tabular-nums">
+          <p className="text-xl font-semibold tabular-nums">
             {view?.durationSeconds ? formatDuration(view.durationSeconds) : "—"}
           </p>
         </div>
-        <div className="flex flex-col items-center gap-1 px-4 py-3">
+        <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Target className="size-3.5" />
             <span className="text-[11px] font-medium uppercase tracking-wide">Series</span>
           </div>
-          <p className="text-lg font-semibold tabular-nums">
+          <p className="text-xl font-semibold tabular-nums">
             {completedSets}/{totalSets}
           </p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {exercises.map((exercise) => {
+      <div className="flex flex-col">
+        {exercises.map((exercise, exerciseIndex) => {
           const cardio = isCardio(exercise.muscleGroup);
           return (
-            <div key={exercise.exerciseId} className="overflow-hidden rounded-xl border">
-              <div className="flex items-center gap-2 border-b bg-foreground/[0.02] px-4 py-3">
-                <p className="min-w-0 flex-1 truncate text-sm font-medium">{exercise.exerciseName}</p>
+            <div
+              key={exercise.exerciseId}
+              className={cn("flex flex-col gap-2.5 py-4", exerciseIndex > 0 && "border-t")}
+            >
+              <div className="flex items-center gap-2">
+                <p className="min-w-0 flex-1 truncate text-base font-semibold">{exercise.exerciseName}</p>
                 {exercise.videoUrl ? (
                   <ExerciseVideoButton videoUrl={exercise.videoUrl} exerciseName={exercise.exerciseName} />
                 ) : null}
@@ -109,35 +112,33 @@ export function TrainerSessionDetailSheetContent({
                   <History className="size-4.5" />
                 </Link>
               </div>
-              <div className="px-4 py-3">
-                <div className="grid grid-cols-[1.5rem_1fr_1fr_1.5rem] items-center gap-2 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  <span>#</span>
-                  <span>{cardio ? "Minutos" : "Peso"}</span>
-                  <span>{cardio ? "Nivel" : "Reps"}</span>
-                  <span />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  {exercise.sets.map((set, i) => (
-                    <div key={i} className="grid grid-cols-[1.5rem_1fr_1fr_1.5rem] items-center gap-2 text-sm">
-                      <span className="text-muted-foreground">{set.setNumber}</span>
-                      <span className="tabular-nums">
-                        {cardio
-                          ? (set.actualMinutes ? `${set.actualMinutes} min` : "—")
-                          : set.actualWeight
-                            ? `${set.actualWeight} kg`
-                            : "—"}
-                      </span>
-                      <span className="tabular-nums">
-                        {cardio ? (set.actualLevel ?? "—") : (set.actualReps ?? "—")}
-                      </span>
-                      {set.isCompleted ? (
-                        <Check className="size-4 text-primary" />
-                      ) : (
-                        <Minus className={cn("size-4 text-muted-foreground/40")} />
-                      )}
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-[1.5rem_1fr_1fr_1.5rem] items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <span>#</span>
+                <span>{cardio ? "Minutos" : "Peso"}</span>
+                <span>{cardio ? "Nivel" : "Reps"}</span>
+                <span />
+              </div>
+              <div className="flex flex-col gap-2">
+                {exercise.sets.map((set, i) => (
+                  <div key={i} className="grid grid-cols-[1.5rem_1fr_1fr_1.5rem] items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">{set.setNumber}</span>
+                    <span className="tabular-nums">
+                      {cardio
+                        ? (set.actualMinutes ? `${set.actualMinutes} min` : "—")
+                        : set.actualWeight
+                          ? `${set.actualWeight} kg`
+                          : "—"}
+                    </span>
+                    <span className="tabular-nums">
+                      {cardio ? (set.actualLevel ?? "—") : (set.actualReps ?? "—")}
+                    </span>
+                    {set.isCompleted ? (
+                      <Check className="size-4 text-primary" />
+                    ) : (
+                      <Minus className={cn("size-4 text-muted-foreground/40")} />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           );

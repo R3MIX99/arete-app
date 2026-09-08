@@ -233,15 +233,18 @@ export function ClientAttendanceCalendar({
         </div>
 
         {selectedDay ? (
-          <div className="flex flex-col gap-3 rounded-xl border p-4">
-            <p className="text-sm font-semibold">
+          <div className="flex flex-col gap-4 border-t pt-4">
+            <p className="text-base font-semibold">
               {selectedDay.dayNumber} de {MONTH_NAMES[cursor.month - 1]}
             </p>
 
             {selectedDay.attendance ? (
-              selectedDay.attendance.sessions.map((session) => (
-                <div key={session.id} className="flex flex-col gap-2 border-t pt-3 first:border-t-0 first:pt-0">
-                  <p className="text-sm font-medium">{session.routineName}</p>
+              selectedDay.attendance.sessions.map((session, sessionIndex) => (
+                <div
+                  key={session.id}
+                  className={cn("flex flex-col gap-3", sessionIndex > 0 && "border-t pt-4")}
+                >
+                  <p className="text-sm font-medium text-muted-foreground">{session.routineName}</p>
                   <TrainerSessionDetailSheetContent clientId={clientId} sessionId={session.id} />
                 </div>
               ))
