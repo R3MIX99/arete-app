@@ -6,6 +6,7 @@ import { AlertCircle, FileText, Loader2, RefreshCw, Trash2, Video, Dumbbell, App
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { formatDate } from "@/lib/format";
 import {
   knowledgeContentTypeLabels,
@@ -66,16 +67,38 @@ export function KnowledgeList({ sources }: { sources: KnowledgeSource[] }) {
 
   async function reprocess(source: KnowledgeSource) {
     setBusyId(source.id);
+    const startedAt = startTiming();
     const supabase = createClient();
     const { error } = await supabase.functions.invoke("ingest-knowledge", {
       body: { sourceId: source.id },
     });
     setBusyId(null);
     if (error) {
+      logActivity({
+        action: "superadmin.ai_ingest_knowledge_failed",
+        category: "superadmin",
+        severity: "error",
+        message: `No se pudo reprocesar "${source.title}" con IA`,
+        targetType: "knowledge_source",
+        targetId: source.id,
+        targetLabel: source.title,
+        startedAt,
+        context: { reason: error.message },
+      });
       toast.error("No se pudo procesar. Revisa el mensaje de error en la tarjeta.");
       router.refresh();
       return;
     }
+    logActivity({
+      action: "superadmin.ai_ingest_knowledge",
+      category: "superadmin",
+      severity: "success",
+      message: `Reprocesó "${source.title}" con IA`,
+      targetType: "knowledge_source",
+      targetId: source.id,
+      targetLabel: source.title,
+      startedAt,
+    });
     toast.success("Procesado");
     router.refresh();
   }

@@ -5,6 +5,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import type { ExerciseOption, RoutineGoal, RoutineLevel } from "@/lib/types/routine";
 import type { Equipment } from "@/lib/types/exercise";
 import type { AiRoutineResult } from "@/lib/types/ai";
@@ -91,6 +92,7 @@ export function GenerateRoutineDialog({
     if (daysPerWeek === "") return;
     setLoading(true);
     setError(null);
+    const startedAt = startTiming();
 
     const supabase = createClient();
     const { data, error: fnError } = await supabase.functions.invoke("generate-routine", {
@@ -112,10 +114,27 @@ export function GenerateRoutineDialog({
     setLoading(false);
     if (fnError || !data || data.error) {
       const message = data?.error ?? "No se pudo generar la rutina. Intenta de nuevo.";
+      logActivity({
+        action: "trainer.ai_generate_routine_failed",
+        category: "trainer",
+        severity: "error",
+        message: "No se pudo generar una rutina con IA",
+        startedAt,
+        context: { goal, level, daysPerWeek, equipment: Array.from(equipment), reason: message },
+      });
       setError(message);
       toast.error(message);
       return;
     }
+
+    logActivity({
+      action: "trainer.ai_generate_routine",
+      category: "trainer",
+      severity: "success",
+      message: "Generó una rutina con IA",
+      startedAt,
+      context: { goal, level, daysPerWeek, equipment: Array.from(equipment) },
+    });
 
     onGenerated(data as AiRoutineResult);
     onOpenChange(false);

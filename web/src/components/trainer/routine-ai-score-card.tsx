@@ -5,6 +5,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import type { RoutineExerciseInput, RoutineGoal, RoutineLevel } from "@/lib/types/routine";
 import type { AiScoreResult } from "@/lib/types/ai";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ export function RoutineAiScoreCard({
       return;
     }
     setLoading(true);
+    const startedAt = startTiming();
     const supabase = createClient();
     const { data, error } = await supabase.functions.invoke("score-routine", {
       body: {
@@ -79,13 +81,36 @@ export function RoutineAiScoreCard({
     });
     setLoading(false);
     if (error || !data || data.error) {
-      toast.error(data?.error ?? "No se pudo calcular el puntaje. Intenta de nuevo.");
+      const message = data?.error ?? "No se pudo calcular el puntaje. Intenta de nuevo.";
+      logActivity({
+        action: "trainer.ai_score_routine_failed",
+        category: "trainer",
+        severity: "error",
+        message: "No se pudo calificar la rutina con IA",
+        targetType: "routine",
+        targetId: routineId,
+        targetLabel: name,
+        startedAt,
+        context: { reason: message },
+      });
+      toast.error(message);
       return;
     }
     const result = data as AiScoreResult;
     setScore(result.score);
     setReasoning(result.reasoning);
     setAnalyzedAt(new Date().toISOString());
+    logActivity({
+      action: "trainer.ai_score_routine",
+      category: "trainer",
+      severity: "success",
+      message: `Calificó la rutina "${name}" con IA (${result.score}/100)`,
+      targetType: "routine",
+      targetId: routineId,
+      targetLabel: name,
+      startedAt,
+      context: { score: result.score },
+    });
     toast.success("Puntaje actualizado");
   }
 

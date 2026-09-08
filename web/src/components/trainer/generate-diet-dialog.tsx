@@ -5,6 +5,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import type { AiDietResult } from "@/lib/types/ai";
 import {
   Dialog,
@@ -65,6 +66,7 @@ export function GenerateDietDialog({
   async function handleGenerate() {
     setLoading(true);
     setError(null);
+    const startedAt = startTiming();
     const supabase = createClient();
 
     const ownFilter = `trainer_id.is.null,trainer_id.eq.${trainerId}`;
@@ -154,10 +156,27 @@ export function GenerateDietDialog({
     setLoading(false);
     if (fnError || !data || data.error) {
       const message = data?.error ?? "No se pudo generar el plan. Intenta de nuevo.";
+      logActivity({
+        action: "trainer.ai_generate_diet_failed",
+        category: "trainer",
+        severity: "error",
+        message: "No se pudo generar un plan nutricional con IA",
+        startedAt,
+        context: { calorieTarget, reason: message },
+      });
       setError(message);
       toast.error(message);
       return;
     }
+
+    logActivity({
+      action: "trainer.ai_generate_diet",
+      category: "trainer",
+      severity: "success",
+      message: "Generó un plan nutricional con IA",
+      startedAt,
+      context: { calorieTarget },
+    });
 
     onGenerated(data as AiDietResult);
     onOpenChange(false);

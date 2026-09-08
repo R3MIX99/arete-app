@@ -6,6 +6,7 @@ import { Loader2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import type { KnowledgeContentType, ReferenceOption } from "@/lib/types/knowledge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,6 +102,7 @@ export function KnowledgeUploadForm({
     }
 
     setSaving(true);
+    const startedAt = startTiming();
     const supabase = createClient();
     const {
       data: { user },
@@ -159,10 +161,30 @@ export function KnowledgeUploadForm({
     setSaving(false);
 
     if (ingestError) {
+      logActivity({
+        action: "superadmin.ai_ingest_knowledge_failed",
+        category: "superadmin",
+        severity: "error",
+        message: `Se guardó "${source.id}" pero no se pudo procesar con IA todavía`,
+        targetType: "knowledge_source",
+        targetId: source.id,
+        startedAt,
+        context: { contentType, reason: ingestError.message },
+      });
       toast.error("Se guardó, pero no se pudo procesar todavía", {
         description: "Revisa el estado en la lista — puedes reprocesarlo desde ahí.",
       });
     } else {
+      logActivity({
+        action: "superadmin.ai_ingest_knowledge",
+        category: "superadmin",
+        severity: "success",
+        message: "Procesó contenido nuevo con IA para la base de conocimiento",
+        targetType: "knowledge_source",
+        targetId: source.id,
+        startedAt,
+        context: { contentType },
+      });
       toast.success("Contenido procesado y disponible para la IA");
     }
 
