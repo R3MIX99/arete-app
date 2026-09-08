@@ -861,10 +861,16 @@ export function RoutineForm({
           </p>
         ) : null}
 
-        <Button type="submit" disabled={saving} className="mt-1 w-fit">
-          {saving ? <Loader2 className="animate-spin" /> : null}
-          {mode === "create" ? "Crear rutina" : "Guardar cambios"}
-        </Button>
+        {/* En computadora el botón de guardar queda fijo abajo, para que
+            el entrenador no tenga que bajar hasta el final de una rutina
+            larga cada vez que quiere guardar. En teléfono se queda en su
+            lugar normal, al final del formulario. */}
+        <div className="mt-1 flex md:sticky md:bottom-0 md:-mx-8 md:justify-end md:border-t md:bg-background/95 md:px-8 md:py-3 md:backdrop-blur">
+          <Button type="submit" disabled={saving} className="w-fit">
+            {saving ? <Loader2 className="animate-spin" /> : null}
+            {mode === "create" ? "Crear rutina" : "Guardar cambios"}
+          </Button>
+        </div>
       </form>
 
       <ExercisePickerDialog
