@@ -34,8 +34,14 @@ const MONTH_NAMES = [
  */
 export function ClientAttendanceCalendar({
   completedSessions,
+  onSessionClick,
 }: {
   completedSessions: CompletedSessionRow[];
+  /** Al hacerle clic a un día con sesión — abre el mismo detalle que ya
+   * se usa en Historial, para no duplicar esa vista. Si el día tuvo más
+   * de una sesión, abre la primera; es el caso raro, no vale la pena un
+   * selector aparte solo para eso. */
+  onSessionClick: (session: CompletedSessionRow) => void;
 }) {
   const today = useMemo(() => todayKey(), []);
   const [cursor, setCursor] = useState(() => {
@@ -51,13 +57,21 @@ export function ClientAttendanceCalendar({
   const monthEnd = toKey(cursor.year, cursor.month, daysInMonth);
 
   const byDate = useMemo(() => {
-    const map = new Map<string, { complete: boolean; missing: Set<string> }>();
+    const map = new Map<
+      string,
+      { complete: boolean; missing: Set<string>; sessions: CompletedSessionRow[] }
+    >();
     for (const session of completedSessions) {
       if (session.sessionDate < monthStart || session.sessionDate > monthEnd) continue;
       const complete = session.incompleteMuscleGroups.length === 0;
-      const entry = map.get(session.sessionDate) ?? { complete: true, missing: new Set<string>() };
+      const entry = map.get(session.sessionDate) ?? {
+        complete: true,
+        missing: new Set<string>(),
+        sessions: [],
+      };
       entry.complete = entry.complete && complete;
       for (const group of session.incompleteMuscleGroups) entry.missing.add(group);
+      entry.sessions.push(session);
       map.set(session.sessionDate, entry);
     }
     return map;
@@ -137,8 +151,11 @@ export function ClientAttendanceCalendar({
               ? `Le faltó: ${Array.from(attendance.missing).join(", ")}`
               : null;
             return (
-              <div
+              <button
                 key={day.date}
+                type="button"
+                disabled={attendance === null}
+                onClick={() => attendance && onSessionClick(attendance.sessions[0])}
                 title={`${day.dayNumber} — ${
                   attendance === null
                     ? "sin sesión registrada"
@@ -149,15 +166,15 @@ export function ClientAttendanceCalendar({
                 className={cn(
                   "flex size-8 shrink-0 items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors",
                   attendance === null
-                    ? "bg-muted/50 text-muted-foreground/60"
+                    ? "bg-muted/50 text-muted-foreground/60 cursor-default"
                     : attendance.complete
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-warning/14 text-warning border border-warning/50",
+                      ? "bg-primary text-primary-foreground cursor-pointer hover:opacity-85"
+                      : "bg-warning/14 text-warning border border-warning/50 cursor-pointer hover:opacity-85",
                   day.isToday && "ring-2 ring-primary ring-offset-1 ring-offset-background",
                 )}
               >
                 {day.dayNumber}
-              </div>
+              </button>
             );
           })}
         </div>
