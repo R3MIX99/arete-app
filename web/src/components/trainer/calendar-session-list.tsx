@@ -1,5 +1,6 @@
-import { CalendarX } from "lucide-react";
+import { CalendarX, Check } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { initialsOf } from "@/lib/format";
 import type { CalendarSession } from "@/lib/calendar-logic";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +11,7 @@ interface ClientDaySessions {
   clientId: string;
   clientName: string;
   programNames: string[];
-  routines: { routineId: string; routineName: string; isCustomizedForClient?: boolean }[];
+  routines: { routineId: string; routineName: string; date: string; isCustomizedForClient?: boolean }[];
 }
 
 /** Agrupa las sesiones del día por cliente — un programa con más de una
@@ -33,13 +34,20 @@ function groupByClient(sessions: CalendarSession[]): ClientDaySessions[] {
     entry.routines.push({
       routineId: session.routineId,
       routineName: session.routineName,
+      date: session.date,
       isCustomizedForClient: session.isCustomizedForClient,
     });
   }
   return order.map((id) => byClient.get(id)!);
 }
 
-export function CalendarSessionList({ sessions }: { sessions: CalendarSession[] }) {
+export function CalendarSessionList({
+  sessions,
+  completedKeys,
+}: {
+  sessions: CalendarSession[];
+  completedKeys: Set<string>;
+}) {
   if (sessions.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
@@ -67,16 +75,29 @@ export function CalendarSessionList({ sessions }: { sessions: CalendarSession[] 
             </div>
 
             <div className="mt-auto flex flex-col gap-1.5">
-              {client.routines.map((routine, index) => (
-                <div key={`${routine.routineId}-${index}`} className="flex items-center gap-1.5">
-                  <p className="truncate text-xs text-muted-foreground">{routine.routineName}</p>
-                  {routine.isCustomizedForClient && (
-                    <Badge variant="outline" className="shrink-0 text-[10px]">
-                      Personalizado
-                    </Badge>
-                  )}
-                </div>
-              ))}
+              {client.routines.map((routine, index) => {
+                const isCompleted = completedKeys.has(
+                  `${client.clientId}|${routine.date}|${routine.routineId}`,
+                );
+                return (
+                  <div key={`${routine.routineId}-${index}`} className="flex items-center gap-1.5">
+                    <p
+                      className={cn(
+                        "truncate text-xs",
+                        isCompleted ? "font-medium text-success" : "text-muted-foreground",
+                      )}
+                    >
+                      {routine.routineName}
+                    </p>
+                    {isCompleted && <Check className="size-3.5 shrink-0 text-success" />}
+                    {routine.isCustomizedForClient && (
+                      <Badge variant="outline" className="shrink-0 text-[10px]">
+                        Personalizado
+                      </Badge>
+                    )}
+                  </div>
+                );
+              })}
               {client.programNames.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {client.programNames.map((name) => (

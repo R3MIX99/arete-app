@@ -42,11 +42,25 @@ function one<T>(value: T | T[] | null): T | null {
 export default async function CalendarPage() {
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("client_assignments")
-    .select(
-      "id, client_id, start_date, profiles!client_assignments_client_id_fkey(full_name, email), programs(name, duration_weeks, program_routines(id, week_number, day_of_week, routines(id, name))), routines(id, name), assignment_overrides(program_routine_id, routines(id, name))",
-    );
+  const [{ data }, { data: completedRows }] = await Promise.all([
+    supabase
+      .from("client_assignments")
+      .select(
+        "id, client_id, start_date, profiles!client_assignments_client_id_fkey(full_name, email), programs(name, duration_weeks, program_routines(id, week_number, day_of_week, routines(id, name))), routines(id, name), assignment_overrides(program_routine_id, routines(id, name))",
+      ),
+    // Para marcar en verde, con check, la rutina que el cliente ya
+    // completó ese día — la RLS de client_sessions ya limita esto a
+    // clientes actualmente asignados a este entrenador.
+    supabase
+      .from("client_sessions")
+      .select("client_id, session_date, routine_id")
+      .eq("status", "completed")
+      .not("routine_id", "is", null),
+  ]);
+
+  const completedKeys = new Set(
+    (completedRows ?? []).map((row) => `${row.client_id}|${row.session_date}|${row.routine_id}`),
+  );
 
   const assignments: CalendarAssignment[] = ((data ?? []) as AssignmentRow[]).map((row) => {
     const client = one(row.profiles);
@@ -89,5 +103,5 @@ export default async function CalendarPage() {
     };
   });
 
-  return <CalendarView assignments={assignments} />;
+  return <CalendarView assignments={assignments} completedKeys={Array.from(completedKeys)} />;
 }

@@ -33,7 +33,14 @@ function monthGridRange(year: number, month: number) {
   return { gridStart, gridEnd };
 }
 
-export function CalendarView({ assignments }: { assignments: CalendarAssignment[] }) {
+export function CalendarView({
+  assignments,
+  completedKeys,
+}: {
+  assignments: CalendarAssignment[];
+  completedKeys: string[];
+}) {
+  const completedSet = React.useMemo(() => new Set(completedKeys), [completedKeys]);
   const today = React.useMemo(() => todayKey(), []);
   const [selectedDate, setSelectedDate] = React.useState(today);
   const [cursor, setCursor] = React.useState(() => {
@@ -174,7 +181,7 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
           </Button>
         </div>
 
-        <CalendarSessionList sessions={daySessions} />
+        <CalendarSessionList sessions={daySessions} completedKeys={completedSet} />
       </div>
 
       {/* Escritorio: mes fijo a la izquierda, día seleccionado a la derecha. */}
@@ -243,7 +250,7 @@ export function CalendarView({ assignments }: { assignments: CalendarAssignment[
             </Button>
           </div>
 
-          <CalendarSessionList sessions={daySessions} />
+          <CalendarSessionList sessions={daySessions} completedKeys={completedSet} />
         </div>
       </div>
     </div>
