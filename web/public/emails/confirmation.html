@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light" />
+<title>Confirma tu cuenta</title>
+</head>
+<body style="margin:0; padding:0; background-color:#e9e8e4; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  <!-- Preheader (oculto, solo para la vista previa en la bandeja de entrada) -->
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+    {{ if eq .Data.role "trainer" }}Confirma tu cuenta y arranca con tu roster de clientes en Aretia.{{ else }}Confirma tu cuenta para ver la rutina que tu entrenador armó para ti.{{ end }}
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#e9e8e4;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:100%; background-color:#ffffff;">
+
+          <!-- Header: logo sobre negro -->
+          <tr>
+            <td align="center" style="background-color:#0a0a0a; padding:36px 24px;">
+              <img src="{{ .SiteURL }}/emails/logo-white.png" width="34" height="34" alt="Aretia" style="display:block; width:34px; height:34px;" />
+            </td>
+          </tr>
+
+          <!-- Titular enorme -->
+          <tr>
+            <td align="center" style="background-color:#ffffff; padding:56px 24px 40px;">
+              {{ if eq .Data.role "trainer" }}
+              <div style="font-family:Arial Black, Arial, Helvetica, sans-serif; font-weight:900; font-size:52px; line-height:0.98; letter-spacing:-1px; color:#0a0a0a; text-transform:uppercase;">
+                Bienvenido<br />al equipo
+              </div>
+              {{ else }}
+              <div style="font-family:Arial Black, Arial, Helvetica, sans-serif; font-weight:900; font-size:52px; line-height:0.98; letter-spacing:-1px; color:#0a0a0a; text-transform:uppercase;">
+                Bienvenido<br />a Aretia
+              </div>
+              {{ end }}
+            </td>
+          </tr>
+
+          <!-- Foto -->
+          <tr>
+            <td style="background-color:#ffffff;">
+              <img src="{{ .SiteURL }}/emails/confirmation-hero.jpg" width="600" alt="" style="display:block; width:100%; max-width:600px; height:auto;" />
+            </td>
+          </tr>
+
+          <!-- Barra de misión -->
+          <tr>
+            <td align="center" style="background-color:#0a0a0a; padding:20px 24px;">
+              <div style="font-family:Arial, Helvetica, sans-serif; font-weight:700; font-size:13px; letter-spacing:2px; color:#ffffff; text-transform:uppercase;">
+                {{ if eq .Data.role "trainer" }}Aretia te hace mejor entrenador{{ else }}Tu entrenador ya te está esperando{{ end }}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Cuerpo -->
+          <tr>
+            <td align="center" style="background-color:#ffffff; padding:36px 40px 8px;">
+              <p style="margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.6; color:#4a4a48; text-align:center;">
+                {{ if eq .Data.role "trainer" }}
+                A partir de hoy tienes todo lo que necesitas para llevar a tus clientes al siguiente nivel: rutinas avanzadas, seguimiento de progreso y todo tu roster en un solo lugar. Confirma tu cuenta para empezar.
+                {{ else }}
+                Tu cuenta está lista. Confirma tu correo para entrar y ver la rutina que tu entrenador armó para ti.
+                {{ end }}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Botón -->
+          <tr>
+            <td align="center" style="background-color:#ffffff; padding:28px 24px 56px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="background-color:#0a0a0a;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block; padding:16px 40px; font-family:Arial, Helvetica, sans-serif; font-weight:700; font-size:13px; letter-spacing:1.5px; color:#ffffff; text-decoration:none; text-transform:uppercase;">
+                      Confirmar mi cuenta
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color:#f4f4f2; padding:28px 24px;">
+              <img src="{{ .SiteURL }}/emails/logo-black.png" width="18" height="18" alt="Aretia" style="display:block; width:18px; height:18px; margin:0 auto 10px; opacity:0.5;" />
+              <p style="margin:0 0 4px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.5; color:#9a9a96; text-align:center;">
+                Si el botón no funciona, copia y pega este enlace en tu navegador:
+              </p>
+              <p style="margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.5; word-break:break-all; text-align:center;">
+                <a href="{{ .ConfirmationURL }}" style="color:#6b6b68;">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
