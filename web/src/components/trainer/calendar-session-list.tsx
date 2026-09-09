@@ -6,6 +6,39 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
+interface ClientDaySessions {
+  clientId: string;
+  clientName: string;
+  programNames: string[];
+  routines: { routineId: string; routineName: string; isCustomizedForClient?: boolean }[];
+}
+
+/** Agrupa las sesiones del día por cliente — un programa con más de una
+ * rutina el mismo día (ej. cardio + tren superior) generaba una tarjeta
+ * repetida por cada rutina; ahora es una sola tarjeta por cliente con
+ * todas sus rutinas de ese día enlistadas. */
+function groupByClient(sessions: CalendarSession[]): ClientDaySessions[] {
+  const order: string[] = [];
+  const byClient = new Map<string, ClientDaySessions>();
+  for (const session of sessions) {
+    let entry = byClient.get(session.clientId);
+    if (!entry) {
+      entry = { clientId: session.clientId, clientName: session.clientName, programNames: [], routines: [] };
+      byClient.set(session.clientId, entry);
+      order.push(session.clientId);
+    }
+    if (session.isProgram && session.programName && !entry.programNames.includes(session.programName)) {
+      entry.programNames.push(session.programName);
+    }
+    entry.routines.push({
+      routineId: session.routineId,
+      routineName: session.routineName,
+      isCustomizedForClient: session.isCustomizedForClient,
+    });
+  }
+  return order.map((id) => byClient.get(id)!);
+}
+
 export function CalendarSessionList({ sessions }: { sessions: CalendarSession[] }) {
   if (sessions.length === 0) {
     return (
@@ -16,31 +49,42 @@ export function CalendarSessionList({ sessions }: { sessions: CalendarSession[] 
     );
   }
 
+  const clients = groupByClient(sessions);
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {sessions.map((session, index) => (
+      {clients.map((client) => (
         <Card
-          key={`${session.assignmentId}-${index}`}
+          key={client.clientId}
           className="h-full card-hover-glow transition-colors hover:border-primary/40"
         >
           <CardContent className="flex h-full flex-col gap-3">
-            <div className="flex items-start justify-between">
-              <Avatar className="size-10">
-                <AvatarFallback>{initialsOf(session.clientName) || "?"}</AvatarFallback>
+            <div className="flex items-center gap-3">
+              <Avatar className="size-10 shrink-0">
+                <AvatarFallback>{initialsOf(client.clientName) || "?"}</AvatarFallback>
               </Avatar>
-              {session.isCustomizedForClient && (
-                <Badge variant="outline" className="text-[10px]">
-                  Personalizado
-                </Badge>
-              )}
+              <p className="truncate text-sm font-semibold">{client.clientName}</p>
             </div>
-            <div className="mt-auto">
-              <p className="truncate text-sm font-semibold">{session.clientName}</p>
-              <p className="truncate text-xs text-muted-foreground">{session.routineName}</p>
-              {session.isProgram && session.programName && (
-                <Badge variant="secondary" className="mt-2">
-                  {session.programName}
-                </Badge>
+
+            <div className="mt-auto flex flex-col gap-1.5">
+              {client.routines.map((routine, index) => (
+                <div key={`${routine.routineId}-${index}`} className="flex items-center gap-1.5">
+                  <p className="truncate text-xs text-muted-foreground">{routine.routineName}</p>
+                  {routine.isCustomizedForClient && (
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      Personalizado
+                    </Badge>
+                  )}
+                </div>
+              ))}
+              {client.programNames.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {client.programNames.map((name) => (
+                    <Badge key={name} variant="secondary">
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
               )}
             </div>
           </CardContent>
