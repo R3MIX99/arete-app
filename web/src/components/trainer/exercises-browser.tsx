@@ -301,7 +301,7 @@ export function ExercisesBrowser({
                     tratamiento que la vista previa de rutina), el texto
                     a la derecha — se ve mejor que una franja angosta
                     arriba de la tarjeta. */}
-                <Card className="card-hover-glow gap-0 overflow-hidden border-transparent py-0 shadow-none transition-colors hover:border-primary/40">
+                <Card className="card-hover-glow gap-0 overflow-hidden !border-transparent py-0 !shadow-none transition-colors hover:!border-primary/40">
                   <CardContent className="flex items-center gap-3 p-1.5 pr-3">
                     <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-primary/12">
                       {uploadedImageUrl ? (

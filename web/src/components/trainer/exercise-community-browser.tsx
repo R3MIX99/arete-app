@@ -362,7 +362,7 @@ export function ExerciseCommunityBrowser({
             return (
               <Card
                 key={exercise.id}
-                className="card-hover-glow gap-0 overflow-hidden border-transparent py-0 shadow-none transition-colors hover:border-primary/40"
+                className="card-hover-glow gap-0 overflow-hidden !border-transparent py-0 !shadow-none transition-colors hover:!border-primary/40"
               >
                 {/* Clic en la imagen/texto abre el detalle — el botón de
                     agregar de abajo es aparte, para poder sumarlo sin
