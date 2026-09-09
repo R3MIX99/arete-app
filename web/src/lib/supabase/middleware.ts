@@ -37,7 +37,13 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/registro") ||
     request.nextUrl.pathname.startsWith("/recuperar");
-  const isPublicAsset = request.nextUrl.pathname.startsWith("/_next");
+  const isPublicAsset =
+    request.nextUrl.pathname.startsWith("/_next") ||
+    // Las plantillas de correo (public/emails/*.html) las carga GoTrue
+    // como archivo plano — sin cookies de sesión — para armar los
+    // correos de auth; sin esto, el middleware las mandaba a /login en
+    // vez de servirlas.
+    request.nextUrl.pathname.startsWith("/emails/");
 
   if (!user && !isAuthRoute && !isPublicAsset && request.nextUrl.pathname !== "/") {
     const url = request.nextUrl.clone();
