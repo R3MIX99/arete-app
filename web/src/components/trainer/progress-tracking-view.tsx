@@ -20,6 +20,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -63,12 +65,18 @@ export function ProgressTrackingView({
   const [editingMeasurement, setEditingMeasurement] =
     React.useState<ProgressMeasurement | null>(null);
 
-  // Filtro por mes: acota registros, fotos y el % de asistencia al mes
-  // que se esté viendo — arranca en el mes de hoy.
+  // El mes seleccionado siempre rige el % de asistencia (por diseño,
+  // esa tarjeta es mensual siempre). Filtrar por ese mismo mes las
+  // gráficas/fotos/registros es OPCIONAL (filterByMonth) y arranca
+  // apagado: normalmente se registra una vez al mes, así que filtrando
+  // por mes casi nunca hay más de un punto y la gráfica de tendencia no
+  // se ve — por default se ve todo el historial, y se puede acotar al
+  // mes activo si se quiere.
   const [cursor, setCursor] = React.useState(() => {
     const [y, m] = todayKey().split("-").map(Number);
     return { year: y, month: m };
   });
+  const [filterByMonth, setFilterByMonth] = React.useState(false);
   const monthStart = toKey(cursor.year, cursor.month, 1);
   const daysInMonth = new Date(Date.UTC(cursor.year, cursor.month, 0)).getUTCDate();
   const monthEnd = toKey(cursor.year, cursor.month, daysInMonth);
@@ -89,10 +97,9 @@ export function ProgressTrackingView({
       measurements.filter(
         (m) =>
           m.client_id === selectedClientId &&
-          m.entry_date >= monthStart &&
-          m.entry_date <= monthEnd,
+          (!filterByMonth || (m.entry_date >= monthStart && m.entry_date <= monthEnd)),
       ),
-    [measurements, selectedClientId, monthStart, monthEnd],
+    [measurements, selectedClientId, filterByMonth, monthStart, monthEnd],
   );
 
   const clientPhotos = React.useMemo(
@@ -101,18 +108,27 @@ export function ProgressTrackingView({
         .filter(
           (p) =>
             p.client_id === selectedClientId &&
-            p.entry_date >= monthStart &&
-            p.entry_date <= monthEnd,
+            (!filterByMonth || (p.entry_date >= monthStart && p.entry_date <= monthEnd)),
         )
         .slice()
         .reverse(),
-    [photos, selectedClientId, monthStart, monthEnd],
+    [photos, selectedClientId, filterByMonth, monthStart, monthEnd],
   );
 
   // % de asistencia del mes: mismo criterio que la pestaña Asistencia
   // (una client_sessions completada ese día cuenta como asistido), no
-  // "cualquier serie con algo guardado" — y acotado al mes que se está
-  // viendo, no a una ventana fija de 4 semanas.
+  // "cualquier serie con algo guardado" — acotado siempre al mes
+  // seleccionado (independiente del switch de arriba).
+  //
+  // Si el entrenador reasigna al cliente (nueva rutina/programa),
+  // client_assignments no guarda lo que tenía antes — no queda ningún
+  // registro de qué estaba programado en un mes anterior a la
+  // asignación vigente. Para no mostrar "sin sesiones programadas"
+  // cuando en realidad SÍ hubo sesiones completadas ese mes (solo que
+  // ya no sabemos contra qué horario), esos días completados también
+  // se cuentan como "programados" cuando no hay ninguna asignación que
+  // los cubra — es lo más honesto que se puede mostrar sin guardar
+  // historial de asignaciones.
   const compliance = React.useMemo(() => {
     if (!selectedClientId) return null;
     const clientAssignments = assignments.filter((a) => a.clientId === selectedClientId);
@@ -121,9 +137,12 @@ export function ProgressTrackingView({
     const rangeEnd = monthEnd < todayKey() ? monthEnd : todayKey();
     if (rangeEnd < monthStart) return null;
     const scheduled = sessionsInRange(clientAssignments, monthStart, rangeEnd);
-    if (scheduled.length === 0) return null;
     const scheduledDates = new Set(scheduled.map((s) => s.date));
     const completedDates = new Set(completedDatesByClient[selectedClientId] ?? []);
+    for (const d of completedDates) {
+      if (d >= monthStart && d <= rangeEnd) scheduledDates.add(d);
+    }
+    if (scheduledDates.size === 0) return null;
     const completed = Array.from(scheduledDates).filter((d) => completedDates.has(d)).length;
     return completed / scheduledDates.size;
   }, [assignments, completedDatesByClient, selectedClientId, monthStart, monthEnd]);
@@ -175,28 +194,46 @@ export function ProgressTrackingView({
           <ChevronsUpDown className="size-3.5 text-muted-foreground" />
         </button>
 
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Mes anterior"
-            onClick={() => shiftMonth(-1)}
-          >
-            <ChevronLeft />
-          </Button>
-          <p className="w-36 text-center text-sm font-medium capitalize">
-            {formatMonthYear(cursor.year, cursor.month)}
-          </p>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Mes siguiente"
-            onClick={() => shiftMonth(1)}
-          >
-            <ChevronRight />
-          </Button>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Mes anterior"
+              onClick={() => shiftMonth(-1)}
+            >
+              <ChevronLeft />
+            </Button>
+            <p className="w-36 text-center text-sm font-medium capitalize">
+              {formatMonthYear(cursor.year, cursor.month)}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Mes siguiente"
+              onClick={() => shiftMonth(1)}
+            >
+              <ChevronRight />
+            </Button>
+          </div>
+
+          {/* La asistencia de arriba siempre es del mes que se está
+              viendo — este switch es aparte, y solo decide si las
+              gráficas/fotos/registros de abajo también se acotan a ese
+              mes (normalmente se registra una vez al mes, así que
+              filtrando casi nunca hay más de un punto para graficar). */}
+          <div className="flex items-center gap-2">
+            <Switch
+              id="filter-by-month"
+              checked={filterByMonth}
+              onCheckedChange={setFilterByMonth}
+            />
+            <Label htmlFor="filter-by-month" className="text-sm text-muted-foreground">
+              Acotar registros a este mes
+            </Label>
+          </div>
         </div>
       </div>
 
