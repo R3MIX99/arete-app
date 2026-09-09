@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ChevronsUpDown, Plus, Users } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, ChevronsUpDown, Plus, Users } from "lucide-react";
 
-import { formatDate, initialsOf } from "@/lib/format";
+import { formatDate, formatMonthYear, initialsOf } from "@/lib/format";
 import {
-  addDays,
   sessionsInRange,
+  toKey,
   todayKey,
   type CalendarAssignment,
 } from "@/lib/calendar-logic";
@@ -46,14 +46,14 @@ export function ProgressTrackingView({
   assignments,
   measurements,
   photos,
-  loggedDatesByClient,
+  completedDatesByClient,
 }: {
   trainerId: string;
   clients: ClientRow[];
   assignments: CalendarAssignment[];
   measurements: (ProgressMeasurement & { client_id: string })[];
   photos: (ProgressPhotoEntry & { client_id: string })[];
-  loggedDatesByClient: Record<string, string[]>;
+  completedDatesByClient: Record<string, string[]>;
 }) {
   const router = useRouter();
   const [selectedClientId, setSelectedClientId] = React.useState(clients[0]?.id ?? "");
@@ -63,30 +63,70 @@ export function ProgressTrackingView({
   const [editingMeasurement, setEditingMeasurement] =
     React.useState<ProgressMeasurement | null>(null);
 
+  // Filtro por mes: acota registros, fotos y el % de asistencia al mes
+  // que se esté viendo — arranca en el mes de hoy.
+  const [cursor, setCursor] = React.useState(() => {
+    const [y, m] = todayKey().split("-").map(Number);
+    return { year: y, month: m };
+  });
+  const monthStart = toKey(cursor.year, cursor.month, 1);
+  const daysInMonth = new Date(Date.UTC(cursor.year, cursor.month, 0)).getUTCDate();
+  const monthEnd = toKey(cursor.year, cursor.month, daysInMonth);
+
+  function shiftMonth(delta: number) {
+    setCursor((c) => {
+      const zeroBased = c.month - 1 + delta;
+      const year = c.year + Math.floor(zeroBased / 12);
+      const month = ((zeroBased % 12) + 12) % 12 + 1;
+      return { year, month };
+    });
+  }
+
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
   const clientMeasurements = React.useMemo(
-    () => measurements.filter((m) => m.client_id === selectedClientId),
-    [measurements, selectedClientId],
+    () =>
+      measurements.filter(
+        (m) =>
+          m.client_id === selectedClientId &&
+          m.entry_date >= monthStart &&
+          m.entry_date <= monthEnd,
+      ),
+    [measurements, selectedClientId, monthStart, monthEnd],
   );
 
   const clientPhotos = React.useMemo(
-    () => photos.filter((p) => p.client_id === selectedClientId).slice().reverse(),
-    [photos, selectedClientId],
+    () =>
+      photos
+        .filter(
+          (p) =>
+            p.client_id === selectedClientId &&
+            p.entry_date >= monthStart &&
+            p.entry_date <= monthEnd,
+        )
+        .slice()
+        .reverse(),
+    [photos, selectedClientId, monthStart, monthEnd],
   );
 
+  // % de asistencia del mes: mismo criterio que la pestaña Asistencia
+  // (una client_sessions completada ese día cuenta como asistido), no
+  // "cualquier serie con algo guardado" — y acotado al mes que se está
+  // viendo, no a una ventana fija de 4 semanas.
   const compliance = React.useMemo(() => {
     if (!selectedClientId) return null;
     const clientAssignments = assignments.filter((a) => a.clientId === selectedClientId);
-    const rangeEnd = todayKey();
-    const rangeStart = addDays(rangeEnd, -28);
-    const scheduled = sessionsInRange(clientAssignments, rangeStart, rangeEnd);
+    // No cuenta días programados que todavía no llegan (un mes futuro
+    // completo se vería siempre en 0%, no "sin datos").
+    const rangeEnd = monthEnd < todayKey() ? monthEnd : todayKey();
+    if (rangeEnd < monthStart) return null;
+    const scheduled = sessionsInRange(clientAssignments, monthStart, rangeEnd);
     if (scheduled.length === 0) return null;
     const scheduledDates = new Set(scheduled.map((s) => s.date));
-    const loggedDates = new Set(loggedDatesByClient[selectedClientId] ?? []);
-    const completed = Array.from(scheduledDates).filter((d) => loggedDates.has(d)).length;
+    const completedDates = new Set(completedDatesByClient[selectedClientId] ?? []);
+    const completed = Array.from(scheduledDates).filter((d) => completedDates.has(d)).length;
     return completed / scheduledDates.size;
-  }, [assignments, loggedDatesByClient, selectedClientId]);
+  }, [assignments, completedDatesByClient, selectedClientId, monthStart, monthEnd]);
 
   const activeField = MEASUREMENT_FIELDS.find((f) => f.key === metric)!;
   const chartPoints = React.useMemo(
@@ -118,21 +158,47 @@ export function ProgressTrackingView({
 
   return (
     <div className="flex w-full flex-col gap-5 p-4 pb-24 md:p-8">
-      <button
-        type="button"
-        onClick={() => setPickerOpen(true)}
-        className="flex w-fit items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors hover:bg-accent"
-      >
-        <Avatar className="size-8">
-          <AvatarFallback className="text-xs">
-            {initialsOf(selectedClient?.full_name ?? "") || "?"}
-          </AvatarFallback>
-        </Avatar>
-        <span className="text-sm font-medium">
-          {selectedClient?.full_name ?? "Elegir cliente"}
-        </span>
-        <ChevronsUpDown className="size-3.5 text-muted-foreground" />
-      </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="flex w-fit items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors hover:bg-accent"
+        >
+          <Avatar className="size-8">
+            <AvatarFallback className="text-xs">
+              {initialsOf(selectedClient?.full_name ?? "") || "?"}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-sm font-medium">
+            {selectedClient?.full_name ?? "Elegir cliente"}
+          </span>
+          <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+        </button>
+
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Mes anterior"
+            onClick={() => shiftMonth(-1)}
+          >
+            <ChevronLeft />
+          </Button>
+          <p className="w-36 text-center text-sm font-medium capitalize">
+            {formatMonthYear(cursor.year, cursor.month)}
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Mes siguiente"
+            onClick={() => shiftMonth(1)}
+          >
+            <ChevronRight />
+          </Button>
+        </div>
+      </div>
 
       <ClientPickerDialog
         open={pickerOpen}
@@ -148,7 +214,7 @@ export function ProgressTrackingView({
               <CheckCircle2 className="size-7 shrink-0 text-primary" />
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">
-                  Cumplimiento de rutinas (últimas 4 semanas)
+                  Asistencia de {formatMonthYear(cursor.year, cursor.month)}
                 </p>
                 <p className="text-lg font-semibold">
                   {compliance === null

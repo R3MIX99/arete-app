@@ -59,7 +59,7 @@ export default async function ProgressPage() {
     { data: assignmentRows },
     { data: measurements },
     { data: photoEntries },
-    { data: setLogs },
+    { data: completedSessionRows },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -80,7 +80,16 @@ export default async function ProgressPage() {
       .select("id, client_id, entry_date, photo_path, notes")
       .not("photo_path", "is", null)
       .order("entry_date"),
-    supabase.from("client_set_logs").select("client_id, session_date"),
+    // Para el % de asistencia: mismo criterio de "día asistido" que ya
+    // usa la pestaña Asistencia (una client_sessions completada ese
+    // día), no "cualquier serie con algún valor guardado" — antes se
+    // usaba client_set_logs sin filtrar por is_completed, contra una
+    // ventana fija de 4 semanas que no coincidía con el mes que se
+    // estuviera viendo.
+    supabase
+      .from("client_sessions")
+      .select("client_id, session_date")
+      .eq("status", "completed"),
   ]);
 
   const assignments: CalendarAssignment[] = ((assignmentRows ?? []) as AssignmentRow[]).map((row) => {
@@ -113,11 +122,11 @@ export default async function ProgressPage() {
     };
   });
 
-  const loggedDatesByClient = new Map<string, Set<string>>();
-  for (const row of (setLogs ?? []) as { client_id: string; session_date: string }[]) {
-    const set = loggedDatesByClient.get(row.client_id) ?? new Set<string>();
+  const completedDatesByClient = new Map<string, Set<string>>();
+  for (const row of (completedSessionRows ?? []) as { client_id: string; session_date: string }[]) {
+    const set = completedDatesByClient.get(row.client_id) ?? new Set<string>();
     set.add(row.session_date);
-    loggedDatesByClient.set(row.client_id, set);
+    completedDatesByClient.set(row.client_id, set);
   }
 
   return (
@@ -127,8 +136,8 @@ export default async function ProgressPage() {
       assignments={assignments}
       measurements={(measurements ?? []) as (ProgressMeasurement & { client_id: string })[]}
       photos={(photoEntries ?? []) as (ProgressPhotoEntry & { client_id: string })[]}
-      loggedDatesByClient={Object.fromEntries(
-        Array.from(loggedDatesByClient.entries()).map(([k, v]) => [k, Array.from(v)]),
+      completedDatesByClient={Object.fromEntries(
+        Array.from(completedDatesByClient.entries()).map(([k, v]) => [k, Array.from(v)]),
       )}
     />
   );
