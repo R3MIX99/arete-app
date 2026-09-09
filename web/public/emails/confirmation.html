@@ -24,27 +24,22 @@
             </td>
           </tr>
 
-          <!-- Titular enorme -->
+          <!-- Titular + foto, fusionados en un solo bloque: cada rol usa su
+               propio banner ya armado (texto quemado en la imagen), sin
+               separar foto y texto en el HTML. -->
+          {{ if eq .Data.role "trainer" }}
           <tr>
-            <td align="center" style="background-color:#ffffff; padding:56px 24px 40px;">
-              {{ if eq .Data.role "trainer" }}
-              <div style="font-family:Arial Black, Arial, Helvetica, sans-serif; font-weight:900; font-size:52px; line-height:0.98; letter-spacing:-1px; color:#0a0a0a; text-transform:uppercase;">
-                Bienvenido<br />al <span style="color:#4F46E5;">equipo</span>
-              </div>
-              {{ else }}
-              <div style="font-family:Arial Black, Arial, Helvetica, sans-serif; font-weight:900; font-size:52px; line-height:0.98; letter-spacing:-1px; color:#0a0a0a; text-transform:uppercase;">
-                Bienvenido a <span style="color:#4F46E5;">Aretia</span>
-              </div>
-              {{ end }}
+            <td style="background-color:#0a0a0a;">
+              <img src="{{ .SiteURL }}/emails/hero-banner-trainer.jpg" width="600" alt="Bienvenido al equipo" style="display:block; width:100%; max-width:600px; height:auto;" />
             </td>
           </tr>
-
-          <!-- Foto -->
+          {{ else }}
           <tr>
-            <td style="background-color:#ffffff;">
-              <img src="{{ .SiteURL }}/emails/confirmation-hero.jpg" width="600" alt="" style="display:block; width:100%; max-width:600px; height:auto;" />
+            <td style="background-color:#0a0a0a;">
+              <img src="{{ .SiteURL }}/emails/hero-banner-client.jpg" width="600" alt="Aretia" style="display:block; width:100%; max-width:600px; height:auto;" />
             </td>
           </tr>
+          {{ end }}
 
           <!-- Barra de misión -->
           <tr>
