@@ -113,6 +113,7 @@ export function WorkoutSessionView({
   exercises,
   initialSessionId,
   initialSessionStatus,
+  initialStartedAt,
   initialLogs,
 }: {
   clientId: string;
@@ -123,6 +124,7 @@ export function WorkoutSessionView({
   exercises: SessionExerciseInfo[];
   initialSessionId: string | null;
   initialSessionStatus: string | null;
+  initialStartedAt: string | null;
   initialLogs: SessionSetLog[];
 }) {
   const router = useRouter();
@@ -150,7 +152,16 @@ export function WorkoutSessionView({
   // ejercicio (en teléfono el Drawer sale de abajo a pantalla completa) —
   // video grande arriba, nombre, e historial, sin la tabla de series.
   const [detailExercise, setDetailExercise] = useState<SessionExerciseInfo | null>(null);
-  const [startedAt] = useState<number>(() => Date.now());
+  // Si ya había una sesión en progreso (el cliente la retomó después de
+  // salirse, cerrar la app, etc.), el cronómetro final debe seguir
+  // contando desde que se le dio "Iniciar rutina" la primera vez
+  // (client_sessions.started_at, guardado en el servidor) — no desde que
+  // este componente se vuelve a montar. Si no hay sesión previa, se usa
+  // Date.now() como valor provisional hasta que el insert de abajo
+  // devuelva el started_at real (la diferencia ahí es de milisegundos).
+  const [startedAt] = useState<number>(() =>
+    initialStartedAt ? new Date(initialStartedAt).getTime() : Date.now(),
+  );
   const startedAtRef = useRef<number>(startedAt);
 
   const [logs, setLogs] = useState<LogState>(() => buildLogState(initialLogs));

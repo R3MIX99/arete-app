@@ -38,6 +38,7 @@ export default async function WorkoutSessionPage({
   let initialLogs: SessionSetLog[] = [];
   const sessionId: string | null = existingSession?.id ?? null;
   const sessionStatus: string | null = existingSession?.status ?? null;
+  const initialStartedAt: string | null = existingSession?.started_at ?? null;
 
   if (sessionId) {
     const { data: logRows } = await supabase
@@ -57,6 +58,7 @@ export default async function WorkoutSessionPage({
       exercises={routineData.exercises}
       initialSessionId={sessionId}
       initialSessionStatus={sessionStatus}
+      initialStartedAt={initialStartedAt}
       initialLogs={initialLogs}
     />
   );
