@@ -10,7 +10,6 @@ import {
   Loader2,
   Mail,
   Phone,
-  Sparkles,
   Trash2,
   User,
   ZoomIn,
@@ -24,7 +23,6 @@ import {
   type MeasurementKey,
   type ProgressMeasurement,
 } from "@/lib/types/progress";
-import { subscriptionPlanLabels } from "@/lib/types/settings";
 import type { AssignedTrainer, ClientProfileSettings } from "@/lib/types/client-profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -396,28 +394,6 @@ export function ClientProfileView({
           </div>
         </CardContent>
       </Card>
-
-      {trainer ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Plan de tu entrenador</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-                <Sparkles className="size-[18px]" />
-              </div>
-              <p className="text-sm font-semibold">
-                Plan {subscriptionPlanLabels[trainer.subscription_plan]}
-              </p>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Tú no tienes un plan propio — las funciones disponibles dependen del plan que
-              tenga contratado tu entrenador.
-            </p>
-          </CardContent>
-        </Card>
-      ) : null}
 
       <Card>
         <CardHeader>

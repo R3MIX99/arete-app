@@ -1,9 +1,5 @@
-import type { SubscriptionPlan } from "@/lib/types/settings";
-
 /** Datos del propio cliente que se muestran y editan en su pestaña
- * Perfil. El correo va aparte porque no se puede cambiar desde aquí.
- * El cliente NO tiene plan propio — ver AssignedTrainer.subscription_plan:
- * las funciones que desbloquea un plan son del entrenador. */
+ * Perfil. El correo va aparte porque no se puede cambiar desde aquí. */
 export interface ClientProfileSettings {
   id: string;
   full_name: string;
@@ -17,13 +13,12 @@ export interface ClientProfileSettings {
 }
 
 /** Entrenador asignado, tal como lo ve su cliente — solo lo necesario
- * para identificarlo, contactarlo, y saber qué plan tiene (que es el
- * que en la práctica determina qué funciones ve el cliente). */
+ * para identificarlo y contactarlo. No incluye el plan de suscripción
+ * del entrenador: el cliente no debe saber en qué plan está. */
 export interface AssignedTrainer {
   full_name: string;
   email: string;
   phone: string | null;
   business_name: string | null;
   business_logo_path: string | null;
-  subscription_plan: SubscriptionPlan;
 }
