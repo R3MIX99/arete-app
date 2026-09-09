@@ -26,17 +26,22 @@
 
           <!-- Titular + foto, fusionados en un solo bloque: cada rol usa su
                propio banner ya armado (texto quemado en la imagen), sin
-               separar foto y texto en el HTML. -->
+               separar foto y texto en el HTML. El ?v=N en la URL es a
+               propósito: Gmail cachea la imagen para siempre en su propio
+               proxy según la URL exacta, así que cada vez que se reemplace
+               este archivo hay que subir ese número o el correo se sigue
+               viendo con la versión vieja aunque el archivo ya haya
+               cambiado en el servidor. -->
           {{ if eq .Data.role "trainer" }}
           <tr>
             <td style="background-color:#0a0a0a;">
-              <img src="{{ .SiteURL }}/emails/hero-banner-trainer.jpg" width="600" alt="Bienvenido al equipo" style="display:block; width:100%; max-width:600px; height:auto;" />
+              <img src="{{ .SiteURL }}/emails/hero-banner-trainer.jpg?v=2" width="600" alt="Bienvenido al equipo" style="display:block; width:100%; max-width:600px; height:auto;" />
             </td>
           </tr>
           {{ else }}
           <tr>
             <td style="background-color:#0a0a0a;">
-              <img src="{{ .SiteURL }}/emails/hero-banner-client.jpg" width="600" alt="Aretia" style="display:block; width:100%; max-width:600px; height:auto;" />
+              <img src="{{ .SiteURL }}/emails/hero-banner-client.jpg?v=1" width="600" alt="Aretia" style="display:block; width:100%; max-width:600px; height:auto;" />
             </td>
           </tr>
           {{ end }}
