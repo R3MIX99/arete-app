@@ -72,10 +72,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
               icon: "!m-0",
             }
           : {
-              // Tarjeta amplia: ícono a la derecha (flex-row-reverse) y
-              // el texto pegado a la izquierda (justify-between).
+              // Ancho al contenido (se fija por style en línea, más
+              // abajo); ícono a la derecha (flex-row-reverse) separado del
+              // texto por el gap, y el padding px-5 le deja aire a ambos
+              // lados.
               toast:
-                "!rounded-2xl !px-5 !py-4 !gap-4 !shadow-lg !flex-row-reverse !justify-between",
+                "!rounded-2xl !px-5 !py-4 !gap-3.5 !shadow-lg !flex-row-reverse",
               title: "!text-[15px] !font-semibold",
               description: "!text-xs !text-muted-foreground",
               icon: "!m-0 !self-center",
@@ -104,7 +106,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
               maxWidth: "calc(100vw - 32px)",
               translate: "-50% 0",
             } as CSSProperties)
-          : undefined,
+          : // En escritorio, sonner fija width: var(--width) (356px) en
+            // línea/por hoja de estilos — se anula aquí para que el toast
+            // se ajuste a su contenido en vez de dejar un hueco en blanco.
+            ({
+              width: "max-content",
+              maxWidth: "400px",
+            } as CSSProperties),
       }}
       style={
         {
