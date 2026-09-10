@@ -49,13 +49,8 @@ interface WeightRow {
 /** Cuántos clientes se listan antes de cortar con "Ver más". */
 const CLIENTS_TODAY_LIMIT = 4;
 
-// Todas las tarjetas del dashboard van sin fondo y con el borde a baja
-// opacidad. En las <Card> hay que forzar con ! porque .glass-card (fondo
-// + borde + sombra) vive en la misma capa CSS que las utilidades de
-// Tailwind y si no le gana.
-const FLAT_CARD = "!border-border/80 !bg-transparent !shadow-none";
-// Tarjeta de cliente (div propio, no <Card>): mismo look plano + realce
-// del borde en índigo al pasar el mouse.
+// Tarjeta de cliente (div propio, no <Card>): mismo look plano que
+// .glass-card + realce del borde en índigo al pasar el mouse.
 const CLIENT_CARD =
   "relative flex flex-col gap-3 rounded-xl border border-border/80 p-4 transition-colors hover:border-primary/50";
 
@@ -185,7 +180,7 @@ export function DashboardView({
         </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {stats.map((stat) => (
-            <Card key={stat.label} className={FLAT_CARD}>
+            <Card key={stat.label}>
               <CardContent className="flex flex-col gap-3">
                 <div className="flex size-9 items-center justify-center rounded-lg bg-primary/12 text-primary">
                   <stat.icon className="size-[18px]" />
@@ -222,7 +217,7 @@ export function DashboardView({
             Clientes que entrenan hoy
           </h2>
           {clientsToday.length === 0 ? (
-            <Card className={FLAT_CARD}>
+            <Card>
               <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
                 <CalendarDays className="size-6" />
                 <p className="text-sm">Ningún cliente tiene sesión programada hoy.</p>
@@ -298,7 +293,7 @@ export function DashboardView({
             Clientes inactivos
           </h2>
           {inactiveClients.length === 0 ? (
-            <Card className={FLAT_CARD}>
+            <Card>
               <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
                 <UserX className="size-6" />
                 <p className="text-sm">No tienes clientes inactivos por el momento.</p>
@@ -360,7 +355,7 @@ export function DashboardView({
         <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Progreso de peso por cliente
         </h2>
-        <Card className={FLAT_CARD}>
+        <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="text-sm">Evolución de peso corporal</CardTitle>
             <Button

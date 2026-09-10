@@ -271,13 +271,14 @@ html.text-scale-lg {
 }
 
 @layer utilities {
-  /* Tarjeta "de vidrio": borde visible + sombra sutil, translúcida en
-   * oscuro (deja pasar el fondo sin blur — un blur por tarjeta en una
-   * grilla se ve parchado, ya lo probamos). */
+  /* Tarjeta base de toda la app: sin fondo (deja pasar el fondo de la
+   * página) y sin sombra — solo un borde tenue (el color de --border al
+   * 80%). Antes tenía fondo translúcido + sombra ("de vidrio"); se
+   * quitó para un look más plano y menos cargado. */
   .glass-card {
-    background-color: var(--card-glass);
-    border: 1px solid var(--card-glass-border);
-    box-shadow: var(--card-shadow);
+    background-color: transparent;
+    border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+    box-shadow: none;
   }
 
   /* Degradado sutil desde la esquina inferior derecha, solo al hacer
