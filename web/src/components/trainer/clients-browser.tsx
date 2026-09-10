@@ -16,7 +16,9 @@ import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { logActivity, startTiming } from "@/lib/log-activity";
-import { initialsOf, goalLabel } from "@/lib/format";
+import { initialsOf, goalLabel, formatDate } from "@/lib/format";
+import { subscriptionPlanLabels, type SubscriptionPlan } from "@/lib/types/settings";
+import type { ClientUsage } from "@/lib/types/plans";
 import type { ClientProfile, PendingInvitation } from "@/lib/types/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,9 +40,13 @@ type StatusFilter = "active" | "inactive" | null;
 export function ClientsBrowser({
   clients,
   invitations,
+  usage,
+  planKey,
 }: {
   clients: ClientProfile[];
   invitations: PendingInvitation[];
+  usage: ClientUsage;
+  planKey: SubscriptionPlan;
 }) {
   const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState<StatusFilter>(null);
@@ -110,7 +116,13 @@ export function ClientsBrowser({
         startedAt,
         context: { attemptedStatus: next, errorCode: error.code, reason: error.message },
       });
-      toast.error("No se pudo actualizar el estado — recarga la página e intenta de nuevo");
+      // El trigger de límite de plan lanza P0001 con un mensaje ya en
+      // español y accionable — se muestra tal cual.
+      toast.error(
+        error.code === "P0001"
+          ? error.message
+          : "No se pudo actualizar el estado — recarga la página e intenta de nuevo",
+      );
       return;
     }
     setItems((prev) =>
@@ -157,8 +169,46 @@ export function ClientsBrowser({
 
   const hasActiveFilters = query.trim() !== "" || status !== null || goal !== null;
 
+  const atLimit = usage.limit !== null && usage.activeClients >= usage.limit;
+  const overLimit = usage.limit !== null && usage.activeClients > usage.limit;
+
   return (
     <div className="flex w-full flex-col gap-6 p-4 pb-24 md:p-8">
+      {usage.limit !== null && (
+        <div
+          className={
+            atLimit
+              ? "flex flex-col gap-1 rounded-xl border border-warning/50 bg-warning/10 p-4 text-sm"
+              : "flex items-center justify-between gap-3 rounded-xl border border-border/80 p-3 text-sm"
+          }
+        >
+          <p className={atLimit ? "font-medium" : "text-muted-foreground"}>
+            <span className="tabular-nums font-semibold text-foreground">
+              {usage.activeClients} / {usage.limit}
+            </span>{" "}
+            clientes activos · plan {subscriptionPlanLabels[planKey]}
+            {overLimit && usage.overLimitGraceUntil && (
+              <>
+                {" — "}
+                <span className="text-warning">
+                  estás por encima del límite. Tienes hasta el{" "}
+                  {formatDate(usage.overLimitGraceUntil.slice(0, 10))} para bajar de plan o
+                  desactivar a los clientes de más.
+                </span>
+              </>
+            )}
+            {atLimit && !overLimit && (
+              <> — llegaste al tope. Sube de plan o contrata un bloque de 5 para agregar más.</>
+            )}
+          </p>
+          {atLimit && (
+            <Button size="sm" variant="outline" className="w-fit" asChild>
+              <Link href="/entrenador/configuracion">Ver mi plan</Link>
+            </Button>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs">
           <div className="relative min-w-0 flex-1">

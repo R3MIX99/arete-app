@@ -90,7 +90,7 @@ export default async function SuperadminTrainerDetailPage({
     supabase.from("routines").select("id", { count: "exact", head: true }).eq("trainer_id", id),
     supabase.from("programs").select("id", { count: "exact", head: true }).eq("trainer_id", id),
     supabase.from("diet_plans").select("id", { count: "exact", head: true }).eq("trainer_id", id),
-    supabase.from("plans").select("id, key, name, price_cents, currency, client_limit, features, is_active, sort_order").eq("is_active", true).order("sort_order"),
+    supabase.from("plans").select("id, key, name, price_cents, currency, client_limit, included_clients, extra_block_size, extra_block_price_cents, included_seats, extra_seat_price_cents, ai_generations_included, ai_extra_pack_size, ai_extra_pack_price_cents, features, is_active, sort_order").eq("is_active", true).order("sort_order"),
     supabase
       .from("plan_change_log")
       .select(

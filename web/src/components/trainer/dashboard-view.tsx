@@ -107,7 +107,11 @@ export function DashboardView({
         startedAt,
         context: { attemptedStatus: "active", errorCode: error.code, reason: error.message },
       });
-      toast.error("No se pudo reactivar — recarga la página e intenta de nuevo");
+      toast.error(
+        error.code === "P0001"
+          ? error.message
+          : "No se pudo reactivar — recarga la página e intenta de nuevo",
+      );
       return;
     }
     logActivity({

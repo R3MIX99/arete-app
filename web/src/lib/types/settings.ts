@@ -1,4 +1,4 @@
-export type SubscriptionPlan = "free" | "pro" | "studio";
+export type SubscriptionPlan = "free" | "pro" | "studio" | "gym";
 export type SubscriptionStatus = "active" | "trialing" | "past_due" | "canceled";
 
 export interface TrainerSettings {
@@ -15,9 +15,12 @@ export interface TrainerSettings {
 }
 
 export const subscriptionPlanLabels: Record<SubscriptionPlan, string> = {
-  free: "Free",
+  free: "Gratis",
   pro: "Pro",
-  studio: "Studio",
+  // El key sigue siendo "studio" en la base (profiles.subscription_plan lo
+  // referencia por FK), pero de cara al usuario el plan se llama "Estudio".
+  studio: "Estudio",
+  gym: "Gym",
 };
 
 export const subscriptionStatusLabels: Record<SubscriptionStatus, string> = {

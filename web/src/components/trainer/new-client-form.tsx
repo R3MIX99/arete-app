@@ -3,10 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Copy, Loader2, PartyPopper } from "lucide-react";
+import { ArrowLeft, Copy, Loader2, Lock, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { subscriptionPlanLabels, type SubscriptionPlan } from "@/lib/types/settings";
+import type { ClientUsage } from "@/lib/types/plans";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,8 +29,17 @@ const GOAL_OPTIONS = [
   { value: "performance", label: "Rendimiento" },
 ];
 
-export function NewClientForm({ trainerId }: { trainerId: string }) {
+export function NewClientForm({
+  trainerId,
+  usage,
+  planKey,
+}: {
+  trainerId: string;
+  usage: ClientUsage;
+  planKey: SubscriptionPlan;
+}) {
   const router = useRouter();
+  const atLimit = usage.limit !== null && usage.activeClients >= usage.limit;
   const [fullName, setFullName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [goal, setGoal] = React.useState<string>("");
@@ -57,9 +68,17 @@ export function NewClientForm({ trainerId }: { trainerId: string }) {
       .single();
 
     if (insertError || !data) {
-      const message = insertError?.message.includes("duplicate")
+      const raw = insertError?.message ?? "";
+      // La policy de INSERT exige cupo en el plan: si no hay, PostgREST
+      // devuelve un error de RLS ("row-level security" / código 42501).
+      const isLimit =
+        insertError?.code === "42501" ||
+        /row-level security|violates row-level/i.test(raw);
+      const message = raw.includes("duplicate")
         ? "Ya existe una invitación pendiente para ese correo."
-        : "No se pudo crear la invitación. Intenta de nuevo.";
+        : isLimit
+          ? `Llegaste al límite de clientes de tu plan ${subscriptionPlanLabels[planKey]} (${usage.limit}). Sube de plan o contrata un bloque de 5 clientes más.`
+          : "No se pudo crear la invitación. Intenta de nuevo.";
       setError(message);
       toast.error(message);
       setLoading(false);
@@ -119,6 +138,39 @@ export function NewClientForm({ trainerId }: { trainerId: string }) {
     );
   }
 
+  if (atLimit) {
+    return (
+      <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4 md:p-8">
+        <Button variant="ghost" size="sm" className="w-fit" asChild>
+          <Link href="/entrenador/clientes">
+            <ArrowLeft /> Volver a clientes
+          </Link>
+        </Button>
+        <Card>
+          <CardHeader>
+            <div className="flex size-10 items-center justify-center rounded-full bg-warning/12 text-warning">
+              <Lock className="size-5" />
+            </div>
+            <CardTitle>Llegaste al límite de tu plan</CardTitle>
+            <CardDescription>
+              Tu plan {subscriptionPlanLabels[planKey]} incluye {usage.limit} clientes activos y
+              ya los tienes ocupados. Para agregar a alguien más, sube de plan o contrata un
+              bloque de 5 clientes adicionales — o desactiva a un cliente que ya no atiendas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link href="/entrenador/configuracion">Ver mi plan</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/entrenador/clientes">Ir a Clientes</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4 md:p-8">
       <Button variant="ghost" size="sm" className="w-fit" asChild>
@@ -133,6 +185,13 @@ export function NewClientForm({ trainerId }: { trainerId: string }) {
           <CardDescription>
             Se genera un enlace de invitación — tu cliente lo abre y completa su
             propio registro.
+            {usage.limit !== null && (
+              <>
+                {" "}
+                Vas <strong>{usage.activeClients} de {usage.limit}</strong> clientes de tu plan{" "}
+                {subscriptionPlanLabels[planKey]}.
+              </>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
