@@ -42,6 +42,7 @@ interface ClientRow {
   full_name: string;
   email: string;
   status: string;
+  deactivated_at: string | null;
 }
 
 interface MeasurementRow {
@@ -69,7 +70,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, email, status")
+      .select("id, full_name, email, status, deactivated_at")
       .eq("role", "client")
       .order("full_name"),
     supabase.from("routines").select("id", { count: "exact", head: true }),
@@ -136,6 +137,7 @@ export default async function DashboardPage() {
         id: c.id,
         full_name: c.full_name,
         email: c.email,
+        deactivated_at: c.deactivated_at,
       }))}
       routineCount={routineCount ?? 0}
       assignments={assignments}

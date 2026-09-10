@@ -37,6 +37,7 @@ interface InactiveClient {
   id: string;
   full_name: string;
   email: string;
+  deactivated_at: string | null;
 }
 
 interface WeightRow {
@@ -295,15 +296,25 @@ export function DashboardView({
                       {initialsOf(client.full_name) || "?"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <Link
-                      href={`/entrenador/clientes/${client.id}`}
-                      className="truncate text-sm font-semibold text-muted-foreground hover:text-foreground"
-                    >
-                      {client.full_name}
-                    </Link>
-                    <p className="truncate text-xs text-muted-foreground/70">{client.email}</p>
-                  </div>
+                  <Link
+                    href={`/entrenador/clientes/${client.id}`}
+                    className="truncate text-sm font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    {client.full_name}
+                  </Link>
+                  {client.deactivated_at && (
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs font-medium text-muted-foreground">Inactivo desde</p>
+                      <ul className="flex flex-col gap-0.5">
+                        <li className="flex gap-1.5 text-xs text-muted-foreground">
+                          <span aria-hidden>•</span>
+                          <span className="min-w-0">
+                            {formatDate(client.deactivated_at.slice(0, 10))}
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+                  )}
                   <Button
                     type="button"
                     variant="secondary"
