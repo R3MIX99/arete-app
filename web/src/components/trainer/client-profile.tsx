@@ -9,6 +9,7 @@ import {
   CalendarClock,
   CalendarRange,
   Dumbbell,
+  Loader2,
   Pencil,
   Plus,
   Repeat,
@@ -44,6 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   FloatingSheet,
   FloatingSheetContent,
@@ -120,6 +122,10 @@ export function ClientProfile({
   const [openSession, setOpenSession] = React.useState<CompletedSessionRow | null>(null);
   const [openExercise, setOpenExercise] = React.useState<ExerciseProgressSummary | null>(null);
   const [changeTarget, setChangeTarget] = React.useState<ChangeAssignmentTarget | null>(null);
+  const [healthNotes, setHealthNotes] = React.useState(client.health_notes ?? "");
+  const [editingNotes, setEditingNotes] = React.useState(false);
+  const [notesDraft, setNotesDraft] = React.useState("");
+  const [savingNotes, setSavingNotes] = React.useState(false);
   const programAssignments = React.useMemo(
     () => trainingAssignments.filter((a) => a.is_program),
     [trainingAssignments],
@@ -141,6 +147,25 @@ export function ClientProfile({
     } else {
       setOpenExercise(summary);
     }
+  }
+
+  async function handleSaveHealthNotes() {
+    const next = notesDraft.trim();
+    setSavingNotes(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ health_notes: next || null })
+      .eq("id", client.id);
+    setSavingNotes(false);
+    if (error) {
+      toast.error("No se pudo guardar — intenta de nuevo");
+      return;
+    }
+    setHealthNotes(next);
+    setEditingNotes(false);
+    toast.success("Notas de salud actualizadas");
+    router.refresh();
   }
 
   async function toggleStatus() {
@@ -418,16 +443,64 @@ export function ClientProfile({
             )}
           </div>
 
-          {client.health_notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Notas de salud</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{client.health_notes}</p>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle className="text-sm">Notas de salud</CardTitle>
+              {!editingNotes && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setNotesDraft(healthNotes);
+                    setEditingNotes(true);
+                  }}
+                >
+                  <Pencil />
+                  {healthNotes ? "Editar" : "Agregar nota de salud"}
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {editingNotes ? (
+                <div className="flex flex-col gap-2">
+                  <Textarea
+                    autoFocus
+                    rows={4}
+                    value={notesDraft}
+                    onChange={(e) => setNotesDraft(e.target.value)}
+                    placeholder="Alergias, lesiones, condiciones a tener en cuenta al entrenar…"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={savingNotes}
+                      onClick={handleSaveHealthNotes}
+                    >
+                      {savingNotes ? <Loader2 className="animate-spin" /> : null}
+                      Guardar
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      disabled={savingNotes}
+                      onClick={() => setEditingNotes(false)}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : healthNotes ? (
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{healthNotes}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Sin notas de salud todavía.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader className="flex-row items-center justify-between">
