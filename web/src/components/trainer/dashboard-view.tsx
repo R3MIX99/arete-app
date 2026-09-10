@@ -53,11 +53,11 @@ const CLIENTS_TODAY_LIMIT = 4;
 // opacidad. En las <Card> hay que forzar con ! porque .glass-card (fondo
 // + borde + sombra) vive en la misma capa CSS que las utilidades de
 // Tailwind y si no le gana.
-const FLAT_CARD = "!border-border/60 !bg-transparent !shadow-none";
+const FLAT_CARD = "!border-border/80 !bg-transparent !shadow-none";
 // Tarjeta de cliente (div propio, no <Card>): mismo look plano + realce
 // del borde en índigo al pasar el mouse.
 const CLIENT_CARD =
-  "relative flex flex-col gap-3 rounded-xl border border-border/60 p-4 transition-colors hover:border-primary/50";
+  "relative flex flex-col gap-3 rounded-xl border border-border/80 p-4 transition-colors hover:border-primary/50";
 
 const quickActions = [
   { label: "Crear rutina", href: "/entrenador/rutinas/nueva", icon: Plus },
