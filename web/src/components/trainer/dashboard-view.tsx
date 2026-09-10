@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Users,
   UserX,
+  UserCheck,
   Dumbbell,
   CalendarDays,
   Plus,
@@ -12,12 +14,15 @@ import {
   UserPlus,
   ChevronDown,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { initialsOf, formatDate } from "@/lib/format";
+import { createClient } from "@/lib/supabase/client";
+import { logActivity, startTiming } from "@/lib/log-activity";
 import { sessionsInRange, todayKey, type CalendarAssignment } from "@/lib/calendar-logic";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClientPickerDialog } from "@/components/trainer/client-picker-dialog";
@@ -72,6 +77,47 @@ export function DashboardView({
   clientOptions: ClientOption[];
   weightMeasurements: WeightRow[];
 }) {
+  const router = useRouter();
+  const [reactivatingId, setReactivatingId] = React.useState<string | null>(null);
+
+  async function reactivateClient(client: InactiveClient) {
+    setReactivatingId(client.id);
+    const startedAt = startTiming();
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ status: "active" })
+      .eq("id", client.id);
+    setReactivatingId(null);
+    if (error) {
+      logActivity({
+        action: "trainer.client_status_change_failed",
+        category: "trainer",
+        severity: "error",
+        message: `No se pudo reactivar a ${client.full_name}`,
+        targetType: "profile",
+        targetId: client.id,
+        targetLabel: client.full_name,
+        startedAt,
+        context: { attemptedStatus: "active", errorCode: error.code, reason: error.message },
+      });
+      toast.error("No se pudo reactivar — recarga la página e intenta de nuevo");
+      return;
+    }
+    logActivity({
+      action: "trainer.client_reactivated",
+      category: "trainer",
+      severity: "success",
+      message: `Reactivó a ${client.full_name}`,
+      targetType: "profile",
+      targetId: client.id,
+      targetLabel: client.full_name,
+      startedAt,
+    });
+    toast.success(`${client.full_name} vuelve a estar activo`);
+    router.refresh();
+  }
+
   const today = React.useMemo(() => todayKey(), []);
   const todaySessions = React.useMemo(
     () => sessionsInRange(assignments, today, today),
@@ -172,24 +218,37 @@ export function DashboardView({
               </CardContent>
             </Card>
           ) : (
-            <div className="flex flex-col gap-2">
-              {visibleClientsToday.map((client) => (
-                <Link key={client.clientId} href={`/entrenador/clientes/${client.clientId}`}>
-                  <Card className="transition-colors hover:bg-accent/40">
-                    <CardContent className="flex items-center gap-3 p-4">
-                      <Avatar className="size-9">
-                        <AvatarFallback>{initialsOf(client.clientName)}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{client.clientName}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {client.routines.join(" · ")}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {visibleClientsToday.map((client) => (
+                  <div
+                    key={client.clientId}
+                    className="flex flex-col gap-3 rounded-xl border border-border/40 p-4"
+                  >
+                    <Avatar className="size-11">
+                      <AvatarFallback>{initialsOf(client.clientName)}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm font-semibold">{client.clientName}</p>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs font-medium text-muted-foreground">Rutinas</p>
+                      <ul className="flex flex-col gap-0.5">
+                        {client.routines.map((routine) => (
+                          <li
+                            key={routine}
+                            className="flex gap-1.5 text-xs text-muted-foreground"
+                          >
+                            <span aria-hidden>•</span>
+                            <span className="min-w-0">{routine}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <Button asChild variant="secondary" size="sm" className="mt-auto w-full">
+                      <Link href={`/entrenador/clientes/${client.clientId}`}>Ver agenda</Link>
+                    </Button>
+                  </div>
+                ))}
+              </div>
 
               {/* Con más de cuatro la lista se vuelve un muro en teléfono:
                   se corta y el resto se ve en el calendario del día. */}
@@ -225,30 +284,44 @@ export function DashboardView({
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent className="flex flex-col gap-1 px-0">
-                {inactiveClients.map((client) => (
-                  <Link
-                    key={client.id}
-                    href={`/entrenador/clientes/${client.id}`}
-                    className="flex items-center gap-3 px-5 py-2 transition-colors hover:bg-accent"
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {inactiveClients.map((client) => (
+                <div
+                  key={client.id}
+                  className="flex flex-col gap-3 rounded-xl border border-border/40 p-4"
+                >
+                  <Avatar className="size-11 opacity-60">
+                    <AvatarFallback className="text-xs">
+                      {initialsOf(client.full_name) || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <Link
+                      href={`/entrenador/clientes/${client.id}`}
+                      className="truncate text-sm font-semibold text-muted-foreground hover:text-foreground"
+                    >
+                      {client.full_name}
+                    </Link>
+                    <p className="truncate text-xs text-muted-foreground/70">{client.email}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="mt-auto w-full gap-1.5"
+                    disabled={reactivatingId === client.id}
+                    onClick={() => reactivateClient(client)}
                   >
-                    <Avatar className="size-8 shrink-0 opacity-60">
-                      <AvatarFallback className="text-xs">
-                        {initialsOf(client.full_name) || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{client.full_name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{client.email}</p>
-                    </div>
-                    <Badge variant="warning" className="shrink-0 text-[10px]">
-                      Inactivo
-                    </Badge>
-                  </Link>
-                ))}
-              </CardContent>
-            </Card>
+                    {reactivatingId === client.id ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <UserCheck className="size-3.5" />
+                    )}
+                    Reactivar
+                  </Button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </section>
