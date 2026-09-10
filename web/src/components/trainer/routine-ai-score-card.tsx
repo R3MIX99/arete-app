@@ -11,6 +11,8 @@ import type { AiScoreResult } from "@/lib/types/ai";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { usePlanCapabilities } from "@/components/trainer/plan-capabilities";
+import { PlansDialog } from "@/components/trainer/plans-dialog";
 
 function isCardioGroup(muscleGroup: string) {
   return muscleGroup === "cardio";
@@ -48,8 +50,14 @@ export function RoutineAiScoreCard({
   const [reasoning, setReasoning] = React.useState(initialReasoning);
   const [analyzedAt, setAnalyzedAt] = React.useState(initialAnalyzedAt);
   const [loading, setLoading] = React.useState(false);
+  const [plansOpen, setPlansOpen] = React.useState(false);
+  const plan = usePlanCapabilities();
 
   async function handleScore() {
+    if (!plan.hasAI) {
+      setPlansOpen(true);
+      return;
+    }
     if (exercises.length === 0) {
       toast.error("Agrega al menos un ejercicio antes de calcular el puntaje.");
       return;
@@ -160,6 +168,13 @@ export function RoutineAiScoreCard({
           </>
         )}
       </CardContent>
+
+      <PlansDialog
+        open={plansOpen}
+        onOpenChange={setPlansOpen}
+        currentPlan={plan.planKey}
+        reason="Calificar rutinas con IA está en los planes Estudio y Gym."
+      />
     </Card>
   );
 }

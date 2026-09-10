@@ -46,6 +46,19 @@ export interface ClientUsage {
   overLimitGraceUntil: string | null;
 }
 
+/** Lo que el plan del entrenador le permite hacer — se resuelve una vez en
+ *  el layout y se comparte por contexto a todo el panel. */
+export interface PlanCapabilities {
+  planKey: SubscriptionPlan;
+  /** El plan incluye generación con IA (ai_generations_included > 0). */
+  hasAI: boolean;
+  /** Marca propia / white-label (Estudio y Gym). */
+  hasBranding: boolean;
+  clientLimit: number | null;
+  activeClients: number;
+  overLimitGraceUntil: string | null;
+}
+
 export type PlanSource = "default" | "manual" | "stripe";
 
 export const planSourceLabels: Record<PlanSource, string> = {

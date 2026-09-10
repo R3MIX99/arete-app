@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { subscriptionPlanLabels, type SubscriptionPlan } from "@/lib/types/settings";
 import type { ClientUsage } from "@/lib/types/plans";
+import { PlansView } from "@/components/trainer/plans-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,33 +141,28 @@ export function NewClientForm({
 
   if (atLimit) {
     return (
-      <div className="mx-auto flex w-full max-w-lg flex-col gap-4 p-4 md:p-8">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 p-4 md:p-8">
         <Button variant="ghost" size="sm" className="w-fit" asChild>
           <Link href="/entrenador/clientes">
             <ArrowLeft /> Volver a clientes
           </Link>
         </Button>
-        <Card>
-          <CardHeader>
-            <div className="flex size-10 items-center justify-center rounded-full bg-warning/12 text-warning">
-              <Lock className="size-5" />
-            </div>
-            <CardTitle>Llegaste al límite de tu plan</CardTitle>
-            <CardDescription>
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning/12 text-warning">
+            <Lock className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">Llegaste al límite de tu plan</h2>
+            <p className="text-sm text-muted-foreground">
               Tu plan {subscriptionPlanLabels[planKey]} incluye {usage.limit} clientes activos y
-              ya los tienes ocupados. Para agregar a alguien más, sube de plan o contrata un
-              bloque de 5 clientes adicionales — o desactiva a un cliente que ya no atiendas.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Button asChild>
-              <Link href="/entrenador/configuracion">Ver mi plan</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/entrenador/clientes">Ir a Clientes</Link>
-            </Button>
-          </CardContent>
-        </Card>
+              ya los tienes ocupados.
+            </p>
+          </div>
+        </div>
+        <PlansView
+          currentPlan={planKey}
+          reason="Para agregar a más clientes, sube de plan o contrata un bloque de 5 clientes más. También puedes desactivar a alguien que ya no atiendas."
+        />
       </div>
     );
   }

@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchPlanCapabilities } from "@/lib/server/plan-capabilities";
 import { SidebarNav } from "@/components/trainer/sidebar-nav";
 import { TopBar } from "@/components/trainer/top-bar";
+import { PlanCapabilitiesProvider } from "@/components/trainer/plan-capabilities";
 
 export default async function TrainerLayout({
   children,
@@ -31,6 +33,8 @@ export default async function TrainerLayout({
   if (profile?.role === "superadmin") redirect("/superadmin");
   if (profile && !profile.onboarding_completed_at) redirect("/onboarding/entrenador");
 
+  const capabilities = await fetchPlanCapabilities(supabase, user.id);
+
   const userName = profile?.full_name || user.email || "Entrenador";
   const userEmail = profile?.email || user.email || "";
   const brandName = profile?.business_name || "Aretia";
@@ -54,7 +58,9 @@ export default async function TrainerLayout({
           brandName={brandName}
           brandLogoUrl={brandLogoUrl}
         />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto">
+          <PlanCapabilitiesProvider value={capabilities}>{children}</PlanCapabilitiesProvider>
+        </main>
       </div>
     </div>
   );

@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GenerateDietDialog } from "@/components/trainer/generate-diet-dialog";
+import { usePlanCapabilities } from "@/components/trainer/plan-capabilities";
+import { PlansDialog } from "@/components/trainer/plans-dialog";
 
 export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
   const router = useRouter();
@@ -23,6 +25,8 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [aiOpen, setAiOpen] = React.useState(false);
+  const [plansOpen, setPlansOpen] = React.useState(false);
+  const plan = usePlanCapabilities();
 
   async function createPlan(
     supabase: ReturnType<typeof createClient>,
@@ -220,7 +224,7 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
                 type="button"
                 variant="outline"
                 disabled={loading}
-                onClick={() => setAiOpen(true)}
+                onClick={() => (plan.hasAI ? setAiOpen(true) : setPlansOpen(true))}
               >
                 <Sparkles /> Generar con IA
               </Button>
@@ -236,6 +240,13 @@ export function NewDietPlanForm({ trainerId }: { trainerId: string }) {
         trainerId={trainerId}
         defaultCalorieTarget={dailyCalorieTarget === "" ? null : dailyCalorieTarget}
         onGenerated={handleAiGenerated}
+      />
+
+      <PlansDialog
+        open={plansOpen}
+        onOpenChange={setPlansOpen}
+        currentPlan={plan.planKey}
+        reason="Generar planes nutricionales con IA está en los planes Estudio y Gym."
       />
     </div>
   );

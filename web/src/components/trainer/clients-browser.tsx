@@ -19,6 +19,7 @@ import { logActivity, startTiming } from "@/lib/log-activity";
 import { initialsOf, goalLabel, formatDate } from "@/lib/format";
 import { subscriptionPlanLabels, type SubscriptionPlan } from "@/lib/types/settings";
 import type { ClientUsage } from "@/lib/types/plans";
+import { PlansDialog } from "@/components/trainer/plans-dialog";
 import type { ClientProfile, PendingInvitation } from "@/lib/types/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -171,6 +172,7 @@ export function ClientsBrowser({
 
   const atLimit = usage.limit !== null && usage.activeClients >= usage.limit;
   const overLimit = usage.limit !== null && usage.activeClients > usage.limit;
+  const [plansOpen, setPlansOpen] = React.useState(false);
 
   return (
     <div className="flex w-full flex-col gap-6 p-4 pb-24 md:p-8">
@@ -202,12 +204,24 @@ export function ClientsBrowser({
             )}
           </p>
           {atLimit && (
-            <Button size="sm" variant="outline" className="w-fit" asChild>
-              <Link href="/entrenador/configuracion">Ver mi plan</Link>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-fit"
+              onClick={() => setPlansOpen(true)}
+            >
+              Ver planes
             </Button>
           )}
         </div>
       )}
+
+      <PlansDialog
+        open={plansOpen}
+        onOpenChange={setPlansOpen}
+        currentPlan={planKey}
+        reason={`Vas ${usage.activeClients} de ${usage.limit} clientes de tu plan ${subscriptionPlanLabels[planKey]}. Sube de plan o contrata un bloque de 5 clientes más para agregar a alguien.`}
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs">

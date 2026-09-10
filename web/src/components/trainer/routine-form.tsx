@@ -47,6 +47,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ExercisePickerDialog } from "@/components/trainer/exercise-picker-dialog";
 import { GenerateRoutineDialog } from "@/components/trainer/generate-routine-dialog";
 import { RoutineAiScoreCard } from "@/components/trainer/routine-ai-score-card";
+import { usePlanCapabilities } from "@/components/trainer/plan-capabilities";
+import { PlansDialog } from "@/components/trainer/plans-dialog";
 
 const LEVEL_OPTIONS = [
   { value: "beginner", label: "Principiante" },
@@ -116,6 +118,8 @@ export function RoutineForm({
   );
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [aiOpen, setAiOpen] = React.useState(false);
+  const [plansOpen, setPlansOpen] = React.useState(false);
+  const plan = usePlanCapabilities();
   // Para diferenciar en el log si la rutina se armó con IA o a mano —
   // se prende en cuanto se usa el generador aunque después se edite el
   // resultado a mano, porque el punto de partida sí fue IA.
@@ -602,7 +606,7 @@ export function RoutineForm({
               variant="outline"
               size="sm"
               className="flex-1 sm:flex-none"
-              onClick={() => setAiOpen(true)}
+              onClick={() => (plan.hasAI ? setAiOpen(true) : setPlansOpen(true))}
             >
               <Sparkles /> Generar con IA
             </Button>
@@ -888,6 +892,13 @@ export function RoutineForm({
         onOpenChange={setAiOpen}
         exerciseCatalog={exerciseCatalog}
         onGenerated={handleAiGenerated}
+      />
+
+      <PlansDialog
+        open={plansOpen}
+        onOpenChange={setPlansOpen}
+        currentPlan={plan.planKey}
+        reason="Generar rutinas y dietas con IA está en los planes Estudio y Gym."
       />
 
       {routine && (
