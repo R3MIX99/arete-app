@@ -49,6 +49,16 @@ interface WeightRow {
 /** Cuántos clientes se listan antes de cortar con "Ver más". */
 const CLIENTS_TODAY_LIMIT = 4;
 
+// Todas las tarjetas del dashboard van sin fondo y con el borde a baja
+// opacidad. En las <Card> hay que forzar con ! porque .glass-card (fondo
+// + borde + sombra) vive en la misma capa CSS que las utilidades de
+// Tailwind y si no le gana.
+const FLAT_CARD = "!border-border/40 !bg-transparent !shadow-none";
+// Tarjeta de cliente (div propio, no <Card>): mismo look plano + realce
+// del borde en índigo al pasar el mouse.
+const CLIENT_CARD =
+  "relative flex flex-col gap-3 rounded-xl border border-border/40 p-4 transition-colors hover:border-primary/50";
+
 const quickActions = [
   { label: "Crear rutina", href: "/entrenador/rutinas/nueva", icon: Plus },
   { label: "Crear programa", href: "/entrenador/programas/nuevo", icon: CalendarDays },
@@ -175,7 +185,7 @@ export function DashboardView({
         </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {stats.map((stat) => (
-            <Card key={stat.label}>
+            <Card key={stat.label} className={FLAT_CARD}>
               <CardContent className="flex flex-col gap-3">
                 <div className="flex size-9 items-center justify-center rounded-lg bg-primary/12 text-primary">
                   <stat.icon className="size-[18px]" />
@@ -212,7 +222,7 @@ export function DashboardView({
             Clientes que entrenan hoy
           </h2>
           {clientsToday.length === 0 ? (
-            <Card>
+            <Card className={FLAT_CARD}>
               <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
                 <CalendarDays className="size-6" />
                 <p className="text-sm">Ningún cliente tiene sesión programada hoy.</p>
@@ -222,10 +232,15 @@ export function DashboardView({
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {visibleClientsToday.map((client) => (
-                  <div
-                    key={client.clientId}
-                    className="flex flex-col gap-3 rounded-xl border border-border/40 p-4"
-                  >
+                  <div key={client.clientId} className={CLIENT_CARD}>
+                    {/* Enlace que cubre toda la tarjeta → perfil del
+                        cliente. El botón "Ver agenda" va con z-10 encima
+                        para que ese clic caiga en el calendario, no aquí. */}
+                    <Link
+                      href={`/entrenador/clientes/${client.clientId}`}
+                      aria-label={`Ver a ${client.clientName}`}
+                      className="absolute inset-0 rounded-xl"
+                    />
                     <Avatar className="size-11">
                       <AvatarFallback>{initialsOf(client.clientName)}</AvatarFallback>
                     </Avatar>
@@ -244,8 +259,13 @@ export function DashboardView({
                         ))}
                       </ul>
                     </div>
-                    <Button asChild variant="secondary" size="sm" className="mt-auto w-full">
-                      <Link href={`/entrenador/clientes/${client.clientId}`}>Ver agenda</Link>
+                    <Button
+                      asChild
+                      variant="secondary"
+                      size="sm"
+                      className="relative z-10 mt-auto w-full"
+                    >
+                      <Link href="/entrenador/calendario">Ver agenda</Link>
                     </Button>
                   </div>
                 ))}
@@ -278,7 +298,7 @@ export function DashboardView({
             Clientes inactivos
           </h2>
           {inactiveClients.length === 0 ? (
-            <Card>
+            <Card className={FLAT_CARD}>
               <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
                 <UserX className="size-6" />
                 <p className="text-sm">No tienes clientes inactivos por el momento.</p>
@@ -287,21 +307,20 @@ export function DashboardView({
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {inactiveClients.map((client) => (
-                <div
-                  key={client.id}
-                  className="flex flex-col gap-3 rounded-xl border border-border/40 p-4"
-                >
+                <div key={client.id} className={CLIENT_CARD}>
+                  <Link
+                    href={`/entrenador/clientes/${client.id}`}
+                    aria-label={`Ver a ${client.full_name}`}
+                    className="absolute inset-0 rounded-xl"
+                  />
                   <Avatar className="size-11 opacity-60">
                     <AvatarFallback className="text-xs">
                       {initialsOf(client.full_name) || "?"}
                     </AvatarFallback>
                   </Avatar>
-                  <Link
-                    href={`/entrenador/clientes/${client.id}`}
-                    className="truncate text-sm font-semibold text-muted-foreground hover:text-foreground"
-                  >
+                  <p className="truncate text-sm font-semibold text-muted-foreground">
                     {client.full_name}
-                  </Link>
+                  </p>
                   {client.deactivated_at && (
                     <div className="flex flex-col gap-1">
                       <p className="text-xs font-medium text-muted-foreground">Inactivo desde</p>
@@ -319,7 +338,7 @@ export function DashboardView({
                     type="button"
                     variant="secondary"
                     size="sm"
-                    className="mt-auto w-full gap-1.5"
+                    className="relative z-10 mt-auto w-full gap-1.5"
                     disabled={reactivatingId === client.id}
                     onClick={() => reactivateClient(client)}
                   >
@@ -341,7 +360,7 @@ export function DashboardView({
         <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Progreso de peso por cliente
         </h2>
-        <Card>
+        <Card className={FLAT_CARD}>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="text-sm">Evolución de peso corporal</CardTitle>
             <Button
