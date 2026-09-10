@@ -26,8 +26,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <span
       className={
         tone === "success"
-          ? "flex size-9 items-center justify-center rounded-full bg-success/15 text-success"
-          : "flex size-9 items-center justify-center rounded-full bg-destructive/15 text-destructive"
+          ? "flex size-7 items-center justify-center rounded-full bg-success/15 text-success"
+          : "flex size-7 items-center justify-center rounded-full bg-destructive/15 text-destructive"
       }
     >
       {icon}
@@ -55,12 +55,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
         success: isMobile ? (
           <CheckCircle2 className="size-[18px] text-success" />
         ) : (
-          badgeIcon(<Check className="size-4" strokeWidth={3} />, "success")
+          badgeIcon(<Check className="size-3.5" strokeWidth={3} />, "success")
         ),
         error: isMobile ? (
           <XCircle className="size-[18px] text-destructive" />
         ) : (
-          badgeIcon(<X className="size-4" strokeWidth={3} />, "destructive")
+          badgeIcon(<X className="size-3.5" strokeWidth={3} />, "destructive")
         ),
       }}
       toastOptions={{
@@ -73,14 +73,17 @@ const Toaster = ({ ...props }: ToasterProps) => {
             }
           : {
               // Ancho al contenido (se fija por style en línea, más
-              // abajo); ícono a la derecha (flex-row-reverse) separado del
-              // texto por el gap, y el padding px-5 le deja aire a ambos
-              // lados.
+              // abajo); ícono a la derecha (flex-row-reverse). pr mayor
+              // que pl para que el círculo no quede pegado al borde, y
+              // poco padding vertical.
               toast:
-                "!rounded-2xl !px-5 !py-4 !gap-3.5 !shadow-lg !flex-row-reverse",
+                "!rounded-2xl !py-2.5 !pl-5 !pr-6 !gap-3 !shadow-lg !flex-row-reverse",
               title: "!text-[15px] !font-semibold",
               description: "!text-xs !text-muted-foreground",
-              icon: "!m-0 !self-center",
+              // Sonner deja [data-icon] fijo en 16x16 con márgenes raros
+              // (-3px / 4px) — el círculo de 28px se salía de esa caja y
+              // quedaba pegado al borde. Se fuerza a size-7 sin márgenes.
+              icon: "!size-7 !m-0 !justify-center !self-center",
             },
         // Sonner posiciona cada toast en móvil con left:0 + right:0 +
         // un width ya calculado para que su propio cálculo dé una caja
