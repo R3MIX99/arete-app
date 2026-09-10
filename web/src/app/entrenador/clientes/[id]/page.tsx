@@ -79,6 +79,8 @@ export default async function ClientDetailPage({
     { data: trainingAssignmentRows },
     { data: dietPlanAssignmentRows },
     { data: sessionSetLogRows },
+    { data: programRows },
+    { data: dietPlanRows },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -126,6 +128,18 @@ export default async function ClientDetailPage({
       .from("client_set_logs")
       .select("session_id, is_completed, exercises(muscle_group)")
       .eq("client_id", id),
+    // Programas y planes del entrenador — para el modal de "cambiar de
+    // programa / plan" desde el detalle del cliente.
+    supabase
+      .from("programs")
+      .select("id, name, goal, duration_weeks")
+      .eq("trainer_id", user.id)
+      .order("name"),
+    supabase
+      .from("diet_plans")
+      .select("id, name")
+      .eq("trainer_id", user.id)
+      .order("name"),
   ]);
 
   // Aparte del Promise.all de arriba: la agenda completa (programa +
@@ -303,6 +317,27 @@ export default async function ClientDetailPage({
     },
   );
 
+  interface ProgramRow {
+    id: string;
+    name: string;
+    goal: string | null;
+    duration_weeks: number;
+  }
+  interface DietPlanRow {
+    id: string;
+    name: string;
+  }
+  const programs = ((programRows ?? []) as ProgramRow[]).map((p) => ({
+    id: p.id,
+    name: p.name,
+    goal: p.goal,
+    duration_weeks: p.duration_weeks,
+  }));
+  const dietPlans = ((dietPlanRows ?? []) as DietPlanRow[]).map((p) => ({
+    id: p.id,
+    name: p.name,
+  }));
+
   return (
     <ClientProfile
       trainerId={user.id}
@@ -313,6 +348,8 @@ export default async function ClientDetailPage({
       trainingAssignments={trainingAssignments}
       dietPlanAssignments={dietPlanAssignments}
       assignments={assignments}
+      programs={programs}
+      dietPlans={dietPlans}
     />
   );
 }

@@ -11,6 +11,7 @@ import {
   Dumbbell,
   Pencil,
   Plus,
+  Repeat,
   UserCheck,
   UserMinus,
   UserX,
@@ -60,6 +61,13 @@ import { TrainerSessionDetailSheetContent } from "@/components/trainer/trainer-s
 import { ClientAttendanceCalendar } from "@/components/trainer/client-attendance-calendar";
 import { TrainerExerciseHistorySheetContent } from "@/components/trainer/trainer-exercise-history-sheet-content";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  ChangeAssignmentDialog,
+  type ChangeAssignmentTarget,
+  type DietPlanOption,
+  type ProgramOption,
+} from "@/components/trainer/change-assignment-dialog";
 
 function formatDuration(seconds: number | null): string {
   if (!seconds) return "";
@@ -79,6 +87,8 @@ export function ClientProfile({
   trainingAssignments,
   dietPlanAssignments,
   assignments,
+  programs,
+  dietPlans,
 }: {
   trainerId: string;
   client: ClientProfileType;
@@ -91,6 +101,10 @@ export function ClientProfile({
    * solo para la pestaña Asistencia, que necesita saber qué tenía
    * programado cada día, no solo lo que completó. */
   assignments: CalendarAssignment[];
+  /** Programas y planes del entrenador — para el modal de cambiar la
+   * asignación del cliente sin desasignarlo. */
+  programs: ProgramOption[];
+  dietPlans: DietPlanOption[];
 }) {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -105,6 +119,7 @@ export function ClientProfile({
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
   const [openSession, setOpenSession] = React.useState<CompletedSessionRow | null>(null);
   const [openExercise, setOpenExercise] = React.useState<ExerciseProgressSummary | null>(null);
+  const [changeTarget, setChangeTarget] = React.useState<ChangeAssignmentTarget | null>(null);
   const programAssignments = React.useMemo(
     () => trainingAssignments.filter((a) => a.is_program),
     [trainingAssignments],
@@ -305,57 +320,103 @@ export function ClientProfile({
             </div>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Asignado</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              {programAssignments.length === 0 && dietPlanAssignments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Todavía no tiene ningún programa ni plan nutricional asignado.
-                </p>
-              ) : (
-                <>
-                  {programAssignments.map((assignment) => (
+          <div className="flex flex-col gap-3">
+            <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Asignado
+            </h2>
+            {programAssignments.length === 0 && dietPlanAssignments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Todavía no tiene ningún programa ni plan nutricional asignado.
+              </p>
+            ) : (
+              <>
+                {programAssignments.map((assignment) => (
+                  <div
+                    key={assignment.id}
+                    className="relative flex items-center gap-3 rounded-xl border border-border/80 p-4 transition-colors hover:border-primary/40"
+                  >
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+                      <CalendarRange className="size-5" />
+                    </div>
                     <Link
-                      key={assignment.id}
                       href={`/entrenador/programas/${assignment.program_id}`}
-                      className="flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors hover:border-primary/40 hover:bg-accent"
+                      className="min-w-0 flex-1"
                     >
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-                        <CalendarRange className="size-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{assignment.program_name}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {`Programa · ${assignment.program_duration_weeks} ${assignment.program_duration_weeks === 1 ? "semana" : "semanas"}`}
-                          {" · desde el "}
-                          {formatDate(assignment.start_date)}
-                        </p>
-                      </div>
+                      <p className="truncate text-sm font-semibold">{assignment.program_name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {`Programa · ${assignment.program_duration_weeks} ${assignment.program_duration_weeks === 1 ? "semana" : "semanas"}`}
+                        {" · desde el "}
+                        {formatDate(assignment.start_date)}
+                      </p>
                     </Link>
-                  ))}
-                  {dietPlanAssignments.map((assignment) => (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Cambiar de programa"
+                          className="relative z-10 shrink-0 text-muted-foreground hover:text-foreground"
+                          onClick={() =>
+                            setChangeTarget({
+                              kind: "program",
+                              assignmentId: assignment.id,
+                              currentId: assignment.program_id ?? "",
+                              currentName: assignment.program_name ?? "",
+                            })
+                          }
+                        >
+                          <Repeat className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">Cambiar de programa</TooltipContent>
+                    </Tooltip>
+                  </div>
+                ))}
+                {dietPlanAssignments.map((assignment) => (
+                  <div
+                    key={assignment.id}
+                    className="relative flex items-center gap-3 rounded-xl border border-border/80 p-4 transition-colors hover:border-primary/40"
+                  >
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+                      <Apple className="size-5" />
+                    </div>
                     <Link
-                      key={assignment.id}
                       href={`/entrenador/nutricion/planes/${assignment.diet_plan_id}`}
-                      className="flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors hover:border-primary/40 hover:bg-accent"
+                      className="min-w-0 flex-1"
                     >
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-                        <Apple className="size-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{assignment.diet_plan_name}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          Plan nutricional · desde el {formatDate(assignment.start_date)}
-                        </p>
-                      </div>
+                      <p className="truncate text-sm font-semibold">{assignment.diet_plan_name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        Plan nutricional · desde el {formatDate(assignment.start_date)}
+                      </p>
                     </Link>
-                  ))}
-                </>
-              )}
-            </CardContent>
-          </Card>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Cambiar de plan nutricional"
+                          className="relative z-10 shrink-0 text-muted-foreground hover:text-foreground"
+                          onClick={() =>
+                            setChangeTarget({
+                              kind: "diet",
+                              assignmentId: assignment.id,
+                              currentId: assignment.diet_plan_id,
+                              currentName: assignment.diet_plan_name,
+                            })
+                          }
+                        >
+                          <Repeat className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">Cambiar de plan nutricional</TooltipContent>
+                    </Tooltip>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
 
           {client.health_notes && (
             <Card>
@@ -534,6 +595,17 @@ export function ClientProfile({
       />
 
       <EditClientDialog open={editOpen} onOpenChange={setEditOpen} client={client} />
+
+      <ChangeAssignmentDialog
+        target={changeTarget}
+        onOpenChange={(open) => !open && setChangeTarget(null)}
+        clientId={client.id}
+        clientName={client.full_name}
+        trainerId={trainerId}
+        programs={programs}
+        dietPlans={dietPlans}
+        onChanged={() => router.refresh()}
+      />
 
       <AddMeasurementDialog
         open={addMeasurementOpen}
