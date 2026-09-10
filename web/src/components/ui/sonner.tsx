@@ -1,8 +1,8 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useTheme } from "next-themes";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { Check, CheckCircle2, X, XCircle } from "lucide-react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
@@ -13,10 +13,26 @@ import { useIsMobile } from "@/lib/hooks/use-is-mobile";
  * vez de arriba, con forma de píldora — mismo lenguaje visual que la
  * nav — y solo el ícono de check se colorea según el resultado (verde
  * éxito, rojo error), no todo el fondo del toast.
+ *
+ * En computadora es una tarjeta más amplia y limpia: texto más grande a
+ * la izquierda y un círculo con el ícono (verde éxito / rojo error) a la
+ * derecha.
  */
 const Toaster = ({ ...props }: ToasterProps) => {
   const { resolvedTheme } = useTheme();
   const isMobile = useIsMobile();
+
+  const badgeIcon = (icon: ReactNode, tone: "success" | "destructive") => (
+    <span
+      className={
+        tone === "success"
+          ? "flex size-9 items-center justify-center rounded-full bg-success/15 text-success"
+          : "flex size-9 items-center justify-center rounded-full bg-destructive/15 text-destructive"
+      }
+    >
+      {icon}
+    </span>
+  );
 
   return (
     <Sonner
@@ -36,16 +52,34 @@ const Toaster = ({ ...props }: ToasterProps) => {
       // Se neutraliza para que el centrado del toast sí quede parejo.
       className="toaster group max-md:!left-0 max-md:!right-0 max-md:!w-auto"
       icons={{
-        success: <CheckCircle2 className="size-[18px] text-success" />,
-        error: <XCircle className="size-[18px] text-destructive" />,
+        success: isMobile ? (
+          <CheckCircle2 className="size-[18px] text-success" />
+        ) : (
+          badgeIcon(<Check className="size-4" strokeWidth={3} />, "success")
+        ),
+        error: isMobile ? (
+          <XCircle className="size-[18px] text-destructive" />
+        ) : (
+          badgeIcon(<X className="size-4" strokeWidth={3} />, "destructive")
+        ),
       }}
       toastOptions={{
         unstyled: false,
-        classNames: {
-          toast: "!rounded-full !px-4 !py-3 !gap-2.5 !shadow-lg !justify-center",
-          title: "!text-sm !font-medium !text-center",
-          icon: "!m-0",
-        },
+        classNames: isMobile
+          ? {
+              toast: "!rounded-full !px-4 !py-3 !gap-2.5 !shadow-lg !justify-center",
+              title: "!text-sm !font-medium !text-center",
+              icon: "!m-0",
+            }
+          : {
+              // Tarjeta amplia: ícono a la derecha (flex-row-reverse) y
+              // el texto pegado a la izquierda (justify-between).
+              toast:
+                "!rounded-2xl !px-5 !py-4 !gap-4 !shadow-lg !flex-row-reverse !justify-between",
+              title: "!text-[15px] !font-semibold",
+              description: "!text-xs !text-muted-foreground",
+              icon: "!m-0 !self-center",
+            },
         // Sonner posiciona cada toast en móvil con left:0 + right:0 +
         // un width ya calculado para que su propio cálculo dé una caja
         // centrada — pero de ANCHO COMPLETO. Forzarle un ancho propio
