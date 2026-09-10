@@ -48,7 +48,10 @@ html.text-scale-lg {
   --ring: oklch(51% 0.22 273 / 0.5);
 
   --card-glass: var(--card);
-  --card-glass-border: var(--border);
+  /* Borde de las tarjetas planas — en claro se hace un poco más marcado
+   * que --border (91% L) para que se distinga sobre el fondo casi
+   * blanco. */
+  --card-glass-border: oklch(87% 0.005 264);
   --card-shadow: 0 1px 2px rgba(24,24,27,0.04);
 
   --sidebar: oklch(100% 0 0);
@@ -91,7 +94,7 @@ html.text-scale-lg {
     --ring: oklch(64% 0.19 273 / 0.5);
 
     --card-glass: oklch(23% 0.005 264 / 0.8);
-    --card-glass-border: oklch(100% 0 0 / 0.12);  /* borde vidrio visible */
+    --card-glass-border: color-mix(in oklab, var(--border) 80%, transparent);
     --card-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 20px -8px rgba(0,0,0,0.5);
 
     --sidebar: oklch(11% 0.004 264);
@@ -134,7 +137,7 @@ html.text-scale-lg {
   --ring: oklch(64% 0.19 273 / 0.5);
 
   --card-glass: oklch(23% 0.005 264 / 0.8);
-  --card-glass-border: oklch(100% 0 0 / 0.12);
+  --card-glass-border: color-mix(in oklab, var(--border) 80%, transparent);
   --card-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 20px -8px rgba(0,0,0,0.5);
 
   --sidebar: oklch(11% 0.004 264);
@@ -277,7 +280,7 @@ html.text-scale-lg {
    * quitó para un look más plano y menos cargado. */
   .glass-card {
     background-color: transparent;
-    border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+    border: 1px solid var(--card-glass-border);
     box-shadow: none;
   }
 

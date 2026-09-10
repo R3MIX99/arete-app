@@ -651,12 +651,12 @@ export function ProgramBuilder({
               {assignments.map((assignment) => (
                 <div
                   key={assignment.id}
-                  className="flex items-center gap-1 rounded-lg border pr-1 transition-colors hover:border-primary/40"
+                  className="flex items-center gap-1 overflow-hidden rounded-lg border pr-1 transition-colors hover:border-primary/40 hover:bg-accent"
                 >
                   <button
                     type="button"
                     onClick={() => setOverridesForAssignment(assignment)}
-                    className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left hover:bg-accent"
+                    className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left"
                   >
                     <Avatar className="size-9">
                       <AvatarFallback className="text-xs">
