@@ -36,7 +36,11 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/registro") ||
-    request.nextUrl.pathname.startsWith("/recuperar");
+    request.nextUrl.pathname.startsWith("/recuperar") ||
+    // Vuelta del login con Google (y de cualquier otro proveedor OAuth a
+    // futuro): todavía no hay sesión en la cookie cuando cae esta
+    // petición — la crea el propio route handler al intercambiar el code.
+    request.nextUrl.pathname.startsWith("/auth/callback");
   const isPublicAsset =
     request.nextUrl.pathname.startsWith("/_next") ||
     // Las plantillas de correo (public/emails/*.html) las carga GoTrue

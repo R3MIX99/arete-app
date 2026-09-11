@@ -12,6 +12,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AuthBrandIcon } from "@/components/auth/auth-brand-icon";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -136,6 +137,14 @@ export default function LoginPage() {
                 Iniciar sesión
               </Button>
             </form>
+
+            <div className="my-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground">o</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <GoogleSignInButton />
           </CardContent>
         </Card>
 

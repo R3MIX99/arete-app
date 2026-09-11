@@ -13,6 +13,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AuthBrandIcon } from "@/components/auth/auth-brand-icon";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 interface InvitationPreview {
   id: string;
@@ -42,6 +43,7 @@ export function InvitationAcceptForm({
   const router = useRouter();
   const [checkingSession, setCheckingSession] = React.useState(true);
   const [hasSession, setHasSession] = React.useState(false);
+  const [sessionEmail, setSessionEmail] = React.useState<string | null>(null);
   const [fullName, setFullName] = React.useState(invitation.full_name ?? "");
   const [password, setPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
@@ -54,6 +56,7 @@ export function InvitationAcceptForm({
       const supabase = createClient();
       const { data } = await supabase.auth.getUser();
       setHasSession(Boolean(data.user));
+      setSessionEmail(data.user?.email ?? null);
       setCheckingSession(false);
     }
     void load();
@@ -167,6 +170,27 @@ export function InvitationAcceptForm({
               <Loader2 className="size-5 animate-spin text-muted-foreground" />
             </CardContent>
           </Card>
+        ) : hasSession && sessionEmail?.toLowerCase() !== invitation.email.toLowerCase() ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Esta invitación es para <strong className="text-foreground">{invitation.email}</strong>,
+                pero entraste con <strong className="text-foreground">{sessionEmail}</strong>. Cierra
+                sesión y abre este enlace de nuevo con la cuenta correcta.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={async () => {
+                  await createClient().auth.signOut();
+                  router.refresh();
+                }}
+              >
+                Cerrar sesión
+              </Button>
+            </CardContent>
+          </Card>
         ) : hasSession ? (
           <Card>
             <CardHeader>
@@ -246,6 +270,14 @@ export function InvitationAcceptForm({
                   Crear cuenta y unirme
                 </Button>
               </form>
+
+              <div className="my-4 flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">o</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              <GoogleSignInButton next={`/registro/invitacion/${token}`} />
             </CardContent>
           </Card>
         )}
