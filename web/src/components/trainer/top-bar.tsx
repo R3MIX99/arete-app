@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-import { trainerNavItems } from "@/lib/nav-items";
+import { useTrainerNavItems } from "@/lib/hooks/use-trainer-nav-items";
 import { MobileNav } from "@/components/trainer/mobile-nav";
 
 /**
@@ -23,9 +23,10 @@ export function TopBar({
   brandLogoUrl: string | null;
 }) {
   const pathname = usePathname();
+  const navItems = useTrainerNavItems();
 
   const title =
-    trainerNavItems.find((item) =>
+    navItems.find((item) =>
       item.href === "/entrenador" ? pathname === "/entrenador" : pathname.startsWith(item.href),
     )?.label ?? "Aretia";
 

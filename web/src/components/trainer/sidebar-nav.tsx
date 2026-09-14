@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
-import { trainerNavItems } from "@/lib/nav-items";
+import { useTrainerNavItems } from "@/lib/hooks/use-trainer-nav-items";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SidebarProfileFooter } from "@/components/trainer/sidebar-profile-footer";
@@ -31,6 +31,7 @@ export function SidebarNav({
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = React.useState(false);
+  const navItems = useTrainerNavItems();
 
   return (
     <aside
@@ -86,7 +87,7 @@ export function SidebarNav({
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className={cn("flex flex-col", collapsed ? "gap-3" : "gap-2.5")}>
-          {trainerNavItems.map((item) => {
+          {navItems.map((item) => {
             const active =
               item.href === "/entrenador"
                 ? pathname === "/entrenador"

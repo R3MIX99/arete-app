@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 
-import { trainerNavItems } from "@/lib/nav-items";
+import { useTrainerNavItems } from "@/lib/hooks/use-trainer-nav-items";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -30,6 +30,7 @@ export function MobileNav({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
+  const navItems = useTrainerNavItems();
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -50,7 +51,7 @@ export function MobileNav({
 
         <nav className="flex-1 overflow-y-auto px-2.5 py-3">
           <ul className="flex flex-col gap-1.5">
-            {trainerNavItems.map((item) => {
+            {navItems.map((item) => {
               const active =
                 item.href === "/entrenador"
                   ? pathname === "/entrenador"

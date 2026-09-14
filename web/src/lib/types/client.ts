@@ -10,6 +10,10 @@ export interface ClientProfile {
   health_notes: string | null;
   status: ClientStatus;
   created_at: string;
+  /** Quién lo atiende. Solo se usa/rellena en vistas de gimnasio (Fase F) —
+   *  un entrenador independiente siempre es él mismo, no se muestra. */
+  trainer_id?: string;
+  trainer_name?: string | null;
 }
 
 /** Un programa o rutina suelta asignada a un cliente — vista desde el

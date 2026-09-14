@@ -27,7 +27,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MobileFab } from "@/components/trainer/mobile-fab";
+
+interface TeamOption {
+  id: string;
+  full_name: string;
+}
 
 const GOAL_OPTIONS: { value: string; label: string }[] = [
   { value: "lose_weight", label: "Perder peso" },
@@ -43,11 +49,17 @@ export function ClientsBrowser({
   invitations,
   usage,
   planKey,
+  isGymManager = false,
+  teamOptions = [],
 }: {
   clients: ClientProfile[];
   invitations: PendingInvitation[];
   usage: ClientUsage;
   planKey: SubscriptionPlan;
+  /** admin/supervisor del gimnasio (Fase F) — muestra a quién atiende
+   *  cada cliente y deja reasignarlo a otro compañero de equipo. */
+  isGymManager?: boolean;
+  teamOptions?: TeamOption[];
 }) {
   const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState<StatusFilter>(null);
@@ -140,6 +152,44 @@ export function ClientsBrowser({
       startedAt,
     });
     toast.success(next === "active" ? "Cliente reactivado" : "Cliente desactivado");
+  }
+
+  const [reassigningId, setReassigningId] = React.useState<string | null>(null);
+
+  async function reassignClient(client: ClientProfile, newTrainerId: string) {
+    if (newTrainerId === client.trainer_id) return;
+    setReassigningId(client.id);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ trainer_id: newTrainerId })
+      .eq("id", client.id);
+    setReassigningId(null);
+
+    if (error) {
+      toast.error(error.message || "No se pudo reasignar al cliente.");
+      return;
+    }
+
+    const newTrainer = teamOptions.find((t) => t.id === newTrainerId);
+    setItems((prev) =>
+      prev.map((c) =>
+        c.id === client.id
+          ? { ...c, trainer_id: newTrainerId, trainer_name: newTrainer?.full_name ?? null }
+          : c,
+      ),
+    );
+    logActivity({
+      action: "trainer.client_reassigned",
+      category: "trainer",
+      severity: "success",
+      message: `${client.full_name} reasignado a ${newTrainer?.full_name ?? newTrainerId}`,
+      targetType: "profile",
+      targetId: client.id,
+      targetLabel: client.full_name,
+      context: { previousTrainerId: client.trainer_id, newTrainerId },
+    });
+    toast.success("Cliente reasignado.");
   }
 
   async function revokeInvitation(id: string) {
@@ -401,6 +451,30 @@ export function ClientsBrowser({
                     )}
                   </div>
                 </Link>
+                {isGymManager ? (
+                  <div
+                    className="flex flex-col gap-1"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <p className="text-xs text-muted-foreground">Entrenador asignado</p>
+                    <Select
+                      value={client.trainer_id}
+                      onValueChange={(v) => reassignClient(client, v)}
+                      disabled={reassigningId === client.id}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teamOptions.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
                 <Button
                   variant="outline"
                   size="sm"

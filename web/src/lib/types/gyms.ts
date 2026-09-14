@@ -25,6 +25,13 @@ export interface GymMember {
   created_at: string;
 }
 
+/** GymMember + los datos del profile que casi siempre se necesitan
+ *  junto (nombre, correo) — lo que de verdad consume la UI del equipo. */
+export interface GymMemberWithProfile extends GymMember {
+  full_name: string;
+  email: string;
+}
+
 export type GymInvitationStatus = "pending" | "accepted" | "expired" | "revoked";
 
 export const gymInvitationStatusLabels: Record<GymInvitationStatus, string> = {

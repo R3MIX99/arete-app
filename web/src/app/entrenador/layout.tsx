@@ -2,9 +2,11 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { fetchPlanCapabilities } from "@/lib/server/plan-capabilities";
+import { fetchGymContext } from "@/lib/server/gym-context";
 import { SidebarNav } from "@/components/trainer/sidebar-nav";
 import { TopBar } from "@/components/trainer/top-bar";
 import { PlanCapabilitiesProvider } from "@/components/trainer/plan-capabilities";
+import { GymContextProvider } from "@/components/trainer/gym-context";
 
 export default async function TrainerLayout({
   children,
@@ -34,6 +36,7 @@ export default async function TrainerLayout({
   if (profile && !profile.onboarding_completed_at) redirect("/onboarding/entrenador");
 
   const capabilities = await fetchPlanCapabilities(supabase, user.id);
+  const gymContext = await fetchGymContext(supabase, user.id);
 
   const userName = profile?.full_name || user.email || "Entrenador";
   const userEmail = profile?.email || user.email || "";
@@ -44,24 +47,26 @@ export default async function TrainerLayout({
     : null;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
-      <SidebarNav
-        userName={userName}
-        userEmail={userEmail}
-        brandName={brandName}
-        brandLogoUrl={brandLogoUrl}
-      />
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <TopBar
+    <GymContextProvider value={gymContext}>
+      <div className="flex h-screen w-full overflow-hidden bg-background">
+        <SidebarNav
           userName={userName}
           userEmail={userEmail}
           brandName={brandName}
           brandLogoUrl={brandLogoUrl}
         />
-        <main className="flex-1 overflow-y-auto">
-          <PlanCapabilitiesProvider value={capabilities}>{children}</PlanCapabilitiesProvider>
-        </main>
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <TopBar
+            userName={userName}
+            userEmail={userEmail}
+            brandName={brandName}
+            brandLogoUrl={brandLogoUrl}
+          />
+          <main className="flex-1 overflow-y-auto">
+            <PlanCapabilitiesProvider value={capabilities}>{children}</PlanCapabilitiesProvider>
+          </main>
+        </div>
       </div>
-    </div>
+    </GymContextProvider>
   );
 }
