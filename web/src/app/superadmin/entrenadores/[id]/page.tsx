@@ -11,10 +11,16 @@ import {
   type SubscriptionPlan,
   type SubscriptionStatus,
 } from "@/lib/types/settings";
-import type { PlanCatalogEntry, PlanChangeLogEntry, PlanSource } from "@/lib/types/plans";
+import type {
+  PlanCatalogEntry,
+  PlanChangeLogEntry,
+  PlanSource,
+  TrainerSubscription,
+} from "@/lib/types/plans";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlanManager } from "@/components/superadmin/plan-manager";
+import { SubscriptionExtrasManager } from "@/components/superadmin/subscription-extras-manager";
 
 interface TrainerRow {
   id: string;
@@ -72,6 +78,7 @@ export default async function SuperadminTrainerDetailPage({
     { count: dietPlanCount },
     { data: planRows },
     { data: changeLogRows },
+    { data: subscriptionRow },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -98,6 +105,11 @@ export default async function SuperadminTrainerDetailPage({
       )
       .eq("profile_id", id)
       .order("changed_at", { ascending: false }),
+    supabase
+      .from("trainer_subscription")
+      .select("trainer_id, plan_key, extra_client_blocks, extra_seats, ai_extra_packs, over_limit_grace_until")
+      .eq("trainer_id", id)
+      .maybeSingle(),
   ]);
 
   if (!trainer) notFound();
@@ -108,6 +120,17 @@ export default async function SuperadminTrainerDetailPage({
     ...row,
     changed_by_name: one(row.changed_by_profile)?.full_name ?? null,
   }));
+  // El trigger ensure_trainer_subscription() crea la fila para todo
+  // entrenador — este default es solo por si acaso (ej. datos viejos).
+  const subscription: TrainerSubscription = subscriptionRow ?? {
+    trainer_id: t.id,
+    plan_key: t.subscription_plan,
+    extra_client_blocks: 0,
+    extra_seats: 0,
+    ai_extra_packs: 0,
+    over_limit_grace_until: null,
+  };
+  const currentPlanEntry = plans.find((plan) => plan.key === t.subscription_plan) ?? null;
 
   const stats = [
     { label: "Clientes", value: clients.length, icon: UserRound },
@@ -172,6 +195,12 @@ export default async function SuperadminTrainerDetailPage({
         planOverrideExpiresAt={t.plan_override_expires_at}
         plans={plans}
         changeLog={changeLog}
+      />
+
+      <SubscriptionExtrasManager
+        trainerId={t.id}
+        subscription={subscription}
+        plan={currentPlanEntry}
       />
 
       <Card>
