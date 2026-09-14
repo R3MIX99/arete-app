@@ -13,8 +13,14 @@ export interface ClientEnvironment {
  */
 export function describeClientEnvironment(): ClientEnvironment | null {
   if (typeof navigator === "undefined") return null;
-  const ua = navigator.userAgent;
+  return parseUserAgent(navigator.userAgent);
+}
 
+/** Misma lectura que describeClientEnvironment(), pero a partir de un
+ * user-agent ya conocido — la usan los logs generados en el servidor
+ * (ej. /auth/callback), donde no hay `navigator` pero sí el header
+ * `user-agent` de la petición original. */
+export function parseUserAgent(ua: string): ClientEnvironment {
   let os = "Desconocido";
   if (/iPhone|iPad|iPod/.test(ua)) os = "iOS";
   else if (/Android/.test(ua)) os = "Android";

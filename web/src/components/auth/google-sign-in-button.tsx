@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { logActivity } from "@/lib/log-activity";
 import { Button } from "@/components/ui/button";
 
 function GoogleIcon() {
@@ -67,6 +68,17 @@ export function GoogleSignInButton({
     if (error) {
       setLoading(false);
       toast.error("No se pudo conectar con Google. Intenta de nuevo.");
+      // Esto es antes de siquiera salir hacia Google (ej. red caída,
+      // proveedor deshabilitado del lado de GoTrue) — el resto de fallas
+      // del flujo (código inválido, canje de sesión) se loguean del lado
+      // del servidor en /auth/callback, que es donde realmente ocurren.
+      logActivity({
+        action: "auth.login_failed",
+        category: "auth",
+        severity: "warning",
+        message: "No se pudo iniciar el flujo de Google",
+        context: { provider: "google", reason: error.message, redirectTo },
+      });
     }
     // Sin error, el navegador ya está en camino a Google — no hay nada
     // más que hacer aquí (por eso no se apaga `loading`).
