@@ -41,10 +41,28 @@ export async function requireTrainerWithinLimit(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, subscription_plan")
     .eq("id", user.id)
     .single();
   if (profile?.role !== "trainer") throw jsonError("Solo entrenadores pueden usar esta función.", 403);
+
+  // El gate de plan hasta ahora solo vivía en la UI (routine-form.tsx,
+  // routine-ai-score-card.tsx, new-diet-plan-form.tsx abrían PlansDialog
+  // en vez del diálogo real si plan.hasAI era falso) — cualquiera que le
+  // pegara directo a la función con un token válido de un plan Gratis/Pro
+  // se la saltaba. Se repite aquí la misma regla (ai_generations_included
+  // > 0) del lado del servidor, que es la que de verdad cuenta.
+  const { data: plan } = await supabase
+    .from("plans")
+    .select("ai_generations_included")
+    .eq("key", profile.subscription_plan ?? "free")
+    .maybeSingle();
+  if (!plan || (plan.ai_generations_included ?? 0) <= 0) {
+    throw jsonError(
+      "Esta función de inteligencia artificial no está incluida en tu plan actual. Sube a Estudio o Gym para usarla.",
+      403,
+    );
+  }
 
   const limit = DAILY_LIMITS[feature];
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
