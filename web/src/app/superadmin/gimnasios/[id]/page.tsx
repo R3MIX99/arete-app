@@ -3,10 +3,12 @@ import Link from "next/link";
 import { ChevronLeft, UserRound } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
-import { formatDate } from "@/lib/format";
-import { gymRoleLabels, type GymRole } from "@/lib/types/gyms";
+import { formatDate, formatDateTime } from "@/lib/format";
+import { gymInvitationStatusLabels, gymRoleLabels, type GymRole } from "@/lib/types/gyms";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InviteGymMemberDialog } from "@/components/superadmin/invite-gym-member-dialog";
+import { RevokeGymInvitationButton } from "@/components/superadmin/revoke-gym-invitation-button";
 
 interface GymRow {
   id: string;
@@ -32,6 +34,15 @@ interface ClientRow {
   trainer_id: string | null;
 }
 
+interface InvitationRow {
+  id: string;
+  email: string;
+  invited_role: GymRole;
+  status: "pending" | "accepted" | "expired" | "revoked";
+  expires_at: string;
+  created_at: string;
+}
+
 function one<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
@@ -44,25 +55,35 @@ export default async function SuperadminGymDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: gym }, { data: memberRows }, { data: clientRows }] = await Promise.all([
-    supabase.from("gyms").select("id, owner_id, name, created_at").eq("id", id).maybeSingle(),
-    supabase
-      .from("gym_members")
-      .select("gym_id, profile_id, role, status, joined_at, profile:profile_id(full_name, email)")
-      .eq("gym_id", id)
-      .order("role"),
-    supabase
-      .from("profiles")
-      .select("id, full_name, email, status, trainer_id")
-      .eq("gym_id", id)
-      .eq("role", "client")
-      .order("full_name"),
-  ]);
+  const [{ data: gym }, { data: memberRows }, { data: clientRows }, { data: invitationRows }, { data: seatLimit }, { data: seatUsed }] =
+    await Promise.all([
+      supabase.from("gyms").select("id, owner_id, name, created_at").eq("id", id).maybeSingle(),
+      supabase
+        .from("gym_members")
+        .select("gym_id, profile_id, role, status, joined_at, profile:profile_id(full_name, email)")
+        .eq("gym_id", id)
+        .order("role"),
+      supabase
+        .from("profiles")
+        .select("id, full_name, email, status, trainer_id")
+        .eq("gym_id", id)
+        .eq("role", "client")
+        .order("full_name"),
+      supabase
+        .from("gym_invitations")
+        .select("id, email, invited_role, status, expires_at, created_at")
+        .eq("gym_id", id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false }),
+      supabase.rpc("gym_seat_limit", { p_gym_id: id }),
+      supabase.rpc("gym_used_seats", { p_gym_id: id }),
+    ]);
 
   if (!gym) notFound();
   const g = gym as GymRow;
   const members = (memberRows ?? []) as MemberRow[];
   const clients = (clientRows ?? []) as ClientRow[];
+  const invitations = (invitationRows ?? []) as InvitationRow[];
 
   return (
     <div className="flex w-full flex-col gap-5 p-4 md:p-8">
@@ -86,8 +107,10 @@ export default async function SuperadminGymDetailPage({
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card>
           <CardContent className="flex flex-col gap-1">
-            <p className="text-2xl font-bold tracking-tight tabular-nums">{members.length}</p>
-            <p className="text-sm text-muted-foreground">Empleados</p>
+            <p className="text-2xl font-bold tracking-tight tabular-nums">
+              {seatUsed ?? members.length} / {seatLimit ?? "—"}
+            </p>
+            <p className="text-sm text-muted-foreground">Seats usados</p>
           </CardContent>
         </Card>
         <Card>
@@ -99,8 +122,9 @@ export default async function SuperadminGymDetailPage({
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="text-sm">Equipo</CardTitle>
+          <InviteGymMemberDialog gymId={g.id} gymName={g.name} />
         </CardHeader>
         <CardContent>
           {members.length === 0 ? (
@@ -133,11 +157,38 @@ export default async function SuperadminGymDetailPage({
               })}
             </div>
           )}
-          <p className="mt-3 text-xs text-muted-foreground">
-            Invitar más empleados todavía no está disponible — es la siguiente fase del plan Gym.
-          </p>
         </CardContent>
       </Card>
+
+      {invitations.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Invitaciones pendientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-2">
+              {invitations.map((invitation) => (
+                <div
+                  key={invitation.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{invitation.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {gymRoleLabels[invitation.invited_role]} · vence el{" "}
+                      {formatDateTime(invitation.expires_at)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="outline">{gymInvitationStatusLabels[invitation.status]}</Badge>
+                    <RevokeGymInvitationButton invitationId={invitation.id} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

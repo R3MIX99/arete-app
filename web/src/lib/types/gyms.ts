@@ -24,3 +24,25 @@ export interface GymMember {
   joined_at: string | null;
   created_at: string;
 }
+
+export type GymInvitationStatus = "pending" | "accepted" | "expired" | "revoked";
+
+export const gymInvitationStatusLabels: Record<GymInvitationStatus, string> = {
+  pending: "Pendiente",
+  accepted: "Aceptada",
+  expired: "Vencida",
+  revoked: "Revocada",
+};
+
+export interface GymInvitation {
+  id: string;
+  gym_id: string;
+  token: string;
+  email: string;
+  invited_role: GymRole;
+  status: GymInvitationStatus;
+  invited_by: string;
+  expires_at: string;
+  created_at: string;
+  accepted_at: string | null;
+}
