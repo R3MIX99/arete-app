@@ -40,7 +40,15 @@ export async function updateSession(request: NextRequest) {
     // Vuelta del login con Google (y de cualquier otro proveedor OAuth a
     // futuro): todavía no hay sesión en la cookie cuando cae esta
     // petición — la crea el propio route handler al intercambiar el code.
-    request.nextUrl.pathname.startsWith("/auth/callback");
+    request.nextUrl.pathname.startsWith("/auth/callback") ||
+    // Términos y privacidad tienen que verse sin sesión: Google (para
+    // verificar la pantalla de consentimiento de OAuth), las tiendas de
+    // apps, y cualquier visitante que las quiera leer antes de
+    // registrarse. Antes caían en el catch-all de abajo y se
+    // redirigían a /login, así que el verificador de Google veía el
+    // formulario de login en vez del contenido real.
+    request.nextUrl.pathname.startsWith("/privacidad") ||
+    request.nextUrl.pathname.startsWith("/terminos");
   const isPublicAsset =
     request.nextUrl.pathname.startsWith("/_next") ||
     // Las plantillas de correo (public/emails/*.html) las carga GoTrue

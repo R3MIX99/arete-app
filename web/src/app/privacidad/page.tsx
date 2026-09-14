@@ -98,10 +98,11 @@ export default function PrivacyPolicyPage() {
           </p>
           <ul className="list-disc space-y-1.5 pl-5">
             <li>
-              <strong>Supabase</strong> — aloja nuestra base de datos y archivos (fotos de progreso, logos).
+              <strong>Supabase (autoalojado en nuestra propia infraestructura)</strong> — aloja nuestra base de
+              datos y archivos (fotos de progreso, logos).
             </li>
             <li>
-              <strong>Vercel</strong> — aloja la aplicación web.
+              <strong>Hostinger</strong> — el servidor donde corre la aplicación web.
             </li>
             <li>
               <strong>Anthropic (Claude)</strong> — procesa la información necesaria (objetivo, historial de

@@ -82,7 +82,13 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <AuthBrandIcon />
-          <p className="text-sm text-muted-foreground">Inicia sesión para continuar</p>
+          <div>
+            <p className="font-medium">Aretia</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              La plataforma para que entrenadores y gimnasios gestionen rutinas, planes de nutrición
+              y el progreso de sus clientes en un solo lugar.
+            </p>
+          </div>
         </div>
 
         <Card>
