@@ -19,7 +19,16 @@ import { createClient } from "@/lib/supabase/server";
  * aquí mismo, una sola vez.
  */
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams, origin: requestOrigin } = new URL(request.url);
+  // Detrás del proxy de Coolify (Traefik), el origin que Next.js calcula a
+  // partir de request.url no siempre refleja el dominio público real —
+  // según la conexión, a veces se ve algo interno del contenedor en vez de
+  // https://app.aretia.com.mx, y GoTrue termina mandando al cliente a un
+  // dominio que no existe fuera del VPS. x-forwarded-host/-proto sí traen
+  // siempre el dominio con el que entró la petición original.
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
+  const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : requestOrigin;
   const code = searchParams.get("code");
   const next = searchParams.get("next");
   const intent = searchParams.get("intent");
