@@ -13,6 +13,7 @@ import {
   Library,
   Sparkles,
   ScrollText,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -41,6 +42,7 @@ export const superadminNavItems: NavItem[] = [
   { href: "/superadmin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/superadmin/entrenadores", label: "Entrenadores", icon: Users },
   { href: "/superadmin/clientes", label: "Clientes", icon: UserRound },
+  { href: "/superadmin/gimnasios", label: "Gimnasios", icon: Building2 },
   { href: "/superadmin/biblioteca", label: "Biblioteca de Aretia", icon: Library },
   { href: "/superadmin/ia", label: "Sección IA", icon: Sparkles },
   { href: "/superadmin/logs", label: "Logs", icon: ScrollText },
