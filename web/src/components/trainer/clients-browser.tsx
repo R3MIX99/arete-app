@@ -27,12 +27,69 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MobileFab } from "@/components/trainer/mobile-fab";
 
 interface TeamOption {
   id: string;
   full_name: string;
+}
+
+/** Circulito que se asoma en la esquina del avatar del cliente, con las
+ *  iniciales del entrenador asignado — clic abre la lista de todo el
+ *  equipo para reasignar. Solo lo ven admin/supervisor (isGymManager). */
+function AssigneeBadge({
+  client,
+  teamOptions,
+  disabled,
+  onSelect,
+}: {
+  client: ClientProfile;
+  teamOptions: TeamOption[];
+  disabled: boolean;
+  onSelect: (trainerId: string) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          title={`Entrenador asignado: ${client.trainer_name ?? ""}`}
+          className="absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full border-2 border-background bg-primary text-[9px] font-semibold text-primary-foreground shadow-sm disabled:opacity-60"
+        >
+          {initialsOf(client.trainer_name ?? "") || "?"}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuLabel>Entrenador asignado</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {teamOptions.map((t) => (
+          <DropdownMenuItem
+            key={t.id}
+            onClick={() => onSelect(t.id)}
+            className={t.id === client.trainer_id ? "font-medium" : undefined}
+          >
+            <Avatar className="size-5">
+              <AvatarFallback className="text-[9px]">{initialsOf(t.full_name) || "?"}</AvatarFallback>
+            </Avatar>
+            {t.full_name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 const GOAL_OPTIONS: { value: string; label: string }[] = [
@@ -432,9 +489,19 @@ export function ClientsBrowser({
                   }
                 >
                   <div className="flex items-start justify-between">
-                    <Avatar className="size-10">
-                      <AvatarFallback>{initialsOf(client.full_name) || "?"}</AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="size-10">
+                        <AvatarFallback>{initialsOf(client.full_name) || "?"}</AvatarFallback>
+                      </Avatar>
+                      {isGymManager ? (
+                        <AssigneeBadge
+                          client={client}
+                          teamOptions={teamOptions}
+                          disabled={reassigningId === client.id}
+                          onSelect={(trainerId) => reassignClient(client, trainerId)}
+                        />
+                      ) : null}
+                    </div>
                     {client.status === "inactive" && (
                       <Badge variant="warning">Inactivo</Badge>
                     )}
@@ -451,39 +518,15 @@ export function ClientsBrowser({
                     )}
                   </div>
                 </Link>
-                {isGymManager ? (
-                  <div
-                    className="flex flex-col gap-1"
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    <p className="text-xs text-muted-foreground">Entrenador asignado</p>
-                    <Select
-                      value={client.trainer_id}
-                      onValueChange={(v) => reassignClient(client, v)}
-                      disabled={reassigningId === client.id}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teamOptions.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
-                            {t.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : null}
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   disabled={togglingId === client.id}
                   onClick={(e) => toggleClientStatus(e, client)}
                   className={
                     client.status === "active"
-                      ? "text-destructive hover:text-destructive"
-                      : "text-success hover:text-success"
+                      ? "self-start rounded-full bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive"
+                      : "self-start rounded-full bg-success/10 text-success hover:bg-success/15 hover:text-success"
                   }
                 >
                   {client.status === "active" ? <UserX /> : <UserCheck />}
