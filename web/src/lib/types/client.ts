@@ -14,6 +14,10 @@ export interface ClientProfile {
    *  un entrenador independiente siempre es él mismo, no se muestra. */
   trainer_id?: string;
   trainer_name?: string | null;
+  /** Nutriólogo asignado — independiente del entrenador (un cliente de
+   *  gimnasio puede tener ambos a la vez, cada uno en su dominio). */
+  nutritionist_id?: string | null;
+  nutritionist_name?: string | null;
 }
 
 /** Un programa o rutina suelta asignada a un cliente — vista desde el

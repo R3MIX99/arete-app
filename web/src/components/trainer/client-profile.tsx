@@ -91,6 +91,8 @@ export function ClientProfile({
   assignments,
   programs,
   dietPlans,
+  canManageRoutines,
+  canManageNutrition,
 }: {
   trainerId: string;
   client: ClientProfileType;
@@ -107,6 +109,13 @@ export function ClientProfile({
    * asignación del cliente sin desasignarlo. */
   programs: ProgramOption[];
   dietPlans: DietPlanOption[];
+  /** En un gimnasio, entrenador y nutriólogo son roles separados
+   *  (cada uno con su propio dominio) — si el usuario actual no es el
+   *  responsable de ese dominio (ni admin/supervisor), no puede
+   *  cambiar la asignación: ve un aviso de quién sí la maneja en vez
+   *  del botón de cambiar. */
+  canManageRoutines: boolean;
+  canManageNutrition: boolean;
 }) {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -378,28 +387,34 @@ export function ClientProfile({
                         {formatDate(assignment.start_date)}
                       </p>
                     </Link>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Cambiar de programa"
-                          className="relative z-10 shrink-0 text-muted-foreground hover:text-foreground"
-                          onClick={() =>
-                            setChangeTarget({
-                              kind: "program",
-                              assignmentId: assignment.id,
-                              currentId: assignment.program_id ?? "",
-                              currentName: assignment.program_name ?? "",
-                            })
-                          }
-                        >
-                          <Repeat className="size-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">Cambiar de programa</TooltipContent>
-                    </Tooltip>
+                    {canManageRoutines ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Cambiar de programa"
+                            className="relative z-10 shrink-0 text-muted-foreground hover:text-foreground"
+                            onClick={() =>
+                              setChangeTarget({
+                                kind: "program",
+                                assignmentId: assignment.id,
+                                currentId: assignment.program_id ?? "",
+                                currentName: assignment.program_name ?? "",
+                              })
+                            }
+                          >
+                            <Repeat className="size-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Cambiar de programa</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <Badge variant="outline" className="shrink-0 text-xs">
+                        Lo maneja {client.trainer_name ?? "tu entrenador"}
+                      </Badge>
+                    )}
                   </div>
                 ))}
                 {dietPlanAssignments.map((assignment) => (
@@ -419,28 +434,34 @@ export function ClientProfile({
                         Plan nutricional · desde el {formatDate(assignment.start_date)}
                       </p>
                     </Link>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Cambiar de plan nutricional"
-                          className="relative z-10 shrink-0 text-muted-foreground hover:text-foreground"
-                          onClick={() =>
-                            setChangeTarget({
-                              kind: "diet",
-                              assignmentId: assignment.id,
-                              currentId: assignment.diet_plan_id,
-                              currentName: assignment.diet_plan_name,
-                            })
-                          }
-                        >
-                          <Repeat className="size-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">Cambiar de plan nutricional</TooltipContent>
-                    </Tooltip>
+                    {canManageNutrition ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Cambiar de plan nutricional"
+                            className="relative z-10 shrink-0 text-muted-foreground hover:text-foreground"
+                            onClick={() =>
+                              setChangeTarget({
+                                kind: "diet",
+                                assignmentId: assignment.id,
+                                currentId: assignment.diet_plan_id,
+                                currentName: assignment.diet_plan_name,
+                              })
+                            }
+                          >
+                            <Repeat className="size-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Cambiar de plan nutricional</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <Badge variant="outline" className="shrink-0 text-xs">
+                        Lo maneja {client.nutritionist_name ?? client.trainer_name ?? "tu entrenador"}
+                      </Badge>
+                    )}
                   </div>
                 ))}
               </>

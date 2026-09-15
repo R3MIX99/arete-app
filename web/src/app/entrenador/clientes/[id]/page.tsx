@@ -81,10 +81,14 @@ export default async function ClientDetailPage({
     { data: sessionSetLogRows },
     { data: programRows },
     { data: dietPlanRows },
+    { data: canManageRoutines },
+    { data: canManageNutrition },
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, email, phone, goal, health_notes, status, created_at")
+      .select(
+        "id, full_name, email, phone, goal, health_notes, status, created_at, trainer_id, trainer:trainer_id(full_name), nutritionist_id, nutritionist:nutritionist_id(full_name)",
+      )
       .eq("id", id)
       .eq("role", "client")
       .single(),
@@ -140,6 +144,8 @@ export default async function ClientDetailPage({
       .select("id, name")
       .eq("trainer_id", user.id)
       .order("name"),
+    supabase.rpc("can_manage_client", { p_client_id: id }),
+    supabase.rpc("can_manage_client_nutrition", { p_client_id: id }),
   ]);
 
   // Aparte del Promise.all de arriba: la agenda completa (programa +
@@ -175,6 +181,36 @@ export default async function ClientDetailPage({
   }
 
   if (!client) notFound();
+
+  interface ClientRow {
+    id: string;
+    full_name: string;
+    email: string;
+    phone: string | null;
+    goal: ClientProfileType["goal"];
+    health_notes: string | null;
+    status: ClientProfileType["status"];
+    created_at: string;
+    trainer_id: string;
+    trainer: { full_name: string } | { full_name: string }[] | null;
+    nutritionist_id: string | null;
+    nutritionist: { full_name: string } | { full_name: string }[] | null;
+  }
+  const clientRow = client as ClientRow;
+  const clientProfile: ClientProfileType = {
+    id: clientRow.id,
+    full_name: clientRow.full_name,
+    email: clientRow.email,
+    phone: clientRow.phone,
+    goal: clientRow.goal,
+    health_notes: clientRow.health_notes,
+    status: clientRow.status,
+    created_at: clientRow.created_at,
+    trainer_id: clientRow.trainer_id,
+    trainer_name: one(clientRow.trainer)?.full_name ?? null,
+    nutritionist_id: clientRow.nutritionist_id,
+    nutritionist_name: one(clientRow.nutritionist)?.full_name ?? null,
+  };
 
   const byExercise = new Map<
     string,
@@ -341,7 +377,7 @@ export default async function ClientDetailPage({
   return (
     <ClientProfile
       trainerId={user.id}
-      client={client as ClientProfileType}
+      client={clientProfile}
       measurements={(measurements ?? []) as ProgressMeasurement[]}
       exerciseSummaries={exerciseSummaries}
       completedSessions={completedSessions}
@@ -350,6 +386,8 @@ export default async function ClientDetailPage({
       assignments={assignments}
       programs={programs}
       dietPlans={dietPlans}
+      canManageRoutines={Boolean(canManageRoutines)}
+      canManageNutrition={Boolean(canManageNutrition)}
     />
   );
 }

@@ -43,20 +43,32 @@ interface TeamOption {
   full_name: string;
 }
 
-/** Selector del entrenador asignado: avatar con iniciales + nombre +
- *  chevrón, mismo alto que el botón de Desactivar/Reactivar y a su
- *  lado derecho. Clic abre la lista de todo el equipo para reasignar.
- *  Solo lo ven admin/supervisor (isGymManager). */
+/** Selector de a quién está asignado el cliente en un dominio (rutinas
+ *  o nutrición): avatar con iniciales + chevrón. Clic abre la lista de
+ *  compañeros que pueden tomar ese rol (ya filtrada por el llamador —
+ *  el picker de entrenador solo lista admin/entrenador, el de
+ *  nutriólogo solo admin/nutriólogo) para reasignar. Sin nadie
+ *  asignado todavía, muestra un círculo vacío punteado. Solo lo ven
+ *  admin/supervisor (isGymManager). */
 function AssigneePicker({
-  client,
-  teamOptions,
+  label,
+  currentId,
+  currentName,
+  options,
   disabled,
   onSelect,
+  accentClassName = "",
 }: {
-  client: ClientProfile;
-  teamOptions: TeamOption[];
+  label: string;
+  currentId: string | null | undefined;
+  currentName: string | null | undefined;
+  options: TeamOption[];
   disabled: boolean;
-  onSelect: (trainerId: string) => void;
+  onSelect: (profileId: string) => void;
+  /** Distingue visualmente el círculo (ej. verde para nutriólogo, morado
+   *  para entrenador) — dos pickers uno al lado del otro necesitan verse
+   *  distintos aunque sea la misma persona (admin puede ser ambos). */
+  accentClassName?: string;
 }) {
   return (
     <DropdownMenu>
@@ -68,32 +80,42 @@ function AssigneePicker({
             e.preventDefault();
             e.stopPropagation();
           }}
-          title={client.trainer_name ?? ""}
+          title={currentName ? `${label}: ${currentName}` : `${label}: sin asignar`}
           className="flex shrink-0 items-center gap-0.5 rounded-full transition-transform hover:scale-105 disabled:opacity-60"
         >
-          <Avatar className="size-7 ring-2 ring-background">
-            <AvatarFallback className="text-[10px]">
-              {initialsOf(client.trainer_name ?? "") || "?"}
-            </AvatarFallback>
-          </Avatar>
+          {currentId ? (
+            <Avatar className="size-7 ring-2 ring-background">
+              <AvatarFallback className={`text-[10px] ${accentClassName}`}>
+                {initialsOf(currentName ?? "") || "?"}
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <span className="flex size-7 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground">
+              <UserPlus className="size-3.5" />
+            </span>
+          )}
           <ChevronDown className="size-3.5 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuLabel>Entrenador asignado</DropdownMenuLabel>
+        <DropdownMenuLabel>{label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {teamOptions.map((t) => (
-          <DropdownMenuItem
-            key={t.id}
-            onClick={() => onSelect(t.id)}
-            className={t.id === client.trainer_id ? "font-medium" : undefined}
-          >
-            <Avatar className="size-5">
-              <AvatarFallback className="text-[9px]">{initialsOf(t.full_name) || "?"}</AvatarFallback>
-            </Avatar>
-            {t.full_name}
-          </DropdownMenuItem>
-        ))}
+        {options.length === 0 ? (
+          <p className="px-2 py-1.5 text-xs text-muted-foreground">Nadie con este rol todavía.</p>
+        ) : (
+          options.map((t) => (
+            <DropdownMenuItem
+              key={t.id}
+              onClick={() => onSelect(t.id)}
+              className={t.id === currentId ? "font-medium" : undefined}
+            >
+              <Avatar className="size-5">
+                <AvatarFallback className="text-[9px]">{initialsOf(t.full_name) || "?"}</AvatarFallback>
+              </Avatar>
+              {t.full_name}
+            </DropdownMenuItem>
+          ))
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -114,16 +136,20 @@ export function ClientsBrowser({
   usage,
   planKey,
   isGymManager = false,
-  teamOptions = [],
+  trainerOptions = [],
+  nutritionistOptions = [],
 }: {
   clients: ClientProfile[];
   invitations: PendingInvitation[];
   usage: ClientUsage;
   planKey: SubscriptionPlan;
   /** admin/supervisor del gimnasio (Fase F) — muestra a quién atiende
-   *  cada cliente y deja reasignarlo a otro compañero de equipo. */
+   *  cada cliente y deja reasignarlo a otro compañero de equipo, por
+   *  separado para rutinas (trainerOptions) y nutrición
+   *  (nutritionistOptions) — un cliente puede tener ambos a la vez. */
   isGymManager?: boolean;
-  teamOptions?: TeamOption[];
+  trainerOptions?: TeamOption[];
+  nutritionistOptions?: TeamOption[];
 }) {
   const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState<StatusFilter>(null);
@@ -220,13 +246,25 @@ export function ClientsBrowser({
 
   const [reassigningId, setReassigningId] = React.useState<string | null>(null);
 
-  async function reassignClient(client: ClientProfile, newTrainerId: string) {
-    if (newTrainerId === client.trainer_id) return;
+  /** field="trainer_id" reasigna quién lleva las rutinas; field=
+   *  "nutritionist_id" reasigna quién lleva la nutrición — son
+   *  independientes, cambiar uno nunca toca el otro (un cliente de
+   *  gimnasio puede tener ambos a la vez). */
+  async function reassignClient(
+    client: ClientProfile,
+    field: "trainer_id" | "nutritionist_id",
+    newProfileId: string,
+  ) {
+    const currentId = field === "trainer_id" ? client.trainer_id : client.nutritionist_id;
+    if (newProfileId === currentId) return;
+    const options = field === "trainer_id" ? trainerOptions : nutritionistOptions;
+    const nameField = field === "trainer_id" ? "trainer_name" : "nutritionist_name";
+
     setReassigningId(client.id);
     const supabase = createClient();
     const { error } = await supabase
       .from("profiles")
-      .update({ trainer_id: newTrainerId })
+      .update({ [field]: newProfileId })
       .eq("id", client.id);
     setReassigningId(null);
 
@@ -235,11 +273,11 @@ export function ClientsBrowser({
       return;
     }
 
-    const newTrainer = teamOptions.find((t) => t.id === newTrainerId);
+    const newAssignee = options.find((t) => t.id === newProfileId);
     setItems((prev) =>
       prev.map((c) =>
         c.id === client.id
-          ? { ...c, trainer_id: newTrainerId, trainer_name: newTrainer?.full_name ?? null }
+          ? { ...c, [field]: newProfileId, [nameField]: newAssignee?.full_name ?? null }
           : c,
       ),
     );
@@ -247,11 +285,11 @@ export function ClientsBrowser({
       action: "trainer.client_reassigned",
       category: "trainer",
       severity: "success",
-      message: `${client.full_name} reasignado a ${newTrainer?.full_name ?? newTrainerId}`,
+      message: `${client.full_name}: ${field === "trainer_id" ? "entrenador" : "nutriólogo"} reasignado a ${newAssignee?.full_name ?? newProfileId}`,
       targetType: "profile",
       targetId: client.id,
       targetLabel: client.full_name,
-      context: { previousTrainerId: client.trainer_id, newTrainerId },
+      context: { field, previousId: currentId, newProfileId },
     });
     toast.success("Cliente reasignado.");
   }
@@ -527,12 +565,26 @@ export function ClientsBrowser({
                     {client.status === "active" ? "Desactivar" : "Reactivar"}
                   </Button>
                   {isGymManager ? (
-                    <AssigneePicker
-                      client={client}
-                      teamOptions={teamOptions}
-                      disabled={reassigningId === client.id}
-                      onSelect={(trainerId) => reassignClient(client, trainerId)}
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <AssigneePicker
+                        label="Entrenador asignado"
+                        currentId={client.trainer_id}
+                        currentName={client.trainer_name}
+                        options={trainerOptions}
+                        disabled={reassigningId === client.id}
+                        onSelect={(profileId) => reassignClient(client, "trainer_id", profileId)}
+                        accentClassName="bg-primary text-primary-foreground"
+                      />
+                      <AssigneePicker
+                        label="Nutriólogo asignado"
+                        currentId={client.nutritionist_id}
+                        currentName={client.nutritionist_name}
+                        options={nutritionistOptions}
+                        disabled={reassigningId === client.id}
+                        onSelect={(profileId) => reassignClient(client, "nutritionist_id", profileId)}
+                        accentClassName="bg-emerald-500 text-white dark:bg-emerald-600"
+                      />
+                    </div>
                   ) : null}
                 </div>
               </CardContent>
