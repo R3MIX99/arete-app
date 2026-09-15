@@ -11,7 +11,6 @@ import {
   UserCheck,
   FilterX,
   SlidersHorizontal,
-  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -68,15 +67,14 @@ function AssigneePicker({
             e.preventDefault();
             e.stopPropagation();
           }}
-          className="flex max-w-[55%] items-center gap-1.5 rounded-full bg-accent/60 py-1 pr-2 pl-1 text-xs font-medium hover:bg-accent disabled:opacity-60"
+          title={client.trainer_name ?? ""}
+          className="shrink-0 rounded-full ring-2 ring-background transition-transform hover:scale-105 disabled:opacity-60"
         >
-          <Avatar className="size-5">
-            <AvatarFallback className="text-[9px]">
+          <Avatar className="size-7">
+            <AvatarFallback className="text-[10px]">
               {initialsOf(client.trainer_name ?? "") || "?"}
             </AvatarFallback>
           </Avatar>
-          <span className="truncate">{client.trainer_name}</span>
-          <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
