@@ -11,6 +11,7 @@ import {
   UserCheck,
   FilterX,
   SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,10 +43,11 @@ interface TeamOption {
   full_name: string;
 }
 
-/** Circulito que se asoma en la esquina del avatar del cliente, con las
- *  iniciales del entrenador asignado — clic abre la lista de todo el
- *  equipo para reasignar. Solo lo ven admin/supervisor (isGymManager). */
-function AssigneeBadge({
+/** Selector del entrenador asignado: avatar con iniciales + nombre +
+ *  chevrón, mismo alto que el botón de Desactivar/Reactivar y a su
+ *  lado derecho. Clic abre la lista de todo el equipo para reasignar.
+ *  Solo lo ven admin/supervisor (isGymManager). */
+function AssigneePicker({
   client,
   teamOptions,
   disabled,
@@ -66,13 +68,18 @@ function AssigneeBadge({
             e.preventDefault();
             e.stopPropagation();
           }}
-          title={`Entrenador asignado: ${client.trainer_name ?? ""}`}
-          className="absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full border-2 border-background bg-primary text-[9px] font-semibold text-primary-foreground shadow-sm disabled:opacity-60"
+          className="flex max-w-[55%] items-center gap-1.5 rounded-full bg-accent/60 py-1 pr-2 pl-1 text-xs font-medium hover:bg-accent disabled:opacity-60"
         >
-          {initialsOf(client.trainer_name ?? "") || "?"}
+          <Avatar className="size-5">
+            <AvatarFallback className="text-[9px]">
+              {initialsOf(client.trainer_name ?? "") || "?"}
+            </AvatarFallback>
+          </Avatar>
+          <span className="truncate">{client.trainer_name}</span>
+          <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
         <DropdownMenuLabel>Entrenador asignado</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {teamOptions.map((t) => (
@@ -488,50 +495,46 @@ export function ClientsBrowser({
                       : "flex flex-1 flex-col gap-3"
                   }
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="relative">
-                      <Avatar className="size-10">
-                        <AvatarFallback>{initialsOf(client.full_name) || "?"}</AvatarFallback>
-                      </Avatar>
-                      {isGymManager ? (
-                        <AssigneeBadge
-                          client={client}
-                          teamOptions={teamOptions}
-                          disabled={reassigningId === client.id}
-                          onSelect={(trainerId) => reassignClient(client, trainerId)}
-                        />
-                      ) : null}
+                  <div className="flex items-start justify-between gap-2">
+                    <Avatar className="size-10">
+                      <AvatarFallback>{initialsOf(client.full_name) || "?"}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col items-end gap-1.5">
+                      {client.status === "inactive" && <Badge variant="warning">Inactivo</Badge>}
+                      {client.goal && <Badge variant="secondary">{goalLabel(client.goal)}</Badge>}
                     </div>
-                    {client.status === "inactive" && (
-                      <Badge variant="warning">Inactivo</Badge>
-                    )}
                   </div>
                   <div className="mt-auto">
                     <p className="truncate text-sm font-semibold">{client.full_name}</p>
                     <p className="truncate text-xs text-muted-foreground">
                       {client.email}
                     </p>
-                    {client.goal && (
-                      <Badge variant="secondary" className="mt-2">
-                        {goalLabel(client.goal)}
-                      </Badge>
-                    )}
                   </div>
                 </Link>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={togglingId === client.id}
-                  onClick={(e) => toggleClientStatus(e, client)}
-                  className={
-                    client.status === "active"
-                      ? "self-start rounded-full bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive"
-                      : "self-start rounded-full bg-success/10 text-success hover:bg-success/15 hover:text-success"
-                  }
-                >
-                  {client.status === "active" ? <UserX /> : <UserCheck />}
-                  {client.status === "active" ? "Desactivar" : "Reactivar"}
-                </Button>
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={togglingId === client.id}
+                    onClick={(e) => toggleClientStatus(e, client)}
+                    className={
+                      client.status === "active"
+                        ? "shrink-0 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive"
+                        : "shrink-0 rounded-full bg-success/10 text-success hover:bg-success/15 hover:text-success"
+                    }
+                  >
+                    {client.status === "active" ? <UserX /> : <UserCheck />}
+                    {client.status === "active" ? "Desactivar" : "Reactivar"}
+                  </Button>
+                  {isGymManager ? (
+                    <AssigneePicker
+                      client={client}
+                      teamOptions={teamOptions}
+                      disabled={reassigningId === client.id}
+                      onSelect={(trainerId) => reassignClient(client, trainerId)}
+                    />
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
           ))}
