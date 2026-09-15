@@ -1,4 +1,4 @@
-import { Users2 } from "lucide-react";
+import { Network } from "lucide-react";
 
 import { trainerNavItems, type NavItem } from "@/lib/nav-items";
 import { useGymContext } from "@/components/trainer/gym-context";
@@ -13,7 +13,7 @@ export function useTrainerNavItems(): NavItem[] {
 
   const items = [...trainerNavItems];
   const clientsIndex = items.findIndex((item) => item.href === "/entrenador/clientes");
-  const teamItem: NavItem = { href: "/entrenador/equipo", label: "Equipo", icon: Users2 };
+  const teamItem: NavItem = { href: "/entrenador/equipo", label: "Equipo", icon: Network };
   items.splice(clientsIndex + 1, 0, teamItem);
   return items;
 }
