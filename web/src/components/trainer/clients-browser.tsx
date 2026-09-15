@@ -12,6 +12,7 @@ import {
   FilterX,
   SlidersHorizontal,
   ChevronDown,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -43,33 +44,34 @@ interface TeamOption {
   full_name: string;
 }
 
-/** Selector de a quién está asignado el cliente en un dominio (rutinas
- *  o nutrición): avatar con iniciales + chevrón. Clic abre la lista de
- *  compañeros que pueden tomar ese rol (ya filtrada por el llamador —
- *  el picker de entrenador solo lista admin/entrenador, el de
- *  nutriólogo solo admin/nutriólogo) para reasignar. Sin nadie
- *  asignado todavía, muestra un círculo vacío punteado. Solo lo ven
- *  admin/supervisor (isGymManager). */
-function AssigneePicker({
-  label,
-  currentId,
-  currentName,
-  options,
+const TRAINER_ACCENT = "bg-primary text-primary-foreground";
+const NUTRITIONIST_ACCENT = "bg-emerald-500 text-white dark:bg-emerald-600";
+
+/** Quién atiende al cliente: avatares apilados (entrenador + nutriólogo,
+ *  uno encima asomándose del otro) con un solo chevrón al final — un
+ *  único clic abre una sola lista con todo el equipo, agrupada por rol.
+ *  Elegir a alguien en "Entrenador" reemplaza solo al entrenador (nunca
+ *  puede haber dos a la vez); elegir en "Nutriólogo" reemplaza solo al
+ *  nutriólogo — son independientes entre sí. Solo lo ven admin/
+ *  supervisor (isGymManager). */
+function TeamAssignmentPicker({
+  client,
+  trainerOptions,
+  nutritionistOptions,
   disabled,
   onSelect,
-  accentClassName = "",
 }: {
-  label: string;
-  currentId: string | null | undefined;
-  currentName: string | null | undefined;
-  options: TeamOption[];
+  client: ClientProfile;
+  trainerOptions: TeamOption[];
+  nutritionistOptions: TeamOption[];
   disabled: boolean;
-  onSelect: (profileId: string) => void;
-  /** Distingue visualmente el círculo (ej. verde para nutriólogo, morado
-   *  para entrenador) — dos pickers uno al lado del otro necesitan verse
-   *  distintos aunque sea la misma persona (admin puede ser ambos). */
-  accentClassName?: string;
+  onSelect: (field: "trainer_id" | "nutritionist_id", profileId: string) => void;
 }) {
+  const slots: { id: string | null | undefined; name: string | null | undefined; accent: string }[] = [
+    { id: client.trainer_id, name: client.trainer_name, accent: TRAINER_ACCENT },
+    { id: client.nutritionist_id, name: client.nutritionist_name, accent: NUTRITIONIST_ACCENT },
+  ];
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -80,39 +82,72 @@ function AssigneePicker({
             e.preventDefault();
             e.stopPropagation();
           }}
-          title={currentName ? `${label}: ${currentName}` : `${label}: sin asignar`}
+          title="Entrenador y nutriólogo asignados"
           className="flex shrink-0 items-center gap-0.5 rounded-full transition-transform hover:scale-105 disabled:opacity-60"
         >
-          {currentId ? (
-            <Avatar className="size-7 ring-2 ring-background">
-              <AvatarFallback className={`text-[10px] ${accentClassName}`}>
-                {initialsOf(currentName ?? "") || "?"}
-              </AvatarFallback>
-            </Avatar>
-          ) : (
-            <span className="flex size-7 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground">
-              <UserPlus className="size-3.5" />
-            </span>
-          )}
+          <div className="flex items-center">
+            {slots.map((slot, i) =>
+              slot.id ? (
+                <Avatar
+                  key={i}
+                  className={`size-7 ring-2 ring-background ${i > 0 ? "-ml-2.5" : ""}`}
+                >
+                  <AvatarFallback className={`text-[10px] ${slot.accent}`}>
+                    {initialsOf(slot.name ?? "") || "?"}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <span
+                  key={i}
+                  className={`flex size-7 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 bg-background text-muted-foreground ${i > 0 ? "-ml-2.5" : ""}`}
+                >
+                  <UserPlus className="size-3.5" />
+                </span>
+              ),
+            )}
+          </div>
           <ChevronDown className="size-3.5 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuLabel>{label}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {options.length === 0 ? (
+        <DropdownMenuLabel>Entrenador</DropdownMenuLabel>
+        {trainerOptions.length === 0 ? (
           <p className="px-2 py-1.5 text-xs text-muted-foreground">Nadie con este rol todavía.</p>
         ) : (
-          options.map((t) => (
+          trainerOptions.map((t) => (
             <DropdownMenuItem
-              key={t.id}
-              onClick={() => onSelect(t.id)}
-              className={t.id === currentId ? "font-medium" : undefined}
+              key={`trainer-${t.id}`}
+              onClick={() => onSelect("trainer_id", t.id)}
+              className={t.id === client.trainer_id ? "font-medium" : undefined}
             >
               <Avatar className="size-5">
-                <AvatarFallback className="text-[9px]">{initialsOf(t.full_name) || "?"}</AvatarFallback>
+                <AvatarFallback className={`text-[9px] ${TRAINER_ACCENT}`}>
+                  {initialsOf(t.full_name) || "?"}
+                </AvatarFallback>
               </Avatar>
               {t.full_name}
+              {t.id === client.trainer_id ? <Check className="ml-auto size-3.5" /> : null}
+            </DropdownMenuItem>
+          ))
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Nutriólogo</DropdownMenuLabel>
+        {nutritionistOptions.length === 0 ? (
+          <p className="px-2 py-1.5 text-xs text-muted-foreground">Nadie con este rol todavía.</p>
+        ) : (
+          nutritionistOptions.map((t) => (
+            <DropdownMenuItem
+              key={`nutritionist-${t.id}`}
+              onClick={() => onSelect("nutritionist_id", t.id)}
+              className={t.id === client.nutritionist_id ? "font-medium" : undefined}
+            >
+              <Avatar className="size-5">
+                <AvatarFallback className={`text-[9px] ${NUTRITIONIST_ACCENT}`}>
+                  {initialsOf(t.full_name) || "?"}
+                </AvatarFallback>
+              </Avatar>
+              {t.full_name}
+              {t.id === client.nutritionist_id ? <Check className="ml-auto size-3.5" /> : null}
             </DropdownMenuItem>
           ))
         )}
@@ -565,26 +600,13 @@ export function ClientsBrowser({
                     {client.status === "active" ? "Desactivar" : "Reactivar"}
                   </Button>
                   {isGymManager ? (
-                    <div className="flex items-center gap-1.5">
-                      <AssigneePicker
-                        label="Entrenador asignado"
-                        currentId={client.trainer_id}
-                        currentName={client.trainer_name}
-                        options={trainerOptions}
-                        disabled={reassigningId === client.id}
-                        onSelect={(profileId) => reassignClient(client, "trainer_id", profileId)}
-                        accentClassName="bg-primary text-primary-foreground"
-                      />
-                      <AssigneePicker
-                        label="Nutriólogo asignado"
-                        currentId={client.nutritionist_id}
-                        currentName={client.nutritionist_name}
-                        options={nutritionistOptions}
-                        disabled={reassigningId === client.id}
-                        onSelect={(profileId) => reassignClient(client, "nutritionist_id", profileId)}
-                        accentClassName="bg-emerald-500 text-white dark:bg-emerald-600"
-                      />
-                    </div>
+                    <TeamAssignmentPicker
+                      client={client}
+                      trainerOptions={trainerOptions}
+                      nutritionistOptions={nutritionistOptions}
+                      disabled={reassigningId === client.id}
+                      onSelect={(field, profileId) => reassignClient(client, field, profileId)}
+                    />
                   ) : null}
                 </div>
               </CardContent>
