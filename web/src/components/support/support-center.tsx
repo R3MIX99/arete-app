@@ -80,7 +80,7 @@ function SearchBox({
 
 /** Centro de ayuda del entrenador. La vista principal es siempre el
  * buscador con guías y preguntas frecuentes; si ya tiene conversaciones,
- * un botón arriba a la derecha abre la lista de sus tickets (y de ahí se
+ * el botón de la tarjeta de chat pasa a "Ver mis tickets" y abre la lista (y de ahí se
  * regresa al centro de ayuda). */
 export function SupportCenter({
   tickets,
@@ -186,18 +186,6 @@ export function SupportCenter({
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 p-4 pb-24 md:p-8">
-      {tickets.length > 0 ? (
-        <div className="-mb-4 flex justify-end">
-          <Button variant="outline" onClick={() => setView("tickets")}>
-            <Ticket /> Ver mis tickets
-            {totalUnread > 0 ? (
-              <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] text-primary-foreground">
-                {totalUnread}
-              </span>
-            ) : null}
-          </Button>
-        </div>
-      ) : null}
       <div className="flex flex-col items-center gap-5 pt-4 text-center">
         <h1 className="text-3xl font-bold">¿Cómo podemos ayudarte?</h1>
         <SearchBox value={query} onChange={setQuery} className="w-full max-w-xl" />
@@ -237,9 +225,20 @@ export function SupportCenter({
             <MessagesSquare className="size-8 text-primary" />
             <span className="font-semibold">Chat con soporte</span>
             <span className="text-sm text-muted-foreground">Habla con nuestro equipo</span>
-            <Button size="sm" className="mt-1" onClick={() => setChatOpen(true)}>
-              Iniciar chat
-            </Button>
+            {tickets.length > 0 ? (
+              <Button size="sm" className="mt-1" onClick={() => setView("tickets")}>
+                <Ticket /> Ver mis tickets
+                {totalUnread > 0 ? (
+                  <span className="flex size-5 items-center justify-center rounded-full bg-primary-foreground text-[11px] text-primary">
+                    {totalUnread}
+                  </span>
+                ) : null}
+              </Button>
+            ) : (
+              <Button size="sm" className="mt-1" onClick={() => setChatOpen(true)}>
+                Iniciar chat
+              </Button>
+            )}
           </div>
         </div>
       ) : null}
