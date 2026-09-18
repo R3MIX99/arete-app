@@ -18,12 +18,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 
 // Valores de respaldo cuando el Excel no trae un grupo muscular o equipo
 // reconocible para una fila — así nunca se bloquea la importación, pero
 // la fila queda marcada para que el entrenador la revise después.
 const FALLBACK_MUSCLE_GROUP = "full_body";
 const FALLBACK_EQUIPMENT = "other";
+
+// Se importa en lotes chicos en vez de un solo insert masivo: así la
+// barra de progreso puede ir avanzando de verdad conforme se guarda cada
+// tanda, en lugar de saltar de 0% a 100% de golpe.
+const IMPORT_BATCH_SIZE = 5;
 
 interface ReviewRow extends ParsedExerciseRow {
   included: boolean;
@@ -44,6 +50,7 @@ export function ImportExercisesDialog({
   const [fileName, setFileName] = React.useState<string | null>(null);
   const [parsing, setParsing] = React.useState(false);
   const [importing, setImporting] = React.useState(false);
+  const [importProgress, setImportProgress] = React.useState({ done: 0, total: 0 });
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   function reset() {
@@ -103,24 +110,36 @@ export function ImportExercisesDialog({
     if (toImport.length === 0) return;
 
     setImporting(true);
+    setImportProgress({ done: 0, total: toImport.length });
     const supabase = createClient();
-    const { error } = await supabase.from("exercises").insert(
-      toImport.map((row) => ({
-        trainer_id: trainerId,
-        name: row.name,
-        muscle_groups:
-          row.muscleGroups.values.length > 0 ? row.muscleGroups.values : [FALLBACK_MUSCLE_GROUP],
-        equipment_items:
-          row.equipmentItems.values.length > 0 ? row.equipmentItems.values : [FALLBACK_EQUIPMENT],
-        description: row.description,
-        video_url: row.videoUrl,
-      })),
-    );
-    setImporting(false);
-    if (error) {
-      toast.error("No se pudieron importar los ejercicios", { description: error.message });
-      return;
+
+    let imported = 0;
+    for (let i = 0; i < toImport.length; i += IMPORT_BATCH_SIZE) {
+      const batch = toImport.slice(i, i + IMPORT_BATCH_SIZE);
+      const { error } = await supabase.from("exercises").insert(
+        batch.map((row) => ({
+          trainer_id: trainerId,
+          name: row.name,
+          muscle_groups:
+            row.muscleGroups.values.length > 0 ? row.muscleGroups.values : [FALLBACK_MUSCLE_GROUP],
+          equipment_items:
+            row.equipmentItems.values.length > 0 ? row.equipmentItems.values : [FALLBACK_EQUIPMENT],
+          description: row.description,
+          video_url: row.videoUrl,
+        })),
+      );
+      if (error) {
+        setImporting(false);
+        toast.error("No se pudieron importar los ejercicios", {
+          description: imported > 0 ? `Se alcanzaron a guardar ${imported}. ${error.message}` : error.message,
+        });
+        return;
+      }
+      imported += batch.length;
+      setImportProgress({ done: imported, total: toImport.length });
     }
+
+    setImporting(false);
     toast.success(
       `Se importaron ${toImport.length} ejercicio${toImport.length === 1 ? "" : "s"} a tu biblioteca`,
     );
@@ -183,12 +202,12 @@ export function ImportExercisesDialog({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  disabled={selectableCount === 0}
+                  disabled={selectableCount === 0 || importing}
                   onClick={() => toggleAll(!allSelected)}
                 >
                   {allSelected ? "Deseleccionar todos" : "Seleccionar todos"}
                 </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={reset}>
+                <Button type="button" variant="ghost" size="sm" disabled={importing} onClick={reset}>
                   Elegir otro archivo
                 </Button>
               </div>
@@ -213,7 +232,7 @@ export function ImportExercisesDialog({
                     <Checkbox
                       className="mt-1"
                       checked={row.included}
-                      disabled={row.missingName}
+                      disabled={row.missingName || importing}
                       onCheckedChange={(checked) => toggleRow(row.rowNumber, checked === true)}
                     />
                     <div className="min-w-0 flex-1">
@@ -258,15 +277,38 @@ export function ImportExercisesDialog({
               })}
             </div>
 
-            <Button
-              type="button"
-              disabled={includedCount === 0 || importing}
-              onClick={handleImport}
-              className="w-fit"
-            >
-              {importing ? <Loader2 className="animate-spin" /> : <Upload />}
-              Importar {includedCount} ejercicio{includedCount === 1 ? "" : "s"}
-            </Button>
+            {importing ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">
+                    Importando {importProgress.done} de {importProgress.total} ejercicios…
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {importProgress.total > 0
+                      ? Math.round((importProgress.done / importProgress.total) * 100)
+                      : 0}
+                    %
+                  </span>
+                </div>
+                <Progress
+                  value={
+                    importProgress.total > 0
+                      ? (importProgress.done / importProgress.total) * 100
+                      : 0
+                  }
+                />
+              </div>
+            ) : (
+              <Button
+                type="button"
+                disabled={includedCount === 0}
+                onClick={handleImport}
+                className="w-fit"
+              >
+                <Upload />
+                Importar {includedCount} ejercicio{includedCount === 1 ? "" : "s"}
+              </Button>
+            )}
           </>
         )}
       </DialogContent>
