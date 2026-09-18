@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InviteGymMemberDialog } from "@/components/superadmin/invite-gym-member-dialog";
 import { RevokeGymInvitationButton } from "@/components/superadmin/revoke-gym-invitation-button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const ROLE_OPTIONS: GymRole[] = ["admin", "supervisor", "trainer", "nutritionist", "assistant"];
@@ -232,6 +233,7 @@ export function TeamManager({
                 <th className="px-3 py-2 font-medium">Miembro</th>
                 <th className="px-3 py-2 font-medium">Rol</th>
                 <th className="px-3 py-2 font-medium">Clientes</th>
+                <th className="px-3 py-2 font-medium">Estatus</th>
                 <th className="px-3 py-2 font-medium">Desde</th>
                 {isAdmin ? <th className="w-16 px-3 py-2" /> : null}
               </tr>
@@ -240,7 +242,7 @@ export function TeamManager({
               {filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 5 : 4}
+                    colSpan={isAdmin ? 6 : 5}
                     className="px-3 py-10 text-center text-sm text-muted-foreground"
                   >
                     Nadie coincide con la búsqueda o los filtros.
@@ -307,37 +309,51 @@ export function TeamManager({
                             ) : null}
                           </span>
                         </td>
+                        <td className="px-3 py-2.5">
+                          <Badge variant={member.status === "active" ? "success" : "destructive"}>
+                            {member.status === "active" ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </td>
                         <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">
                           {member.joined_at ? formatDate(member.joined_at.slice(0, 10)) : "—"}
                         </td>
                         {isAdmin ? (
                           <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                             {!isSelf ? (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                aria-label={member.status === "active" ? "Desactivar" : "Reactivar"}
-                                disabled={togglingId === member.profile_id}
-                                onClick={() => handleToggleStatus(member)}
-                                className={
-                                  member.status === "active"
-                                    ? "text-destructive hover:text-destructive"
-                                    : "text-success hover:text-success"
-                                }
-                              >
-                                {member.status === "active" ? (
-                                  <UserX className="size-4" />
-                                ) : (
-                                  <UserCheck className="size-4" />
-                                )}
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    aria-label={member.status === "active" ? "Desactivar" : "Reactivar"}
+                                    disabled={togglingId === member.profile_id}
+                                    onClick={() => handleToggleStatus(member)}
+                                    className={
+                                      member.status === "active"
+                                        ? "text-destructive hover:text-destructive"
+                                        : "text-success hover:text-success"
+                                    }
+                                  >
+                                    {member.status === "active" ? (
+                                      <UserX className="size-4" />
+                                    ) : (
+                                      <UserCheck className="size-4" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  {member.status === "active"
+                                    ? "Desactivar — deja de verse en el equipo, puedes reactivarlo cuando quieras"
+                                    : "Reactivar — vuelve a estar activo en el equipo"}
+                                </TooltipContent>
+                              </Tooltip>
                             ) : null}
                           </td>
                         ) : null}
                       </tr>
                       {expanded && clients.length > 0 ? (
                         <tr className="border-b bg-foreground/[0.015] last:border-b-0">
-                          <td colSpan={isAdmin ? 5 : 4} className="px-3 py-3">
+                          <td colSpan={isAdmin ? 6 : 5} className="px-3 py-3">
                             <p className="mb-2 text-xs font-medium text-muted-foreground uppercase">
                               Clientes asignados
                             </p>
