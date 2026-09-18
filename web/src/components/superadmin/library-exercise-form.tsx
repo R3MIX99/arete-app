@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { CheckboxGroup } from "@/components/ui/checkbox-group";
+import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown";
 
 const MUSCLE_GROUP_OPTIONS = muscleGroupOrder.map((value) => ({
   value,
@@ -248,22 +248,22 @@ export function LibraryExerciseForm({
 
               <div className="flex flex-col gap-1.5">
                 <Label>Grupo muscular (elige uno o varios)</Label>
-                <CheckboxGroup
+                <MultiSelectDropdown
                   idPrefix="muscle_group"
                   options={MUSCLE_GROUP_OPTIONS}
                   value={muscleGroups}
                   onChange={setMuscleGroups}
-                  columns={2}
+                  placeholder="Elige uno o varios grupos"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Equipo (elige uno o varios)</Label>
-                <CheckboxGroup
+                <MultiSelectDropdown
                   idPrefix="equipment"
                   options={EQUIPMENT_OPTIONS}
                   value={equipmentItems}
                   onChange={setEquipmentItems}
-                  columns={2}
+                  placeholder="Elige uno o varios equipos"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
