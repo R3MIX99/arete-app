@@ -136,7 +136,7 @@ export function SidebarNav({
                   <span className={cn("relative", item.href !== TRAINER_SUPPORT_HREF && "truncate")}>
                     {item.label}
                     {item.href === TRAINER_SUPPORT_HREF ? (
-                      <SupportUnreadBadge className="-top-1 -right-3.5" />
+                      <SupportUnreadBadge className="top-0.5 -right-3" />
                     ) : null}
                   </span>
                 )}

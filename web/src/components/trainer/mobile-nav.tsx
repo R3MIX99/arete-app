@@ -82,7 +82,7 @@ export function MobileNav({
                     <span className={item.href === TRAINER_SUPPORT_HREF ? "relative" : "truncate"}>
                       {item.label}
                       {item.href === TRAINER_SUPPORT_HREF ? (
-                        <SupportUnreadBadge className="-top-1 -right-3.5" />
+                        <SupportUnreadBadge className="top-0.5 -right-3" />
                       ) : null}
                     </span>
                   </Link>
