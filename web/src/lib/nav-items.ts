@@ -14,7 +14,7 @@ import {
   Sparkles,
   ScrollText,
   Building2,
-  LifeBuoy,
+  Headset,
   type LucideIcon,
 } from "lucide-react";
 
@@ -37,6 +37,15 @@ export const trainerNavItems: NavItem[] = [
   { href: "/entrenador/configuracion", label: "Configuración", icon: Settings },
 ];
 
+/** Soporte va aparte de los 9 módulos: se dibuja separado, debajo de
+ * Configuración, para que se distinga como ayuda y no como herramienta. */
+export const TRAINER_SUPPORT_HREF = "/entrenador/soporte";
+export const trainerSupportNavItem: NavItem = {
+  href: TRAINER_SUPPORT_HREF,
+  label: "Soporte",
+  icon: Headset,
+};
+
 /** Panel de superadministrador (Fase 12): vista global de la
  * plataforma, en solo lectura por ahora. */
 export const superadminNavItems: NavItem[] = [
@@ -46,7 +55,7 @@ export const superadminNavItems: NavItem[] = [
   { href: "/superadmin/gimnasios", label: "Gimnasios", icon: Building2 },
   { href: "/superadmin/biblioteca", label: "Biblioteca de Aretia", icon: Library },
   { href: "/superadmin/ia", label: "Sección IA", icon: Sparkles },
-  { href: "/superadmin/soporte", label: "Soporte", icon: LifeBuoy },
+  { href: "/superadmin/soporte", label: "Soporte", icon: Headset },
   { href: "/superadmin/logs", label: "Logs", icon: ScrollText },
 ];
 

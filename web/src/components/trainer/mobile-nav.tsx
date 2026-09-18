@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 
 import { useTrainerNavItems } from "@/lib/hooks/use-trainer-nav-items";
+import { TRAINER_SUPPORT_HREF } from "@/lib/nav-items";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -58,7 +59,15 @@ export function MobileNav({
                   : pathname.startsWith(item.href);
               const Icon = item.icon;
               return (
-                <li key={item.href}>
+                <li
+                  key={item.href}
+                  className={item.href === TRAINER_SUPPORT_HREF ? "mt-3 border-t pt-3" : undefined}
+                  style={
+                    item.href === TRAINER_SUPPORT_HREF
+                      ? { borderColor: "var(--sb-border-dim)" }
+                      : undefined
+                  }
+                >
                   <Link
                     href={item.href}
                     onClick={() => setOpen(false)}

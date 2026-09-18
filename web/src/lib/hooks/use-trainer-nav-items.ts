@@ -1,6 +1,6 @@
 import { Network } from "lucide-react";
 
-import { trainerNavItems, type NavItem } from "@/lib/nav-items";
+import { trainerNavItems, trainerSupportNavItem, type NavItem } from "@/lib/nav-items";
 import { useGymContext } from "@/components/trainer/gym-context";
 
 /** trainerNavItems + "Equipo" insertado justo después de "Clientes",
@@ -12,11 +12,11 @@ import { useGymContext } from "@/components/trainer/gym-context";
  *  no triplicar la misma lógica de inserción. */
 export function useTrainerNavItems(): NavItem[] {
   const gym = useGymContext();
-  if (!gym || !gym.isManager) return trainerNavItems;
+  if (!gym || !gym.isManager) return [...trainerNavItems, trainerSupportNavItem];
 
   const items = [...trainerNavItems];
   const clientsIndex = items.findIndex((item) => item.href === "/entrenador/clientes");
   const teamItem: NavItem = { href: "/entrenador/equipo", label: "Equipo", icon: Network };
   items.splice(clientsIndex + 1, 0, teamItem);
-  return items;
+  return [...items, trainerSupportNavItem];
 }

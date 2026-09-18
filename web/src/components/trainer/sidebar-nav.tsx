@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { useTrainerNavItems } from "@/lib/hooks/use-trainer-nav-items";
+import { TRAINER_SUPPORT_HREF } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SidebarProfileFooter } from "@/components/trainer/sidebar-profile-footer";
@@ -145,7 +146,15 @@ export function SidebarNav({
             );
 
             return (
-              <li key={item.href}>
+              <li
+                key={item.href}
+                className={item.href === TRAINER_SUPPORT_HREF ? "mt-4 border-t pt-4" : undefined}
+                style={
+                  item.href === TRAINER_SUPPORT_HREF
+                    ? { borderColor: "var(--sb-border-dim)" }
+                    : undefined
+                }
+              >
                 {collapsed ? (
                   <Tooltip>
                     <TooltipTrigger asChild>{link}</TooltipTrigger>
