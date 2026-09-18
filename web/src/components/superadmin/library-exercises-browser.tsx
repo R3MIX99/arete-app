@@ -27,22 +27,44 @@ const MUSCLE_GROUPS = muscleGroupOrder as unknown as MuscleGroup[];
 
 const EQUIPMENT = equipmentOrder as unknown as Equipment[];
 
+type SortOption = "name_asc" | "date_desc" | "date_asc";
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "name_asc", label: "Nombre (A-Z)" },
+  { value: "date_desc", label: "Más reciente" },
+  { value: "date_asc", label: "Menos reciente" },
+];
+
 export function LibraryExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }) {
   const [query, setQuery] = React.useState("");
   const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup | null>(null);
   const [equipment, setEquipment] = React.useState<Equipment | null>(null);
+  const [sort, setSort] = React.useState<SortOption>("name_asc");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [importOpen, setImportOpen] = React.useState(false);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    return exercises.filter((exercise) => {
+    const result = exercises.filter((exercise) => {
       if (muscleGroup && !exercise.muscle_groups.includes(muscleGroup)) return false;
       if (equipment && !exercise.equipment_items.includes(equipment)) return false;
       if (q && !exercise.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [exercises, query, muscleGroup, equipment]);
+
+    const sorted = [...result];
+    switch (sort) {
+      case "date_desc":
+        sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
+        break;
+      case "date_asc":
+        sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+        break;
+      default:
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return sorted;
+  }, [exercises, query, muscleGroup, equipment, sort]);
 
   const hasActiveFilters = muscleGroup !== null || equipment !== null;
 
@@ -134,6 +156,19 @@ export function LibraryExercisesBrowser({ exercises }: { exercises: ExerciseSumm
             </SelectContent>
           </Select>
 
+          <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button
             variant="ghost"
             size="sm"
@@ -190,6 +225,19 @@ export function LibraryExercisesBrowser({ exercises }: { exercises: ExerciseSumm
             {EQUIPMENT.map((item) => (
               <SelectItem key={item} value={item}>
                 {equipmentLabel(item)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
               </SelectItem>
             ))}
           </SelectContent>

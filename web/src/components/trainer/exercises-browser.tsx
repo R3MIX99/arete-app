@@ -36,6 +36,14 @@ const ORIGIN_OPTIONS: { value: OriginFilter; label: string }[] = [
   { value: "created", label: "Creados" },
 ];
 
+type SortOption = "name_asc" | "date_desc" | "date_asc";
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "name_asc", label: "Nombre (A-Z)" },
+  { value: "date_desc", label: "Más reciente" },
+  { value: "date_asc", label: "Menos reciente" },
+];
+
 export function ExercisesBrowser({
   exercises,
   trainerId,
@@ -47,6 +55,7 @@ export function ExercisesBrowser({
   const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup | null>(null);
   const [equipment, setEquipment] = React.useState<Equipment | null>(null);
   const [origin, setOrigin] = React.useState<OriginFilter>("all");
+  const [sort, setSort] = React.useState<SortOption>("name_asc");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [importOpen, setImportOpen] = React.useState(false);
 
@@ -60,15 +69,28 @@ export function ExercisesBrowser({
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    return exercises.filter((exercise) => {
+    const result = exercises.filter((exercise) => {
       if (muscleGroup && !exercise.muscle_groups.includes(muscleGroup)) return false;
       if (equipment && !exercise.equipment_items.includes(equipment)) return false;
       if (!matchesOrigin(exercise)) return false;
       if (q && !exercise.name.toLowerCase().includes(q)) return false;
       return true;
     });
+
+    const sorted = [...result];
+    switch (sort) {
+      case "date_desc":
+        sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
+        break;
+      case "date_asc":
+        sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+        break;
+      default:
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return sorted;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exercises, query, muscleGroup, equipment, origin, trainerId]);
+  }, [exercises, query, muscleGroup, equipment, origin, sort, trainerId]);
 
   const hasActiveFilters = muscleGroup !== null || equipment !== null || origin !== "all";
 
@@ -177,6 +199,19 @@ export function ExercisesBrowser({
             </SelectContent>
           </Select>
 
+          <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button
             variant="ghost"
             size="sm"
@@ -253,6 +288,19 @@ export function ExercisesBrowser({
             {EQUIPMENT.map((item) => (
               <SelectItem key={item} value={item}>
                 {equipmentLabel(item)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
               </SelectItem>
             ))}
           </SelectContent>

@@ -59,6 +59,7 @@ export default async function ExercisesPage() {
       image_path: r.image_path,
       trainer_id: r.trainer_id,
       forked_from: r.forked_from,
+      created_at: r.created_at,
     }));
 
   // La comunidad solo muestra ejercicios originales — una copia

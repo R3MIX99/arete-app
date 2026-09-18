@@ -36,13 +36,14 @@ const MUSCLE_GROUPS = muscleGroupOrder as unknown as MuscleGroup[];
 
 const EQUIPMENT = equipmentOrder as unknown as Equipment[];
 
-type SortOption = "name_asc" | "added_first" | "not_added_first" | "date_desc";
+type SortOption = "name_asc" | "added_first" | "not_added_first" | "date_desc" | "date_asc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "name_asc", label: "Alfabético (A-Z)" },
   { value: "added_first", label: "Agregados primero" },
   { value: "not_added_first", label: "No agregados primero" },
-  { value: "date_desc", label: "Más recientes primero" },
+  { value: "date_desc", label: "Más reciente" },
+  { value: "date_asc", label: "Menos reciente" },
 ];
 
 /**
@@ -99,6 +100,9 @@ export function ExerciseCommunityBrowser({
         break;
       case "date_desc":
         sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
+        break;
+      case "date_asc":
+        sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
         break;
       default:
         sorted.sort((a, b) => a.name.localeCompare(b.name));

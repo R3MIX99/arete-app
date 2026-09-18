@@ -10,6 +10,7 @@ interface ExerciseRow {
   equipment_items: ExerciseSummary["equipment_items"];
   video_url: string | null;
   image_path: string | null;
+  created_at: string;
 }
 
 interface FoodRow {
@@ -47,7 +48,7 @@ export default async function SuperadminLibraryPage() {
   const [{ data: exerciseRows }, { data: foodRows }, { data: dishRows }] = await Promise.all([
     supabase
       .from("exercises")
-      .select("id, name, muscle_groups, equipment_items, video_url, image_path")
+      .select("id, name, muscle_groups, equipment_items, video_url, image_path, created_at")
       .is("trainer_id", null)
       .order("name"),
     supabase
@@ -73,6 +74,7 @@ export default async function SuperadminLibraryPage() {
     image_path: r.image_path,
     trainer_id: null,
     forked_from: null,
+    created_at: r.created_at,
   }));
 
   const foods: FoodOption[] = ((foodRows ?? []) as FoodRow[]).map((r) => {

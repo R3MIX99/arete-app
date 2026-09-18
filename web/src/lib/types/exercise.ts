@@ -57,6 +57,7 @@ export interface ExerciseSummary {
    * propio id de entrenador (ver ExercisesPage). */
   trainer_id: string | null;
   forked_from: string | null;
+  created_at: string;
 }
 
 export interface ExerciseDetail {
