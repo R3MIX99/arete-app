@@ -36,7 +36,9 @@ export function ImportExercisesDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  trainerId: string;
+  /** null = se importa a la biblioteca global de Aretia (superadmin), no
+   * a la biblioteca de un entrenador en particular. */
+  trainerId: string | null;
 }) {
   const [rows, setRows] = React.useState<ReviewRow[] | null>(null);
   const [fileName, setFileName] = React.useState<string | null>(null);

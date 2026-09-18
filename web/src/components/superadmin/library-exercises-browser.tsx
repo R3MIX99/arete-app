@@ -2,31 +2,93 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, Dumbbell, PlayCircle } from "lucide-react";
+import { Search, Plus, Dumbbell, PlayCircle, SlidersHorizontal, FilterX, FileSpreadsheet } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { muscleGroupLabel, equipmentItemsLabel } from "@/lib/format";
+import { muscleGroupLabel, muscleGroupOrder, equipmentLabel, equipmentOrder, equipmentItemsLabel } from "@/lib/format";
 import { youtubeThumbnails } from "@/lib/youtube";
-import type { ExerciseSummary } from "@/lib/types/exercise";
+import type { ExerciseSummary, MuscleGroup, Equipment } from "@/lib/types/exercise";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ThumbnailImage } from "@/components/client/thumbnail-image";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { ImportExercisesDialog } from "@/components/trainer/import-exercises-dialog";
+
+const MUSCLE_GROUPS = muscleGroupOrder as unknown as MuscleGroup[];
+
+const EQUIPMENT = equipmentOrder as unknown as Equipment[];
 
 export function LibraryExercisesBrowser({ exercises }: { exercises: ExerciseSummary[] }) {
   const [query, setQuery] = React.useState("");
+  const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup | null>(null);
+  const [equipment, setEquipment] = React.useState<Equipment | null>(null);
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = React.useState(false);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return exercises;
-    return exercises.filter((e) => e.name.toLowerCase().includes(q));
-  }, [exercises, query]);
+    return exercises.filter((exercise) => {
+      if (muscleGroup && !exercise.muscle_groups.includes(muscleGroup)) return false;
+      if (equipment && !exercise.equipment_items.includes(equipment)) return false;
+      if (q && !exercise.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [exercises, query, muscleGroup, equipment]);
+
+  const hasActiveFilters = muscleGroup !== null || equipment !== null;
+
+  function clearFilters() {
+    setMuscleGroup(null);
+    setEquipment(null);
+  }
 
   return (
     <div className="flex w-full flex-col gap-6 pt-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-0 flex-1 sm:max-w-xs">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs md:hidden">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar ejercicio por nombre"
+              className="pl-9"
+            />
+          </div>
+          {/* Teléfono: ícono que abre un drawer con los filtros. */}
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Filtros"
+            className="relative shrink-0"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <SlidersHorizontal className="size-4" />
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Importar desde Excel"
+            className="shrink-0 md:hidden"
+            onClick={() => setImportOpen(true)}
+          >
+            <FileSpreadsheet className="size-4" />
+          </Button>
+        </div>
+
+        <div className="relative hidden w-full max-w-xs md:block">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
@@ -35,12 +97,114 @@ export function LibraryExercisesBrowser({ exercises }: { exercises: ExerciseSumm
             className="pl-9"
           />
         </div>
-        <Button asChild className="ml-auto">
-          <Link href="/superadmin/biblioteca/ejercicios/nuevo">
-            <Plus /> Nuevo ejercicio
-          </Link>
-        </Button>
+
+        {/* Computadora: selectores de filtro visibles en la misma barra. */}
+        <div className="hidden items-center gap-2 md:flex">
+          <Select
+            value={muscleGroup ?? "all"}
+            onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
+          >
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
+              <SelectValue placeholder="Grupo muscular" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los grupos</SelectItem>
+              {MUSCLE_GROUPS.map((group) => (
+                <SelectItem key={group} value={group}>
+                  {muscleGroupLabel(group)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={equipment ?? "all"}
+            onValueChange={(v) => setEquipment(v === "all" ? null : (v as Equipment))}
+          >
+            <SelectTrigger className="w-auto min-w-0 whitespace-nowrap">
+              <SelectValue placeholder="Equipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo el equipo</SelectItem>
+              {EQUIPMENT.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {equipmentLabel(item)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            disabled={!hasActiveFilters}
+            onClick={clearFilters}
+          >
+            <FilterX /> Limpiar filtros
+          </Button>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" className="hidden md:inline-flex" onClick={() => setImportOpen(true)}>
+            <FileSpreadsheet />
+            Importar desde Excel
+          </Button>
+          <Button asChild>
+            <Link href="/superadmin/biblioteca/ejercicios/nuevo">
+              <Plus /> Nuevo ejercicio
+            </Link>
+          </Button>
+        </div>
       </div>
+
+      <ImportExercisesDialog open={importOpen} onOpenChange={setImportOpen} trainerId={null} />
+
+      <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
+        <Select
+          value={muscleGroup ?? "all"}
+          onValueChange={(v) => setMuscleGroup(v === "all" ? null : (v as MuscleGroup))}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Grupo muscular" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los grupos</SelectItem>
+            {MUSCLE_GROUPS.map((group) => (
+              <SelectItem key={group} value={group}>
+                {muscleGroupLabel(group)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={equipment ?? "all"}
+          onValueChange={(v) => setEquipment(v === "all" ? null : (v as Equipment))}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Equipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todo el equipo</SelectItem>
+            {EQUIPMENT.map((item) => (
+              <SelectItem key={item} value={item}>
+                {equipmentLabel(item)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-fit text-muted-foreground"
+          disabled={!hasActiveFilters}
+          onClick={clearFilters}
+        >
+          <FilterX /> Limpiar filtros
+        </Button>
+      </ResponsiveDialog>
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
@@ -48,11 +212,13 @@ export function LibraryExercisesBrowser({ exercises }: { exercises: ExerciseSumm
           <p className="text-sm">
             {exercises.length === 0
               ? "Todavía no hay ejercicios en la biblioteca de Aretia."
-              : "Ningún ejercicio coincide con la búsqueda."}
+              : "Ningún ejercicio coincide con la búsqueda o los filtros."}
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        // Grid en vez de una sola columna: en pantallas grandes las
+        // tarjetas quedaban estiradas de punta a punta, ilegibles.
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((exercise) => {
             const hasVideo = Boolean(exercise.video_url);
             const uploadedImageUrl = exercise.image_path
