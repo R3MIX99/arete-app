@@ -13,9 +13,11 @@ import {
   Ticket,
 } from "lucide-react";
 
+import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format";
 import { helpArticles, searchHelpArticles, type HelpArticle } from "@/lib/support-content";
 import {
+  SUPPORT_TICKET_COLUMNS,
   supportCategoryLabels,
   supportStatusLabels,
   type SupportStatus,
@@ -83,7 +85,7 @@ function SearchBox({
  * el botón de la tarjeta de chat pasa a "Ver mis tickets" y abre la lista (y de ahí se
  * regresa al centro de ayuda). */
 export function SupportCenter({
-  tickets,
+  tickets: initialTickets,
   profile,
   initialView = "help",
 }: {
@@ -92,6 +94,43 @@ export function SupportCenter({
   initialView?: "help" | "tickets";
 }) {
   const [view, setView] = React.useState<"help" | "tickets">(initialView);
+  const [tickets, setTickets] = React.useState(initialTickets);
+
+  // La página del servidor puede venir con datos viejos al volver de una
+  // conversación: se piden de nuevo al montar, y se mantienen al día por
+  // tiempo real y cuando se marca una conversación como leída.
+  React.useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+
+    async function refresh() {
+      const { data } = await supabase
+        .from("support_tickets")
+        .select(SUPPORT_TICKET_COLUMNS)
+        .eq("user_id", profile.id)
+        .order("last_message_at", { ascending: false });
+      if (!cancelled && data) setTickets(data as SupportTicket[]);
+    }
+
+    void refresh();
+    const onRead = (event: Event) => {
+      const { ticketId } = (event as CustomEvent<{ ticketId: string }>).detail;
+      setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, trainer_unread: 0 } : t)));
+    };
+    window.addEventListener("support-read", onRead);
+    const channel = supabase
+      .channel("support-center-tickets")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => {
+        void refresh();
+      })
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("support-read", onRead);
+      void supabase.removeChannel(channel);
+    };
+  }, [profile.id]);
   const [query, setQuery] = React.useState("");
   const [section, setSection] = React.useState<"all" | "guia" | "faq">("all");
   const [chatOpen, setChatOpen] = React.useState(false);

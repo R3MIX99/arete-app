@@ -33,8 +33,15 @@ export function SupportChat({
   const [sending, setSending] = React.useState(false);
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
+  // Las consultas de supabase-js son perezosas: solo se ejecutan al hacerles
+  // await. Con `void supabase.rpc(...)` la petición nunca salía.
   const markRead = React.useCallback(() => {
-    void supabase.rpc("mark_support_ticket_read", { p_ticket_id: ticketId });
+    void (async () => {
+      const { error } = await supabase.rpc("mark_support_ticket_read", { p_ticket_id: ticketId });
+      if (!error) {
+        window.dispatchEvent(new CustomEvent("support-read", { detail: { ticketId } }));
+      }
+    })();
   }, [supabase, ticketId]);
 
   React.useEffect(() => {

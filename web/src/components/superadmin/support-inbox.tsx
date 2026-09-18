@@ -207,7 +207,13 @@ export function SupportInbox({
         },
       )
       .subscribe();
+    const onRead = (event: Event) => {
+      const { ticketId } = (event as CustomEvent<{ ticketId: string }>).detail;
+      setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, admin_unread: 0 } : t)));
+    };
+    window.addEventListener("support-read", onRead);
     return () => {
+      window.removeEventListener("support-read", onRead);
       void supabase.removeChannel(channel);
     };
   }, [supabase]);

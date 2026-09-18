@@ -22,6 +22,8 @@ export function SupportUnreadBadge({ className }: { className?: string }) {
     }
 
     void refresh();
+    const onRead = () => void refresh();
+    window.addEventListener("support-read", onRead);
     const channel = supabase
       .channel("support-unread-badge")
       .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => {
@@ -31,6 +33,7 @@ export function SupportUnreadBadge({ className }: { className?: string }) {
 
     return () => {
       cancelled = true;
+      window.removeEventListener("support-read", onRead);
       void supabase.removeChannel(channel);
     };
   }, [supabase]);
