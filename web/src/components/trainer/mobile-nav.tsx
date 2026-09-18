@@ -7,6 +7,7 @@ import { Menu } from "lucide-react";
 
 import { useTrainerNavItems } from "@/lib/hooks/use-trainer-nav-items";
 import { TRAINER_SUPPORT_HREF } from "@/lib/nav-items";
+import { SupportUnreadBadge } from "@/components/support/support-unread-badge";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -79,6 +80,7 @@ export function MobileNav({
                   >
                     <Icon className="size-[18px] shrink-0" />
                     <span className="truncate">{item.label}</span>
+                    {item.href === TRAINER_SUPPORT_HREF ? <SupportUnreadBadge className="ml-auto" /> : null}
                   </Link>
                 </li>
               );

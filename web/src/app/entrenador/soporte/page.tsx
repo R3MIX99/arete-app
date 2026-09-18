@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { SupportForm } from "@/components/support/support-form";
+import { SUPPORT_TICKET_COLUMNS, type SupportTicket } from "@/lib/types/support";
+import { SupportCenter } from "@/components/support/support-center";
 
 export default async function TrainerSupportPage() {
   const supabase = await createClient();
@@ -10,25 +11,19 @@ export default async function TrainerSupportPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, email")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [{ data: profile }, { data: tickets }] = await Promise.all([
+    supabase.from("profiles").select("full_name, email").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("support_tickets")
+      .select(SUPPORT_TICKET_COLUMNS)
+      .eq("user_id", user.id)
+      .order("last_message_at", { ascending: false }),
+  ]);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 pb-24 md:p-8">
-      <div>
-        <h1 className="text-xl font-semibold">Soporte</h1>
-        <p className="text-sm text-muted-foreground">
-          Cuéntanos qué necesitas: tu mensaje llega directo al equipo de Aretia.
-        </p>
-      </div>
-      <SupportForm
-        initialName={profile?.full_name ?? ""}
-        initialEmail={profile?.email ?? ""}
-        userId={user.id}
-      />
-    </div>
+    <SupportCenter
+      tickets={(tickets ?? []) as SupportTicket[]}
+      profile={{ id: user.id, full_name: profile?.full_name ?? "", email: profile?.email ?? "" }}
+    />
   );
 }

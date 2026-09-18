@@ -7,6 +7,7 @@ import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { useTrainerNavItems } from "@/lib/hooks/use-trainer-nav-items";
 import { TRAINER_SUPPORT_HREF } from "@/lib/nav-items";
+import { SupportUnreadBadge } from "@/components/support/support-unread-badge";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SidebarProfileFooter } from "@/components/trainer/sidebar-profile-footer";
@@ -132,6 +133,11 @@ export function SidebarNav({
               >
                 <Icon className="size-[18px] shrink-0" />
                 {!collapsed && <span className="truncate">{item.label}</span>}
+                {item.href === TRAINER_SUPPORT_HREF ? (
+                  <SupportUnreadBadge
+                    className={collapsed ? "absolute -top-1 -right-1 min-w-4 px-1 text-[10px]" : "ml-auto"}
+                  />
+                ) : null}
                 {active && !collapsed && (
                   <span
                     className="absolute right-2 top-2 bottom-2 w-[3px] rounded-full"
