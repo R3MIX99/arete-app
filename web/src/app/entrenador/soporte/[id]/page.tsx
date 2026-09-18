@@ -37,8 +37,8 @@ export default async function TrainerSupportTicketPage({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 md:p-8">
       <Button variant="ghost" size="sm" className="w-fit" asChild>
-        <Link href="/entrenador/soporte">
-          <ArrowLeft /> Volver a soporte
+        <Link href="/entrenador/soporte?vista=tickets">
+          <ArrowLeft /> Volver a mis tickets
         </Link>
       </Button>
 

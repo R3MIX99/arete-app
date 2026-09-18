@@ -3,12 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import {
+  ArrowLeft,
   BookOpen,
   ChevronDown,
   HelpCircle,
   MessageSquarePlus,
   MessagesSquare,
   Search,
+  Ticket,
 } from "lucide-react";
 
 import { formatDateTime } from "@/lib/format";
@@ -76,16 +78,20 @@ function SearchBox({
   );
 }
 
-/** Centro de ayuda del entrenador: sin conversaciones se ve como un
- * buscador con guías y preguntas frecuentes; con conversaciones, pasa a la
- * lista de sus chats con las preguntas frecuentes al lado. */
+/** Centro de ayuda del entrenador. La vista principal es siempre el
+ * buscador con guías y preguntas frecuentes; si ya tiene conversaciones,
+ * un botón arriba a la derecha abre la lista de sus tickets (y de ahí se
+ * regresa al centro de ayuda). */
 export function SupportCenter({
   tickets,
   profile,
+  initialView = "help",
 }: {
   tickets: SupportTicket[];
   profile: { id: string; full_name: string; email: string };
+  initialView?: "help" | "tickets";
 }) {
+  const [view, setView] = React.useState<"help" | "tickets">(initialView);
   const [query, setQuery] = React.useState("");
   const [section, setSection] = React.useState<"all" | "guia" | "faq">("all");
   const [chatOpen, setChatOpen] = React.useState(false);
@@ -98,98 +104,81 @@ export function SupportCenter({
   const faqs = results.filter((a) => a.kind === "faq");
   const searching = query.trim().length > 0;
 
-  const chatButton = (
-    <Button onClick={() => setChatOpen(true)}>
-      <MessageSquarePlus /> {tickets.length > 0 ? "Nuevo chat" : "Iniciar chat"}
-    </Button>
-  );
-
   const dialog = <NewChatDialog open={chatOpen} onOpenChange={setChatOpen} profile={profile} />;
+  const totalUnread = tickets.reduce((sum, t) => sum + t.trainer_unread, 0);
 
-  if (tickets.length > 0) {
+  if (view === "tickets" && tickets.length > 0) {
     return (
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 pb-24 md:p-8">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 pb-24 md:p-8">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold">Soporte</h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="-ml-2 mb-1 w-fit text-muted-foreground"
+              onClick={() => setView("help")}
+            >
+              <ArrowLeft /> Volver al centro de ayuda
+            </Button>
+            <h1 className="text-xl font-semibold">Mis tickets</h1>
             <p className="text-sm text-muted-foreground">
               Tus conversaciones con el equipo de Aretia.
             </p>
           </div>
-          {chatButton}
+          <Button onClick={() => setChatOpen(true)}>
+            <MessageSquarePlus /> Nuevo chat
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_22rem] lg:items-start">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Mis conversaciones</CardTitle>
-            </CardHeader>
-            <CardContent className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-xs text-muted-foreground uppercase">
-                    <th className="px-2 py-2 font-medium">#</th>
-                    <th className="px-2 py-2 font-medium">Asunto</th>
-                    <th className="px-2 py-2 font-medium">Última actividad</th>
-                    <th className="px-2 py-2 font-medium">Estado</th>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Mis conversaciones</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground uppercase">
+                  <th className="px-2 py-2 font-medium">#</th>
+                  <th className="px-2 py-2 font-medium">Asunto</th>
+                  <th className="px-2 py-2 font-medium">Última actividad</th>
+                  <th className="px-2 py-2 font-medium">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.map((t) => (
+                  <tr key={t.id} className="border-b last:border-b-0 hover:bg-foreground/[0.02]">
+                    <td className="px-2 py-3 text-muted-foreground tabular-nums">
+                      {t.ticket_number}
+                    </td>
+                    <td className="px-2 py-3">
+                      <Link href={`/entrenador/soporte/${t.id}`} className="block min-w-0">
+                        <span className="flex items-center gap-2 font-medium">
+                          <span className="truncate">{t.subject}</span>
+                          {t.trainer_unread > 0 ? (
+                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] text-primary-foreground">
+                              {t.trainer_unread}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {supportCategoryLabels[t.category]}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="px-2 py-3 whitespace-nowrap text-muted-foreground">
+                      {formatDateTime(t.last_message_at)}
+                    </td>
+                    <td className="px-2 py-3">
+                      <Badge variant={statusVariant[t.status]}>
+                        {supportStatusLabels[t.status]}
+                      </Badge>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {tickets.map((t) => (
-                    <tr key={t.id} className="border-b last:border-b-0 hover:bg-foreground/[0.02]">
-                      <td className="px-2 py-3 text-muted-foreground tabular-nums">
-                        {t.ticket_number}
-                      </td>
-                      <td className="px-2 py-3">
-                        <Link href={`/entrenador/soporte/${t.id}`} className="block min-w-0">
-                          <span className="flex items-center gap-2 font-medium">
-                            <span className="truncate">{t.subject}</span>
-                            {t.trainer_unread > 0 ? (
-                              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] text-primary-foreground">
-                                {t.trainer_unread}
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {supportCategoryLabels[t.category]}
-                          </span>
-                        </Link>
-                      </td>
-                      <td className="px-2 py-3 whitespace-nowrap text-muted-foreground">
-                        {formatDateTime(t.last_message_at)}
-                      </td>
-                      <td className="px-2 py-3">
-                        <Badge variant={statusVariant[t.status]}>
-                          {supportStatusLabels[t.status]}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Preguntas frecuentes</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <SearchBox value={query} onChange={setQuery} />
-              {results.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  No encontramos nada. Inicia un chat y te ayudamos.
-                </p>
-              ) : (
-                <div className="flex max-h-[28rem] flex-col gap-2 overflow-y-auto">
-                  {results.map((a) => (
-                    <ArticleItem key={a.id} article={a} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
         {dialog}
       </div>
     );
@@ -197,6 +186,18 @@ export function SupportCenter({
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 p-4 pb-24 md:p-8">
+      {tickets.length > 0 ? (
+        <div className="-mb-4 flex justify-end">
+          <Button variant="outline" onClick={() => setView("tickets")}>
+            <Ticket /> Ver mis tickets
+            {totalUnread > 0 ? (
+              <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] text-primary-foreground">
+                {totalUnread}
+              </span>
+            ) : null}
+          </Button>
+        </div>
+      ) : null}
       <div className="flex flex-col items-center gap-5 pt-4 text-center">
         <h1 className="text-3xl font-bold">¿Cómo podemos ayudarte?</h1>
         <SearchBox value={query} onChange={setQuery} className="w-full max-w-xl" />
@@ -246,7 +247,9 @@ export function SupportCenter({
       {results.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-6 text-center">
           <p className="text-sm text-muted-foreground">No encontramos nada con esa búsqueda.</p>
-          {chatButton}
+          <Button onClick={() => setChatOpen(true)}>
+            <MessageSquarePlus /> Iniciar chat
+          </Button>
         </div>
       ) : (
         <div className="flex flex-col gap-8">
