@@ -37,24 +37,46 @@ const statusVariant: Record<SupportStatus, "default" | "secondary" | "outline"> 
 };
 
 function ArticleItem({ article }: { article: HelpArticle }) {
+  const [open, setOpen] = React.useState(false);
   return (
-    <details className="group rounded-lg border">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium">
+    <div className="rounded-xl bg-foreground/[0.04]">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left text-sm font-medium"
+      >
         <span>{article.title}</span>
-        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
-      </summary>
-      <div className="border-t px-4 py-3 text-sm text-muted-foreground">
-        {article.steps ? (
-          <ol className="list-decimal space-y-1 pl-5">
-            {article.steps.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-        ) : (
-          <p>{article.answer}</p>
+        <ChevronDown
+          className={cn(
+            "size-4 shrink-0 text-muted-foreground transition-transform duration-300",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {/* Deslizamiento suave: la fila del grid pasa de 0fr a 1fr, así el
+          alto se anima sin medir el contenido. */}
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-300 ease-out",
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
+      >
+        <div className="overflow-hidden">
+          <div className="px-4 pb-4 text-sm text-muted-foreground">
+            {article.steps ? (
+              <ol className="list-decimal space-y-1 pl-5">
+                {article.steps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+            ) : (
+              <p>{article.answer}</p>
+            )}
+          </div>
+        </div>
       </div>
-    </details>
+    </div>
   );
 }
 
@@ -224,7 +246,7 @@ export function SupportCenter({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 p-4 pb-24 md:p-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 p-4 pb-24 md:p-8">
       <div className="flex flex-col items-center gap-5 pt-4 text-center">
         <h1 className="text-3xl font-bold">¿Cómo podemos ayudarte?</h1>
         <SearchBox value={query} onChange={setQuery} className="w-full max-w-xl" />
@@ -290,18 +312,23 @@ export function SupportCenter({
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-8">
+        <div
+          className={cn(
+            "grid grid-cols-1 items-start gap-8",
+            guides.length > 0 && faqs.length > 0 && "lg:grid-cols-2",
+          )}
+        >
           {guides.length > 0 ? (
-            <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold">Guías</h2>
+            <section className="flex flex-col gap-2.5">
+              <h2 className="mb-1 text-lg font-semibold">Guías</h2>
               {guides.map((a) => (
                 <ArticleItem key={a.id} article={a} />
               ))}
             </section>
           ) : null}
           {faqs.length > 0 ? (
-            <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold">Preguntas frecuentes</h2>
+            <section className="flex flex-col gap-2.5">
+              <h2 className="mb-1 text-lg font-semibold">Preguntas frecuentes</h2>
               {faqs.map((a) => (
                 <ArticleItem key={a.id} article={a} />
               ))}
