@@ -140,7 +140,7 @@ export function SupportChat({
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t p-3">
+      <div className="p-3">
         {canReply ? (
           <div className="flex items-end gap-2">
             <Textarea

@@ -98,7 +98,7 @@ function TicketDetails({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3">
         <Button variant="ghost" size="icon" className="md:hidden" aria-label="Volver" onClick={onBack}>
           <ArrowLeft />
         </Button>
@@ -136,7 +136,7 @@ function TicketDetails({
         </Select>
       </div>
 
-      <div className="border-b px-4 py-2">
+      <div className="px-4 pb-3">
         <p className="truncate text-sm font-medium">{ticket.subject}</p>
         <details className="text-xs text-muted-foreground">
           <summary className="cursor-pointer">Nota interna</summary>
@@ -242,9 +242,9 @@ export function SupportInbox({
   const selected = tickets.find((t) => t.id === selectedId) ?? null;
 
   return (
-    <div className="grid h-[calc(100dvh-3.5rem)] grid-cols-1 md:grid-cols-[22rem_1fr]">
+    <div className="grid h-[calc(100dvh-3.5rem)] grid-cols-1 grid-rows-[minmax(0,1fr)] md:grid-cols-[22rem_1fr]">
       <div className={cn("flex min-h-0 flex-col border-r", selected && "hidden md:flex")}>
-        <div className="flex flex-col gap-3 border-b p-4">
+        <div className="flex flex-col gap-3 p-4">
           <h1 className="flex items-center gap-2 text-lg font-semibold">
             Conversaciones
             <span className="text-sm font-normal text-muted-foreground">{tickets.length}</span>
@@ -277,7 +277,7 @@ export function SupportInbox({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
           {visible.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">No hay conversaciones.</p>
           ) : (
@@ -287,7 +287,7 @@ export function SupportInbox({
                 type="button"
                 onClick={() => setSelectedId(t.id)}
                 className={cn(
-                  "flex w-full items-center gap-3 border-b px-4 py-3 text-left transition-colors hover:bg-foreground/[0.03]",
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-foreground/[0.03]",
                   t.id === selectedId && "bg-foreground/[0.05]",
                 )}
               >
