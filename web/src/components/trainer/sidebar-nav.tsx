@@ -132,9 +132,16 @@ export function SidebarNav({
                 }}
               >
                 <Icon className="size-[18px] shrink-0" />
-                {!collapsed && <span className="truncate">{item.label}</span>}
-                {item.href === TRAINER_SUPPORT_HREF ? (
-                  <SupportUnreadBadge className="top-1 right-1" />
+                {!collapsed && (
+                  <span className={cn("relative", item.href !== TRAINER_SUPPORT_HREF && "truncate")}>
+                    {item.label}
+                    {item.href === TRAINER_SUPPORT_HREF ? (
+                      <SupportUnreadBadge className="-top-1 -right-3.5" />
+                    ) : null}
+                  </span>
+                )}
+                {collapsed && item.href === TRAINER_SUPPORT_HREF ? (
+                  <SupportUnreadBadge className="top-1.5 right-1.5" />
                 ) : null}
                 {active && !collapsed && (
                   <span

@@ -79,8 +79,12 @@ export function MobileNav({
                     }}
                   >
                     <Icon className="size-[18px] shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                    {item.href === TRAINER_SUPPORT_HREF ? <SupportUnreadBadge className="top-1.5 right-2" /> : null}
+                    <span className={item.href === TRAINER_SUPPORT_HREF ? "relative" : "truncate"}>
+                      {item.label}
+                      {item.href === TRAINER_SUPPORT_HREF ? (
+                        <SupportUnreadBadge className="-top-1 -right-3.5" />
+                      ) : null}
+                    </span>
                   </Link>
                 </li>
               );
