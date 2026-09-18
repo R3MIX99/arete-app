@@ -106,8 +106,8 @@ export function InviteGymMemberDialog({ gymId, gymName }: { gymId: string; gymNa
               (llega en una fase más adelante del plan Gym).
             </p>
             <div className="flex items-center gap-2 rounded-lg border px-3 py-2.5">
-              <p className="flex-1 truncate text-sm">{inviteLink}</p>
-              <Button size="sm" variant="outline" onClick={copyLink}>
+              <p className="min-w-0 flex-1 truncate text-sm">{inviteLink}</p>
+              <Button size="sm" variant="outline" className="shrink-0" onClick={copyLink}>
                 <Copy className="size-3.5" /> Copiar
               </Button>
             </div>
