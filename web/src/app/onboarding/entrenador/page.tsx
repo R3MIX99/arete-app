@@ -12,7 +12,9 @@ export default async function TrainerOnboardingPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, role, gender, business_name, business_logo_path, onboarding_completed_at")
+    .select(
+      "id, full_name, role, gender, business_name, business_logo_path, onboarding_completed_at, gym_id",
+    )
     .eq("id", user.id)
     .single();
 
@@ -29,6 +31,10 @@ export default async function TrainerOnboardingPage() {
       initialGender={profile.gender}
       initialBusinessName={profile.business_name}
       initialBusinessLogoPath={profile.business_logo_path}
+      // Un empleado que ya se unió a un gimnasio (vía invitación) no
+      // tiene marca propia — usa la del gimnasio. No tiene sentido
+      // pedirle logo/nombre de negocio en su propio onboarding.
+      skipBusinessStep={Boolean(profile.gym_id)}
     />
   );
 }

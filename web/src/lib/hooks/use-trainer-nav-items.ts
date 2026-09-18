@@ -4,12 +4,15 @@ import { trainerNavItems, type NavItem } from "@/lib/nav-items";
 import { useGymContext } from "@/components/trainer/gym-context";
 
 /** trainerNavItems + "Equipo" insertado justo después de "Clientes",
- *  solo si el entrenador actual pertenece a un gimnasio — un entrenador
- *  independiente nunca ve esta pestaña. La usan SidebarNav, TopBar y
- *  MobileNav para no triplicar la misma lógica de inserción. */
+ *  solo si el entrenador actual pertenece a un gimnasio Y es admin o
+ *  supervisor — un entrenador/nutriólogo/asistente normal solo ve a
+ *  sus propios clientes, no la pestaña de gestión del equipo (matriz
+ *  de permisos de la Fase D: invitar/cambiar roles/reasignar es cosa
+ *  de admin/supervisor). La usan SidebarNav, TopBar y MobileNav para
+ *  no triplicar la misma lógica de inserción. */
 export function useTrainerNavItems(): NavItem[] {
   const gym = useGymContext();
-  if (!gym) return trainerNavItems;
+  if (!gym || !gym.isManager) return trainerNavItems;
 
   const items = [...trainerNavItems];
   const clientsIndex = items.findIndex((item) => item.href === "/entrenador/clientes");

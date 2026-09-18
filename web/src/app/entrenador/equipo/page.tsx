@@ -90,6 +90,11 @@ export default async function TrainerTeamPage() {
   const isAdmin = myRole === "admin";
   const isManager = isAdmin || myRole === "supervisor";
 
+  // Solo admin/supervisor gestionan al equipo — un entrenador,
+  // nutriólogo o asistente normal ni siquiera debería poder entrar
+  // por URL directa, no solo no ver la pestaña en el menú.
+  if (!isManager) redirect("/entrenador/clientes");
+
   const clientsByMember = new Map<string, AssignedClient[]>();
   for (const row of (clientRows ?? []) as ClientRow[]) {
     for (const memberId of [row.trainer_id, row.nutritionist_id]) {

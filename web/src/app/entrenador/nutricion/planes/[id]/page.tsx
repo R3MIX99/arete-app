@@ -79,6 +79,21 @@ interface AssignmentRow {
   profiles: { full_name: string } | { full_name: string }[] | null;
 }
 
+interface ClientRow {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  goal: ClientProfile["goal"];
+  health_notes: string | null;
+  status: ClientProfile["status"];
+  created_at: string;
+  trainer_id: string;
+  trainer: { full_name: string } | { full_name: string }[] | null;
+  nutritionist_id: string | null;
+  nutritionist: { full_name: string } | { full_name: string }[] | null;
+}
+
 function one<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
@@ -139,7 +154,9 @@ export default async function DietPlanDetailPage({
       .order("name"),
     supabase
       .from("profiles")
-      .select("id, full_name, email, phone, goal, health_notes, status, created_at")
+      .select(
+        "id, full_name, email, phone, goal, health_notes, status, created_at, trainer_id, trainer:trainer_id(full_name), nutritionist_id, nutritionist:nutritionist_id(full_name)",
+      )
       .eq("role", "client")
       .order("full_name"),
     supabase
@@ -165,6 +182,21 @@ export default async function DietPlanDetailPage({
   ]);
 
   if (!plan) notFound();
+
+  const clientProfiles: ClientProfile[] = ((clients ?? []) as ClientRow[]).map((row) => ({
+    id: row.id,
+    full_name: row.full_name,
+    email: row.email,
+    phone: row.phone,
+    goal: row.goal,
+    health_notes: row.health_notes,
+    status: row.status,
+    created_at: row.created_at,
+    trainer_id: row.trainer_id,
+    trainer_name: one(row.trainer)?.full_name ?? null,
+    nutritionist_id: row.nutritionist_id,
+    nutritionist_name: one(row.nutritionist)?.full_name ?? null,
+  }));
 
   const mealRows = (meals ?? []) as MealRow[];
   const dishIds = Array.from(
@@ -319,7 +351,7 @@ export default async function DietPlanDetailPage({
       dishCatalog={(dishes ?? []) as DishOption[]}
       communityFoods={communityFoods}
       communityDishes={communityDishes}
-      clients={(clients ?? []) as ClientProfile[]}
+      clients={clientProfiles}
       assignments={assignmentSummaries}
     />
   );

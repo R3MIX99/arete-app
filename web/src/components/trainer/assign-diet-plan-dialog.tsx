@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useGymContext } from "@/components/trainer/gym-context";
 import { cn } from "@/lib/utils";
 
 function todayIso() {
@@ -97,6 +98,16 @@ function AssignDietPlanDialogBody({
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [clientTarget, setClientTarget] = React.useState<number | "">("");
   const [saving, setSaving] = React.useState(false);
+  const gym = useGymContext();
+  // Con gimnasio: la nutrición es cosa del nutriólogo asignado del
+  // cliente — si nunca tuvo uno aparte, cae de vuelta a su entrenador
+  // (mismo fallback que can_manage_client_nutrition en la base).
+  function canAssignDiet(client: ClientProfile): boolean {
+    if (!gym) return true;
+    if (gym.isManager) return true;
+    if (client.nutritionist_id) return client.nutritionist_id === trainerId;
+    return client.trainer_id === trainerId;
+  }
 
   const alreadySet = React.useMemo(
     () => new Set(alreadyAssignedClientIds),
@@ -115,6 +126,8 @@ function AssignDietPlanDialogBody({
 
   function toggle(clientId: string) {
     if (alreadySet.has(clientId)) return;
+    const client = clients.find((c) => c.id === clientId);
+    if (client && !canAssignDiet(client)) return;
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(clientId)) next.delete(clientId);
@@ -296,18 +309,18 @@ function AssignDietPlanDialogBody({
             ) : (
               filtered.map((client) => {
                 const isAssigned = alreadySet.has(client.id);
+                const canAssign = canAssignDiet(client);
                 const isSelected = selected.has(client.id);
+                const disabled = isAssigned || !canAssign;
                 return (
                   <button
                     key={client.id}
                     type="button"
-                    disabled={isAssigned}
+                    disabled={disabled}
                     onClick={() => toggle(client.id)}
                     className={cn(
                       "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors",
-                      isAssigned
-                        ? "cursor-not-allowed opacity-50"
-                        : "hover:border-border hover:bg-accent",
+                      disabled ? "cursor-not-allowed opacity-50" : "hover:border-border hover:bg-accent",
                     )}
                   >
                     <Avatar className="size-8">
@@ -318,7 +331,11 @@ function AssignDietPlanDialogBody({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{client.full_name}</p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {isAssigned ? "Ya asignado" : client.email}
+                        {isAssigned
+                          ? "Ya asignado"
+                          : !canAssign
+                            ? `Su nutrición la maneja ${client.nutritionist_name ?? client.trainer_name ?? "otra persona"}`
+                            : client.email}
                       </p>
                     </div>
                     <div

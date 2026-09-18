@@ -14,13 +14,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-const TOTAL_STEPS = 3;
-
 /**
  * Onboarding de un entrenador recién registrado: bienvenida, cómo se
  * llama y su género, y los datos de su negocio (nombre + logo, ambos
  * opcionales — si no los pone, sus clientes ven el logo de Aretia). Al
  * terminar marca `onboarding_completed_at` y entra al panel.
+ *
+ * Un empleado que llega vía invitación de gimnasio (skipBusinessStep)
+ * no tiene marca propia que configurar — usa la del gimnasio — así
+ * que ese paso se omite y el flujo termina en 2 pasos en vez de 3.
  */
 export function TrainerOnboardingFlow({
   userId,
@@ -28,15 +30,18 @@ export function TrainerOnboardingFlow({
   initialGender,
   initialBusinessName,
   initialBusinessLogoPath,
+  skipBusinessStep = false,
 }: {
   userId: string;
   initialFullName: string;
   initialGender: string;
   initialBusinessName: string | null;
   initialBusinessLogoPath: string | null;
+  skipBusinessStep?: boolean;
 }) {
   const router = useRouter();
   const supabase = React.useMemo(() => createClient(), []);
+  const totalSteps = skipBusinessStep ? 2 : 3;
 
   const [step, setStep] = React.useState(1);
   const [fullName, setFullName] = React.useState(initialFullName);
@@ -97,7 +102,7 @@ export function TrainerOnboardingFlow({
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <AuthBrandIcon className="h-14 w-auto" />
           <p className="text-sm text-muted-foreground">
-            Paso {step} de {TOTAL_STEPS}
+            Paso {step} de {totalSteps}
           </p>
         </div>
 
@@ -145,10 +150,11 @@ export function TrainerOnboardingFlow({
                 </Button>
                 <Button
                   className="flex-1"
-                  disabled={!fullName.trim()}
-                  onClick={() => setStep(3)}
+                  disabled={!fullName.trim() || saving}
+                  onClick={() => (skipBusinessStep ? finish() : setStep(3))}
                 >
-                  Siguiente
+                  {saving ? <Loader2 className="animate-spin" /> : null}
+                  {skipBusinessStep ? "Terminar" : "Siguiente"}
                 </Button>
               </div>
             </CardContent>

@@ -34,6 +34,19 @@ interface OverrideRow {
   routines: { name: string } | { name: string }[] | null;
 }
 
+interface ClientRow {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  goal: ClientGoal | null;
+  health_notes: string | null;
+  status: ClientProfile["status"];
+  created_at: string;
+  trainer_id: string;
+  trainer: { full_name: string } | { full_name: string }[] | null;
+}
+
 function one<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
@@ -71,7 +84,9 @@ export default async function ProgramDetailPage({
     supabase.from("routines").select("id, name, level").order("name"),
     supabase
       .from("profiles")
-      .select("id, full_name, email, phone, goal, health_notes, status, created_at")
+      .select(
+        "id, full_name, email, phone, goal, health_notes, status, created_at, trainer_id, trainer:trainer_id(full_name)",
+      )
       .eq("role", "client")
       .order("full_name"),
     supabase
@@ -81,6 +96,19 @@ export default async function ProgramDetailPage({
   ]);
 
   if (!program) notFound();
+
+  const clientProfiles: ClientProfile[] = ((clients ?? []) as ClientRow[]).map((row) => ({
+    id: row.id,
+    full_name: row.full_name,
+    email: row.email,
+    phone: row.phone,
+    goal: row.goal,
+    health_notes: row.health_notes,
+    status: row.status,
+    created_at: row.created_at,
+    trainer_id: row.trainer_id,
+    trainer_name: one(row.trainer)?.full_name ?? null,
+  }));
 
   const slots: ProgramSlot[] = ((programRoutines ?? []) as ProgramRoutineRow[]).map((pr) => {
     const routine = one(pr.routines);
@@ -134,7 +162,7 @@ export default async function ProgramDetailPage({
       }}
       slots={slots}
       routineCatalog={(routines ?? []) as RoutineOption[]}
-      clients={(clients ?? []) as ClientProfile[]}
+      clients={clientProfiles}
       assignments={programAssignments}
       overridesByAssignment={overridesByAssignment}
     />

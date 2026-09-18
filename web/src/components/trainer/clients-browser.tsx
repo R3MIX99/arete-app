@@ -65,7 +65,7 @@ function TeamAssignmentPicker({
   trainerOptions: TeamOption[];
   nutritionistOptions: TeamOption[];
   disabled: boolean;
-  onSelect: (field: "trainer_id" | "nutritionist_id", profileId: string) => void;
+  onSelect: (field: "trainer_id" | "nutritionist_id", profileId: string | null) => void;
 }) {
   const slots: { id: string | null | undefined; name: string | null | undefined; accent: string }[] = [
     { id: client.trainer_id, name: client.trainer_name, accent: TRAINER_ACCENT },
@@ -132,9 +132,17 @@ function TeamAssignmentPicker({
         )}
         <DropdownMenuSeparator />
         <DropdownMenuLabel>Nutriólogo</DropdownMenuLabel>
-        {nutritionistOptions.length === 0 ? (
-          <p className="px-2 py-1.5 text-xs text-muted-foreground">Nadie con este rol todavía.</p>
-        ) : (
+        <DropdownMenuItem
+          onClick={() => onSelect("nutritionist_id", null)}
+          className={!client.nutritionist_id ? "font-medium" : undefined}
+        >
+          <span className="flex size-5 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground">
+            <X className="size-3" />
+          </span>
+          Sin nutriólogo — lo maneja el entrenador
+          {!client.nutritionist_id ? <Check className="ml-auto size-3.5" /> : null}
+        </DropdownMenuItem>
+        {nutritionistOptions.length === 0 ? null : (
           nutritionistOptions.map((t) => (
             <DropdownMenuItem
               key={`nutritionist-${t.id}`}
@@ -281,14 +289,17 @@ export function ClientsBrowser({
 
   const [reassigningId, setReassigningId] = React.useState<string | null>(null);
 
-  /** field="trainer_id" reasigna quién lleva las rutinas; field=
-   *  "nutritionist_id" reasigna quién lleva la nutrición — son
-   *  independientes, cambiar uno nunca toca el otro (un cliente de
-   *  gimnasio puede tener ambos a la vez). */
+  /** field="trainer_id" reasigna quién lleva las rutinas (siempre
+   *  requiere a alguien — no se puede quitar); field="nutritionist_id"
+   *  reasigna quién lleva la nutrición, o se puede dejar en null
+   *  (newProfileId = null) para quitarlo del todo — en ese caso la
+   *  nutrición vuelve a caer en el entrenador (mismo fallback que
+   *  can_manage_client_nutrition en la base). Son independientes,
+   *  cambiar uno nunca toca el otro. */
   async function reassignClient(
     client: ClientProfile,
     field: "trainer_id" | "nutritionist_id",
-    newProfileId: string,
+    newProfileId: string | null,
   ) {
     const currentId = field === "trainer_id" ? client.trainer_id : client.nutritionist_id;
     if (newProfileId === currentId) return;
@@ -308,7 +319,7 @@ export function ClientsBrowser({
       return;
     }
 
-    const newAssignee = options.find((t) => t.id === newProfileId);
+    const newAssignee = newProfileId ? options.find((t) => t.id === newProfileId) : null;
     setItems((prev) =>
       prev.map((c) =>
         c.id === client.id
@@ -320,7 +331,9 @@ export function ClientsBrowser({
       action: "trainer.client_reassigned",
       category: "trainer",
       severity: "success",
-      message: `${client.full_name}: ${field === "trainer_id" ? "entrenador" : "nutriólogo"} reasignado a ${newAssignee?.full_name ?? newProfileId}`,
+      message: newProfileId
+        ? `${client.full_name}: ${field === "trainer_id" ? "entrenador" : "nutriólogo"} reasignado a ${newAssignee?.full_name ?? newProfileId}`
+        : `${client.full_name}: se quitó su nutriólogo (vuelve a manejarlo el entrenador)`,
       targetType: "profile",
       targetId: client.id,
       targetLabel: client.full_name,
