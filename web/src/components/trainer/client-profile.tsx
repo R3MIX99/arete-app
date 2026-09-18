@@ -151,7 +151,7 @@ export function ClientProfile({
   function handleExerciseClick(summary: ExerciseProgressSummary) {
     if (isMobile) {
       router.push(
-        `/entrenador/clientes/${client.id}/ejercicio/${summary.exercise_id}?name=${encodeURIComponent(summary.exercise_name)}&muscle=${encodeURIComponent(summary.muscle_group)}`,
+        `/entrenador/clientes/${client.id}/ejercicio/${summary.exercise_id}?name=${encodeURIComponent(summary.exercise_name)}&cardio=${isCardioGroup(summary.muscle_groups) ? "1" : "0"}`,
       );
     } else {
       setOpenExercise(summary);
@@ -741,7 +741,7 @@ export function ClientProfile({
           <FloatingSheetHeader>
             <FloatingSheetTitle>{openExercise?.exercise_name}</FloatingSheetTitle>
             <FloatingSheetDescription>
-              {openExercise && isCardioGroup(openExercise.muscle_group)
+              {openExercise && isCardioGroup(openExercise.muscle_groups)
                 ? "Evolución de minutos y nivel"
                 : "Evolución de peso y repeticiones"}
             </FloatingSheetDescription>
@@ -751,7 +751,7 @@ export function ClientProfile({
               <TrainerExerciseHistorySheetContent
                 clientId={client.id}
                 exerciseId={openExercise.exercise_id}
-                cardio={isCardioGroup(openExercise.muscle_group)}
+                cardio={isCardioGroup(openExercise.muscle_groups)}
               />
             ) : null}
           </FloatingSheetBody>

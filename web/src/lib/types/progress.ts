@@ -41,7 +41,7 @@ export interface ExerciseWeightLog {
 export interface ExerciseProgressSummary {
   exercise_id: string;
   exercise_name: string;
-  muscle_group: string;
+  muscle_groups: string[];
   /** En cardio no existe el peso: aquí van los minutos. La unidad real
    * la dice `unit`, para que la tabla muestre "30 min" y no "30 kg". */
   starting_weight: number;

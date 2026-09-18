@@ -8,8 +8,8 @@ import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ExerciseVideoButton } from "@/components/client/exercise-video-button";
 
-function isCardio(muscleGroup: string) {
-  return muscleGroup === "cardio";
+function isCardio(muscleGroups: string[]) {
+  return muscleGroups.includes("cardio");
 }
 
 function formatDuration(seconds: number | null): string {
@@ -147,7 +147,7 @@ export default async function SessionReviewPage({
 
       <div className="flex flex-col gap-3 px-4">
         {exercises.map((exercise) => {
-          const cardio = isCardio(exercise.muscleGroup);
+          const cardio = isCardio(exercise.muscleGroups);
           return (
             <div key={exercise.exerciseId} className="glass-card overflow-hidden rounded-xl">
               <div className="flex items-center gap-3 px-4 py-3">
@@ -156,7 +156,7 @@ export default async function SessionReviewPage({
                   <ExerciseVideoButton videoUrl={exercise.videoUrl} exerciseName={exercise.exerciseName} />
                 ) : null}
                 <Link
-                  href={`/cliente/entrenamiento/evolucion/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&muscle=${encodeURIComponent(exercise.muscleGroup)}`}
+                  href={`/cliente/entrenamiento/evolucion/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&cardio=${cardio ? "1" : "0"}`}
                   className="shrink-0 text-muted-foreground hover:text-foreground"
                   aria-label={`Ver historial de ${exercise.exerciseName}`}
                 >

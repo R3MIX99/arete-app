@@ -6,8 +6,8 @@ import type { DishOption, FoodOption } from "@/lib/types/nutrition";
 interface ExerciseRow {
   id: string;
   name: string;
-  muscle_group: ExerciseSummary["muscle_group"];
-  equipment: ExerciseSummary["equipment"];
+  muscle_groups: ExerciseSummary["muscle_groups"];
+  equipment_items: ExerciseSummary["equipment_items"];
   video_url: string | null;
   image_path: string | null;
 }
@@ -47,7 +47,7 @@ export default async function SuperadminLibraryPage() {
   const [{ data: exerciseRows }, { data: foodRows }, { data: dishRows }] = await Promise.all([
     supabase
       .from("exercises")
-      .select("id, name, muscle_group, equipment, video_url, image_path")
+      .select("id, name, muscle_groups, equipment_items, video_url, image_path")
       .is("trainer_id", null)
       .order("name"),
     supabase
@@ -67,8 +67,8 @@ export default async function SuperadminLibraryPage() {
   const exercises: ExerciseSummary[] = ((exerciseRows ?? []) as ExerciseRow[]).map((r) => ({
     id: r.id,
     name: r.name,
-    muscle_group: r.muscle_group,
-    equipment: r.equipment,
+    muscle_groups: r.muscle_groups,
+    equipment_items: r.equipment_items,
     video_url: r.video_url,
     image_path: r.image_path,
     trainer_id: null,

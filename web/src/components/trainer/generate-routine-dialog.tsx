@@ -105,8 +105,8 @@ export function GenerateRoutineDialog({
         catalog: exerciseCatalog.map((e) => ({
           id: e.id,
           name: e.name,
-          muscle_group: e.muscle_group,
-          equipment: e.equipment,
+          muscle_groups: e.muscle_groups,
+          equipment_items: e.equipment_items,
         })),
       },
     });

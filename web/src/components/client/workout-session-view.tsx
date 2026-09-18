@@ -41,8 +41,8 @@ type LogState = Record<
   { actual_reps: string; actual_weight: string; actual_minutes: string; actual_level: string; is_completed: boolean }
 >;
 
-function isCardio(muscleGroup: string) {
-  return muscleGroup === "cardio";
+function isCardio(muscleGroups: string[]) {
+  return muscleGroups.includes("cardio");
 }
 
 /** Alterna un id dentro de un Set en state (los `expanded`/`videoOpen`
@@ -352,7 +352,7 @@ export function WorkoutSessionView({
   // son — así la pantalla de resumen pide lo que corresponde (calorías/
   // distancia/pasos, o estrellas de fuerza) sin necesitar un campo
   // aparte al crear la rutina.
-  const cardioRoutine = exercises.length > 0 && exercises.every((e) => isCardio(e.muscle_group));
+  const cardioRoutine = exercises.length > 0 && exercises.every((e) => isCardio(e.muscle_groups));
 
   const [stage, setStage] = useState<"active" | "summary">("active");
   const [frozenDuration, setFrozenDuration] = useState<number | null>(null);
@@ -603,7 +603,7 @@ export function WorkoutSessionView({
       <div className="flex flex-col divide-y px-4">
         {exercises.map((exercise) => {
           const isOpen = expanded.has(exercise.id);
-          const cardio = isCardio(exercise.muscle_group);
+          const cardio = isCardio(exercise.muscle_groups);
           const exerciseComplete =
             exercise.sets.length > 0 && exercise.sets.every((s) => logs[s.id]?.is_completed);
           const videoId = exercise.video_url ? youtubeVideoId(exercise.video_url) : null;
@@ -867,7 +867,7 @@ export function WorkoutSessionView({
         title={historyExercise ? `Historial — ${historyExercise.exercise_name}` : ""}
       >
         {historyExercise ? (
-          <ExerciseHistoryList exercise={historyExercise} cardio={isCardio(historyExercise.muscle_group)} />
+          <ExerciseHistoryList exercise={historyExercise} cardio={isCardio(historyExercise.muscle_groups)} />
         ) : null}
       </ResponsiveDialog>
 
@@ -884,7 +884,7 @@ export function WorkoutSessionView({
         {zoomExercise ? (
           <div className="flex flex-col gap-5 pb-2">
             {zoomExercise.sets.map((set) => {
-              const cardio = isCardio(zoomExercise.muscle_group);
+              const cardio = isCardio(zoomExercise.muscle_groups);
               const log = logs[set.id] ?? emptyLog();
               return (
                 <div key={set.id} className="flex items-center gap-3 border-b pb-5 last:border-b-0 last:pb-0">

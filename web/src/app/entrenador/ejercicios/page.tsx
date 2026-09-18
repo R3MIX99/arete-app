@@ -7,8 +7,8 @@ import type { CommunityExerciseOption, ExerciseSummary } from "@/lib/types/exerc
 interface ExerciseRow {
   id: string;
   name: string;
-  muscle_group: ExerciseSummary["muscle_group"];
-  equipment: ExerciseSummary["equipment"];
+  muscle_groups: ExerciseSummary["muscle_groups"];
+  equipment_items: ExerciseSummary["equipment_items"];
   description: string | null;
   video_url: string | null;
   image_path: string | null;
@@ -33,7 +33,7 @@ export default async function ExercisesPage() {
     supabase
       .from("exercises")
       .select(
-        "id, name, muscle_group, equipment, description, video_url, image_path, trainer_id, forked_from, created_at, profiles!exercises_trainer_id_fkey(full_name)",
+        "id, name, muscle_groups, equipment_items, description, video_url, image_path, trainer_id, forked_from, created_at, profiles!exercises_trainer_id_fkey(full_name)",
       )
       .order("name"),
     supabase.from("trainer_hidden_exercises").select("exercise_id").eq("trainer_id", user.id),
@@ -53,8 +53,8 @@ export default async function ExercisesPage() {
     .map((r) => ({
       id: r.id,
       name: r.name,
-      muscle_group: r.muscle_group,
-      equipment: r.equipment,
+      muscle_groups: r.muscle_groups,
+      equipment_items: r.equipment_items,
       video_url: r.video_url,
       image_path: r.image_path,
       trainer_id: r.trainer_id,
@@ -70,8 +70,8 @@ export default async function ExercisesPage() {
     .map((r) => ({
       id: r.id,
       name: r.name,
-      muscle_group: r.muscle_group,
-      equipment: r.equipment,
+      muscle_groups: r.muscle_groups,
+      equipment_items: r.equipment_items,
       description: r.description,
       video_url: r.video_url,
       image_path: r.image_path,

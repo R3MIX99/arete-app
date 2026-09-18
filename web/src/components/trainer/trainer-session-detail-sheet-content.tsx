@@ -15,8 +15,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-function isCardio(muscleGroup: string) {
-  return muscleGroup === "cardio";
+function isCardio(muscleGroups: string[]) {
+  return muscleGroups.includes("cardio");
 }
 
 function formatDuration(seconds: number | null): string {
@@ -110,7 +110,7 @@ export function TrainerSessionDetailSheetContent({
 
       <Accordion type="multiple" className="flex flex-col">
         {exercises.map((exercise) => {
-          const cardio = isCardio(exercise.muscleGroup);
+          const cardio = isCardio(exercise.muscleGroups);
           const exerciseCompleted = exercise.sets.filter((s) => s.isCompleted).length;
           return (
             <AccordionItem key={exercise.exerciseId} value={exercise.exerciseId}>
@@ -131,7 +131,7 @@ export function TrainerSessionDetailSheetContent({
                       <ExerciseVideoButton videoUrl={exercise.videoUrl} exerciseName={exercise.exerciseName} />
                     ) : null}
                     <Link
-                      href={`/entrenador/clientes/${clientId}/ejercicio/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&muscle=${encodeURIComponent(exercise.muscleGroup)}`}
+                      href={`/entrenador/clientes/${clientId}/ejercicio/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&cardio=${cardio ? "1" : "0"}`}
                       className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                     >
                       <History className="size-3.5" />

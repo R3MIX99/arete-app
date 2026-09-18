@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ExerciseVideoButton } from "@/components/client/exercise-video-button";
 
-function isCardio(muscleGroup: string) {
-  return muscleGroup === "cardio";
+function isCardio(muscleGroups: string[]) {
+  return muscleGroups.includes("cardio");
 }
 
 function formatDuration(seconds: number | null): string {
@@ -83,7 +83,7 @@ export default async function TrainerSessionDetailPage({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {exercises.map((exercise) => {
-          const cardio = isCardio(exercise.muscleGroup);
+          const cardio = isCardio(exercise.muscleGroups);
           return (
             <div key={exercise.exerciseId} className="overflow-hidden rounded-xl border">
               <div className="flex items-center gap-2 border-b bg-foreground/[0.02] px-4 py-3">
@@ -92,7 +92,7 @@ export default async function TrainerSessionDetailPage({
                   <ExerciseVideoButton videoUrl={exercise.videoUrl} exerciseName={exercise.exerciseName} />
                 ) : null}
                 <Link
-                  href={`/entrenador/clientes/${clientId}/ejercicio/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&muscle=${encodeURIComponent(exercise.muscleGroup)}`}
+                  href={`/entrenador/clientes/${clientId}/ejercicio/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&cardio=${cardio ? "1" : "0"}`}
                   className="shrink-0 text-muted-foreground hover:text-foreground"
                   aria-label={`Ver historial de ${exercise.exerciseName}`}
                 >

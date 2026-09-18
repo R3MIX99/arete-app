@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { isCardioGroup } from "@/lib/client-exercise-target";
 import { ExerciseHistoryPageView, type ExerciseHistorySession } from "@/components/client/exercise-history-page-view";
 
 interface SetLogRow {
@@ -18,10 +17,10 @@ export default async function ExerciseEvolutionHistoryPage({
   searchParams,
 }: {
   params: Promise<{ exerciseId: string }>;
-  searchParams: Promise<{ name?: string; muscle?: string }>;
+  searchParams: Promise<{ name?: string; cardio?: string }>;
 }) {
   const { exerciseId } = await params;
-  const { name, muscle } = await searchParams;
+  const { name, cardio: cardioParam } = await searchParams;
   if (!name) redirect("/cliente/entrenamiento");
 
   const supabase = await createClient();
@@ -30,7 +29,7 @@ export default async function ExerciseEvolutionHistoryPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const cardio = isCardioGroup(muscle ?? "");
+  const cardio = cardioParam === "1";
 
   // Se lee directo de client_set_logs.exercise_id (no de la rutina viva)
   // para que este historial se mantenga intacto aunque el entrenador

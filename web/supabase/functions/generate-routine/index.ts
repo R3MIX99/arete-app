@@ -6,8 +6,8 @@ import { fetchKnowledgeContext, knowledgeContextBlock } from "./_shared/knowledg
 interface CatalogExercise {
   id: string;
   name: string;
-  muscle_group: string;
-  equipment: string;
+  muscle_groups: string[];
+  equipment_items: string[];
 }
 
 interface GenerateRoutineRequest {
@@ -31,7 +31,7 @@ interface AiRoutineSet {
 interface AiRoutineExercise {
   exercise_id: string | null;
   exercise_name: string;
-  muscle_group: string;
+  muscle_groups: string[];
   is_cardio: boolean;
   notes: string;
   sets: AiRoutineSet[];
@@ -76,7 +76,10 @@ Deno.serve(async (req: Request) => {
     // muestra amplia le basta para encontrar coincidencias razonables.
     const catalog = body.catalog.slice(0, 400);
     const catalogText = catalog
-      .map((e) => `- id:${e.id} | ${e.name} | grupo:${e.muscle_group} | equipo:${e.equipment}`)
+      .map(
+        (e) =>
+          `- id:${e.id} | ${e.name} | grupos:${e.muscle_groups.join("+")} | equipo:${e.equipment_items.join("+")}`,
+      )
       .join("\n");
 
     const system = `Eres un entrenador personal experto que arma rutinas de una sola sesión de gimnasio para un entrenador que las va a asignar a sus clientes. Respondes ÚNICAMENTE con un objeto JSON válido, sin texto antes ni después, sin bloques de código markdown. El JSON debe tener exactamente esta forma:
@@ -87,7 +90,7 @@ Deno.serve(async (req: Request) => {
     {
       "exercise_id": string o null,
       "exercise_name": string,
-      "muscle_group": uno de "chest","back","shoulders","arms","legs","core","cardio","full_body",
+      "muscle_groups": arreglo de uno o más de "chest","back","shoulders","arms","legs","core","cardio","full_body","gluteos","gluteo_medio","femorales","cuadriceps","pantorrillas","aductores","abdomen","oblicuos","pecho_superior","pecho_inferior","dorsales","trapecio","deltoide_anterior","deltoide_lateral","deltoide_posterior","biceps","triceps","braquial","tibial_anterior","agarre",
       "is_cardio": boolean,
       "notes": string (puede ser ""),
       "sets": [
@@ -102,7 +105,7 @@ Deno.serve(async (req: Request) => {
 }
 
 Reglas importantes:
-- SIEMPRE que un ejercicio de la biblioteca del entrenador (la lista de "catálogo" que te doy) sea razonable para el plan, usa exactamente ese "id" en "exercise_id" y copia su nombre y grupo muscular tal cual aparecen en el catálogo.
+- SIEMPRE que un ejercicio de la biblioteca del entrenador (la lista de "catálogo" que te doy) sea razonable para el plan, usa exactamente ese "id" en "exercise_id" y copia su nombre y sus grupos musculares tal cual aparecen en el catálogo (el catálogo los separa con "+").
 - Solo si de verdad no hay ningún ejercicio adecuado en el catálogo para cubrir un grupo muscular necesario, sugiere uno nuevo con "exercise_id": null — pero priorizá siempre usar el catálogo antes que sugerir algo nuevo.
 - Arma una única sesión de entrenamiento (no un plan de varios días) pensada para el número de días por semana solo como referencia de volumen total: entre 5 y 9 ejercicios, con 3-4 series cada uno salvo que el nivel o el enfoque pidan otra cosa.
 - Respeta el equipo disponible que te indican si te lo dan.

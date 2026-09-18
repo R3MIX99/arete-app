@@ -12,7 +12,7 @@ export interface CompletedSessionSet {
 export interface CompletedSessionExercise {
   exerciseId: string;
   exerciseName: string;
-  muscleGroup: string;
+  muscleGroups: string[];
   videoUrl: string | null;
   sets: CompletedSessionSet[];
 }
@@ -32,7 +32,7 @@ export interface CompletedSessionView {
 
 interface ExerciseRef {
   name: string;
-  muscle_group: string;
+  muscle_groups: string[];
   video_url: string | null;
 }
 
@@ -80,7 +80,7 @@ export async function fetchCompletedSessionView(
     supabase
       .from("client_set_logs")
       .select(
-        "exercise_id, set_number, actual_reps, actual_weight, actual_minutes, actual_level, is_completed, created_at, exercises(name, muscle_group, video_url)",
+        "exercise_id, set_number, actual_reps, actual_weight, actual_minutes, actual_level, is_completed, created_at, exercises(name, muscle_groups, video_url)",
       )
       .eq("session_id", sessionId)
       .order("created_at"),
@@ -94,7 +94,7 @@ export async function fetchCompletedSessionView(
     const entry = byExercise.get(row.exercise_id) ?? {
       exerciseId: row.exercise_id,
       exerciseName: ex?.name ?? "Ejercicio",
-      muscleGroup: ex?.muscle_group ?? "",
+      muscleGroups: ex?.muscle_groups ?? [],
       videoUrl: ex?.video_url ?? null,
       sets: [],
     };

@@ -101,7 +101,7 @@ async function fetchYoutubeTranscript(url: string): Promise<string | null> {
 interface RoutineExerciseJoinRow {
   order_index: number;
   notes: string | null;
-  exercises: { name: string; muscle_group: string; equipment: string } | { name: string; muscle_group: string; equipment: string }[] | null;
+  exercises: { name: string; muscle_groups: string[]; equipment_items: string[] } | { name: string; muscle_groups: string[]; equipment_items: string[] }[] | null;
   routine_exercise_sets: {
     set_number: number;
     target_reps_min: number | null;
@@ -121,7 +121,7 @@ async function buildRoutineText(supabase: SupabaseClient, routineId: string): Pr
     supabase
       .from("routine_exercises")
       .select(
-        "order_index, notes, exercises(name, muscle_group, equipment), routine_exercise_sets(set_number, target_reps_min, target_reps_max, rest_seconds, target_minutes)",
+        "order_index, notes, exercises(name, muscle_groups, equipment_items), routine_exercise_sets(set_number, target_reps_min, target_reps_max, rest_seconds, target_minutes)",
       )
       .eq("routine_id", routineId)
       .order("order_index"),
@@ -145,7 +145,7 @@ async function buildRoutineText(supabase: SupabaseClient, routineId: string): Pr
       )
       .join("; ");
     lines.push(
-      `- ${exercise?.name ?? "Ejercicio"} (${exercise?.muscle_group ?? ""}, equipo: ${exercise?.equipment ?? ""}): ${setsText}${row.notes ? ` — ${row.notes}` : ""}`,
+      `- ${exercise?.name ?? "Ejercicio"} (${(exercise?.muscle_groups ?? []).join("+")}, equipo: ${(exercise?.equipment_items ?? []).join("+")}): ${setsText}${row.notes ? ` — ${row.notes}` : ""}`,
     );
   }
   return lines.filter(Boolean).join("\n");

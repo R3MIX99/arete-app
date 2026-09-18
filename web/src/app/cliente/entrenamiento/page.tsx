@@ -16,7 +16,7 @@ interface SessionRow {
 
 interface ExerciseRef {
   name: string;
-  muscle_group: string;
+  muscle_groups: string[];
   image_path: string | null;
   video_url: string | null;
 }
@@ -76,7 +76,7 @@ export default async function ClientTrainingPage() {
       supabase
         .from("client_set_logs")
         .select(
-          "session_date, actual_weight, actual_reps, exercise_id, exercises(name, muscle_group, image_path, video_url)",
+          "session_date, actual_weight, actual_reps, exercise_id, exercises(name, muscle_groups, image_path, video_url)",
         )
         .eq("client_id", user.id)
         .eq("is_completed", true)
@@ -120,7 +120,7 @@ export default async function ClientTrainingPage() {
     const existing = byExercise.get(row.exercise_id) ?? {
       exerciseId: row.exercise_id,
       exerciseName: exercise.name,
-      muscleGroup: exercise.muscle_group,
+      muscleGroups: exercise.muscle_groups,
       logs: [],
       currentWeight: null,
       currentReps: null,

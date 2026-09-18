@@ -22,7 +22,7 @@ export function ClientExerciseEvolution({
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const muscleGroups = useMemo(
-    () => Array.from(new Set(exerciseProgress.map((e) => e.muscleGroup))).sort(),
+    () => Array.from(new Set(exerciseProgress.flatMap((e) => e.muscleGroups))).sort(),
     [exerciseProgress],
   );
 
@@ -31,7 +31,7 @@ export function ClientExerciseEvolution({
       exerciseProgress.filter(
         (e) =>
           (!query || e.exerciseName.toLowerCase().includes(query.toLowerCase())) &&
-          (!muscleFilter || e.muscleGroup === muscleFilter),
+          (!muscleFilter || e.muscleGroups.includes(muscleFilter)),
       ),
     [exerciseProgress, query, muscleFilter],
   );
@@ -120,7 +120,7 @@ export function ClientExerciseEvolution({
           {filtered.map((exercise) => (
             <Link
               key={exercise.exerciseId}
-              href={`/cliente/entrenamiento/evolucion/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&muscle=${encodeURIComponent(exercise.muscleGroup)}`}
+              href={`/cliente/entrenamiento/evolucion/${exercise.exerciseId}?name=${encodeURIComponent(exercise.exerciseName)}&cardio=${exercise.muscleGroups.includes("cardio") ? "1" : "0"}`}
               className="flex items-center gap-3 py-3.5 transition-colors hover:bg-accent/40"
             >
               <div className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-primary/10">
@@ -145,7 +145,7 @@ export function ClientExerciseEvolution({
                   </p>
                 ) : (
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                    {muscleGroupLabel(exercise.muscleGroup)}
+                    {exercise.muscleGroups.map(muscleGroupLabel).join(" + ")}
                   </p>
                 )}
                 {exercise.lastDate ? (

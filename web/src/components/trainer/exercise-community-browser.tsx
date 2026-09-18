@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
+import { muscleGroupLabel, muscleGroupOrder, equipmentLabel, equipmentOrder, equipmentItemsLabel } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { youtubeThumbnails, youtubeVideoId } from "@/lib/youtube";
 import type { CommunityExerciseOption, MuscleGroup, Equipment } from "@/lib/types/exercise";
@@ -32,28 +32,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const MUSCLE_GROUPS: MuscleGroup[] = [
-  "chest",
-  "back",
-  "shoulders",
-  "arms",
-  "legs",
-  "core",
-  "cardio",
-  "full_body",
-];
+const MUSCLE_GROUPS = muscleGroupOrder as unknown as MuscleGroup[];
 
-const EQUIPMENT: Equipment[] = [
-  "bodyweight",
-  "barbell",
-  "dumbbell",
-  "machine",
-  "cable",
-  "kettlebell",
-  "resistance_band",
-  "bench",
-  "other",
-];
+const EQUIPMENT = equipmentOrder as unknown as Equipment[];
 
 type SortOption = "name_asc" | "added_first" | "not_added_first" | "date_desc";
 
@@ -90,8 +71,8 @@ export function ExerciseCommunityBrowser({
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     const result = exercises.filter((exercise) => {
-      if (muscleGroup && exercise.muscle_group !== muscleGroup) return false;
-      if (equipment && exercise.equipment !== equipment) return false;
+      if (muscleGroup && !exercise.muscle_groups.includes(muscleGroup)) return false;
+      if (equipment && !exercise.equipment_items.includes(equipment)) return false;
       if (q && !exercise.name.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -159,8 +140,8 @@ export function ExerciseCommunityBrowser({
     const { error } = await supabase.from("exercises").insert({
       forked_from: exercise.id,
       name: exercise.name,
-      muscle_group: exercise.muscle_group,
-      equipment: exercise.equipment,
+      muscle_groups: exercise.muscle_groups,
+      equipment_items: exercise.equipment_items,
       description: exercise.description,
       video_url: exercise.video_url,
       image_path: exercise.image_path,
@@ -396,8 +377,12 @@ export function ExerciseCommunityBrowser({
                     <p className="truncate text-sm font-semibold">{exercise.name}</p>
                     <p className="truncate text-[11px] text-muted-foreground">Por {exercise.creator_name}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      <Badge variant="secondary">{muscleGroupLabel(exercise.muscle_group)}</Badge>
-                      <Badge variant="secondary">{equipmentLabel(exercise.equipment)}</Badge>
+                      {exercise.muscle_groups.map((group) => (
+                        <Badge key={group} variant="secondary">
+                          {muscleGroupLabel(group)}
+                        </Badge>
+                      ))}
+                      <Badge variant="secondary">{equipmentItemsLabel(exercise.equipment_items)}</Badge>
                     </div>
                     {exercise.in_my_library && (
                       <Badge
@@ -479,8 +464,12 @@ export function ExerciseCommunityBrowser({
             })()}
 
             <div className="flex flex-wrap items-center gap-1.5">
-              <Badge variant="secondary">{muscleGroupLabel(detailExercise.muscle_group)}</Badge>
-              <Badge variant="secondary">{equipmentLabel(detailExercise.equipment)}</Badge>
+              {detailExercise.muscle_groups.map((group) => (
+                <Badge key={group} variant="secondary">
+                  {muscleGroupLabel(group)}
+                </Badge>
+              ))}
+              <Badge variant="secondary">{equipmentItemsLabel(detailExercise.equipment_items)}</Badge>
             </div>
 
             <p className="text-xs text-muted-foreground">Por {detailExercise.creator_name}</p>

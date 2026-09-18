@@ -6,7 +6,27 @@ export type MuscleGroup =
   | "legs"
   | "core"
   | "cardio"
-  | "full_body";
+  | "full_body"
+  | "gluteos"
+  | "gluteo_medio"
+  | "femorales"
+  | "cuadriceps"
+  | "pantorrillas"
+  | "aductores"
+  | "abdomen"
+  | "oblicuos"
+  | "pecho_superior"
+  | "pecho_inferior"
+  | "dorsales"
+  | "trapecio"
+  | "deltoide_anterior"
+  | "deltoide_lateral"
+  | "deltoide_posterior"
+  | "biceps"
+  | "triceps"
+  | "braquial"
+  | "tibial_anterior"
+  | "agarre";
 
 export type Equipment =
   | "bodyweight"
@@ -17,13 +37,20 @@ export type Equipment =
   | "kettlebell"
   | "resistance_band"
   | "bench"
-  | "other";
+  | "other"
+  | "pull_up_bar"
+  | "cardio_machine"
+  | "disc"
+  | "landmine"
+  | "fitball"
+  | "ab_wheel"
+  | "smith_machine";
 
 export interface ExerciseSummary {
   id: string;
   name: string;
-  muscle_group: MuscleGroup;
-  equipment: Equipment;
+  muscle_groups: MuscleGroup[];
+  equipment_items: Equipment[];
   video_url: string | null;
   image_path: string | null;
   /** null = esencial de Aretia; en mi biblioteca solo puede ser esto o mi
@@ -35,8 +62,8 @@ export interface ExerciseSummary {
 export interface ExerciseDetail {
   id: string;
   name: string;
-  muscle_group: MuscleGroup;
-  equipment: Equipment;
+  muscle_groups: MuscleGroup[];
+  equipment_items: Equipment[];
   description: string | null;
   video_url: string | null;
   image_path: string | null;
@@ -49,8 +76,8 @@ export interface ExerciseDetail {
 export interface CommunityExerciseOption {
   id: string;
   name: string;
-  muscle_group: MuscleGroup;
-  equipment: Equipment;
+  muscle_groups: MuscleGroup[];
+  equipment_items: Equipment[];
   description: string | null;
   video_url: string | null;
   image_path: string | null;

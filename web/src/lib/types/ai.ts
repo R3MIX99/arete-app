@@ -21,7 +21,7 @@ export interface AiRoutineSet {
 export interface AiRoutineExercise {
   exercise_id: string | null;
   exercise_name: string;
-  muscle_group: MuscleGroup;
+  muscle_groups: MuscleGroup[];
   is_cardio: boolean;
   notes: string;
   sets: AiRoutineSet[];

@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils";
 import { usePlanCapabilities } from "@/components/trainer/plan-capabilities";
 import { PlansDialog } from "@/components/trainer/plans-dialog";
 
-function isCardioGroup(muscleGroup: string) {
-  return muscleGroup === "cardio";
+function isCardioGroup(muscleGroups: string[]) {
+  return muscleGroups.includes("cardio");
 }
 
 function scoreTone(score: number) {
@@ -72,12 +72,11 @@ export function RoutineAiScoreCard({
         level,
         goal,
         exercises: exercises.map((e) => {
-          const cardio = isCardioGroup(e.exercise_muscle_group);
+          const cardio = isCardioGroup(e.exercise_muscle_groups);
           const first = e.sets[0];
           return {
             exercise_name: e.exercise_name,
-            muscle_group: e.exercise_muscle_group,
-            equipment: "",
+            muscle_groups: e.exercise_muscle_groups,
             is_cardio: cardio,
             sets_count: e.sets.length,
             target_reps_min: first?.target_reps_min ?? null,

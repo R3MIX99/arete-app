@@ -14,7 +14,7 @@ import type { CalendarAssignment } from "@/lib/calendar-logic";
 
 interface ExerciseRef {
   name: string;
-  muscle_group: string;
+  muscle_groups: string[];
 }
 
 interface ProgramRoutineRow {
@@ -52,7 +52,7 @@ interface SetLogRow {
 interface SessionSetLogRow {
   session_id: string;
   is_completed: boolean;
-  exercises: { muscle_group: string } | { muscle_group: string }[] | null;
+  exercises: { muscle_groups: string[] } | { muscle_groups: string[] }[] | null;
 }
 
 function one<T>(value: T | T[] | null): T | null {
@@ -103,7 +103,7 @@ export default async function ClientDetailPage({
       // registra con minutos y nivel), así que ese filtro lo dejaba
       // fuera por completo de la pestaña Evolución.
       .select(
-        "session_date, actual_weight, actual_minutes, exercise_id, exercises(name, muscle_group)",
+        "session_date, actual_weight, actual_minutes, exercise_id, exercises(name, muscle_groups)",
       )
       .eq("client_id", id)
       .eq("is_completed", true)
@@ -130,7 +130,7 @@ export default async function ClientDetailPage({
       .order("start_date", { ascending: false }),
     supabase
       .from("client_set_logs")
-      .select("session_id, is_completed, exercises(muscle_group)")
+      .select("session_id, is_completed, exercises(muscle_groups)")
       .eq("client_id", id),
     // Programas y planes del entrenador — para el modal de "cambiar de
     // programa / plan" desde el detalle del cliente.
@@ -171,10 +171,10 @@ export default async function ClientDetailPage({
     if (row.is_completed) {
       completedSetsBySession.set(row.session_id, (completedSetsBySession.get(row.session_id) ?? 0) + 1);
     } else {
-      const muscleGroup = one(row.exercises)?.muscle_group;
-      if (muscleGroup) {
+      const muscleGroups = one(row.exercises)?.muscle_groups ?? [];
+      if (muscleGroups.length > 0) {
         const set = incompleteGroupsBySession.get(row.session_id) ?? new Set<string>();
-        set.add(muscleGroup);
+        for (const group of muscleGroups) set.add(group);
         incompleteGroupsBySession.set(row.session_id, set);
       }
     }
@@ -214,20 +214,20 @@ export default async function ClientDetailPage({
 
   const byExercise = new Map<
     string,
-    { name: string; muscleGroup: string; logs: { date: string; weight: number }[] }
+    { name: string; muscleGroups: string[]; logs: { date: string; weight: number }[] }
   >();
   for (const row of (setLogs ?? []) as SetLogRow[]) {
     const exercise = one(row.exercises);
-    const muscleGroup = exercise?.muscle_group ?? "";
+    const muscleGroups = exercise?.muscle_groups ?? [];
     // En cardio la métrica que progresa son los minutos; en fuerza, el
     // peso. Se guarda en el mismo campo y la unidad se marca aparte.
-    const cardio = muscleGroup === "cardio";
+    const cardio = muscleGroups.includes("cardio");
     const value = cardio ? row.actual_minutes : row.actual_weight;
     if (value === null) continue;
 
     const entry = byExercise.get(row.exercise_id) ?? {
       name: exercise?.name ?? "Ejercicio",
-      muscleGroup,
+      muscleGroups,
       logs: [],
     };
     // Varias series del mismo día cuentan como un solo registro (el
@@ -243,15 +243,15 @@ export default async function ClientDetailPage({
   }
 
   const exerciseSummaries: ExerciseProgressSummary[] = Array.from(byExercise.entries())
-    .map(([exerciseId, { name, muscleGroup, logs }]) => {
+    .map(([exerciseId, { name, muscleGroups, logs }]) => {
       const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
       return {
         exercise_id: exerciseId,
         exercise_name: name,
-        muscle_group: muscleGroup,
+        muscle_groups: muscleGroups,
         starting_weight: sorted[0].weight,
         current_weight: sorted[sorted.length - 1].weight,
-        unit: muscleGroup === "cardio" ? ("min" as const) : ("kg" as const),
+        unit: muscleGroups.includes("cardio") ? ("min" as const) : ("kg" as const),
         logs: sorted,
       };
     })

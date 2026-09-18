@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Search, Plus, Dumbbell, PlayCircle } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
+import { muscleGroupLabel, equipmentItemsLabel } from "@/lib/format";
 import { youtubeThumbnails } from "@/lib/youtube";
 import type { ExerciseSummary } from "@/lib/types/exercise";
 import { Input } from "@/components/ui/input";
@@ -101,8 +101,12 @@ export function LibraryExercisesBrowser({ exercises }: { exercises: ExerciseSumm
                     <div className="min-w-0 flex-1 py-1">
                       <p className="truncate text-sm font-semibold">{exercise.name}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        <Badge variant="secondary">{muscleGroupLabel(exercise.muscle_group)}</Badge>
-                        <Badge variant="secondary">{equipmentLabel(exercise.equipment)}</Badge>
+                        {exercise.muscle_groups.map((group) => (
+                          <Badge key={group} variant="secondary">
+                            {muscleGroupLabel(group)}
+                          </Badge>
+                        ))}
+                        <Badge variant="secondary">{equipmentItemsLabel(exercise.equipment_items)}</Badge>
                       </div>
                     </div>
                   </CardContent>

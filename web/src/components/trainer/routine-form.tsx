@@ -65,8 +65,8 @@ const GOAL_OPTIONS = [
   { value: "performance", label: "Rendimiento" },
 ];
 
-function isCardioGroup(muscleGroup: string) {
-  return muscleGroup === "cardio";
+function isCardioGroup(muscleGroups: string[]) {
+  return muscleGroups.includes("cardio");
 }
 
 function defaultSet(
@@ -190,7 +190,7 @@ export function RoutineForm({
       nextExercises.push({
         exercise_id: matched.id,
         exercise_name: matched.name,
-        exercise_muscle_group: matched.muscle_group,
+        exercise_muscle_groups: matched.muscle_groups,
         exercise_video_url: matched.video_url,
         order_index: nextExercises.length,
         notes: aiExercise.notes || "",
@@ -221,11 +221,11 @@ export function RoutineForm({
       {
         exercise_id: exercise.id,
         exercise_name: exercise.name,
-        exercise_muscle_group: exercise.muscle_group,
+        exercise_muscle_groups: exercise.muscle_groups,
         exercise_video_url: exercise.video_url,
         order_index: prev.length,
         notes: "",
-        sets: [defaultSet(1, isCardioGroup(exercise.muscle_group))],
+        sets: [defaultSet(1, isCardioGroup(exercise.muscle_groups))],
       },
     ]);
   }
@@ -259,7 +259,7 @@ export function RoutineForm({
           ...ex,
           sets: [
             ...ex.sets,
-            defaultSet(ex.sets.length + 1, isCardioGroup(ex.exercise_muscle_group), last),
+            defaultSet(ex.sets.length + 1, isCardioGroup(ex.exercise_muscle_groups), last),
           ],
         };
       }),
@@ -569,7 +569,7 @@ export function RoutineForm({
 
                     <Separator />
 
-                    {isCardioGroup(exercise.exercise_muscle_group) ? (
+                    {isCardioGroup(exercise.exercise_muscle_groups) ? (
                       <div className="flex flex-col gap-2">
                         <div className="grid grid-cols-[2rem_1fr_1fr] gap-2 text-[11px] font-medium text-muted-foreground uppercase">
                           <span>Serie</span>
@@ -866,7 +866,7 @@ export function RoutineForm({
 
                   <Separator />
 
-                  {isCardioGroup(exercise.exercise_muscle_group) ? (
+                  {isCardioGroup(exercise.exercise_muscle_groups) ? (
                     <div className="flex flex-col gap-2">
                       <div className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 text-[11px] font-medium text-muted-foreground uppercase">
                         <span>Serie</span>

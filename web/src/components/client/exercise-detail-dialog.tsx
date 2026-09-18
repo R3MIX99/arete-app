@@ -19,7 +19,7 @@ export function ExerciseDetailDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const videoId = exercise?.video_url ? youtubeVideoId(exercise.video_url) : null;
-  const cardio = exercise ? isCardioGroup(exercise.muscle_group) : false;
+  const cardio = exercise ? isCardioGroup(exercise.muscle_groups) : false;
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange} title={exercise?.exercise_name ?? ""}>
@@ -108,7 +108,7 @@ export function ExerciseDetailDialog({
 
           <Button asChild type="button" variant="outline" size="sm" className="w-fit gap-2">
             <Link
-              href={`/cliente/entrenamiento/evolucion/${exercise.exercise_id}?name=${encodeURIComponent(exercise.exercise_name)}&muscle=${encodeURIComponent(exercise.muscle_group)}`}
+              href={`/cliente/entrenamiento/evolucion/${exercise.exercise_id}?name=${encodeURIComponent(exercise.exercise_name)}&cardio=${cardio ? "1" : "0"}`}
             >
               <History className="size-4" />
               Ver historial

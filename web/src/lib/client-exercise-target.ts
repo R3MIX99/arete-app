@@ -1,7 +1,7 @@
 import type { SessionExerciseInfo } from "@/lib/types/client-panel";
 
-export function isCardioGroup(muscleGroup: string): boolean {
-  return muscleGroup === "cardio";
+export function isCardioGroup(muscleGroups: string[]): boolean {
+  return muscleGroups.includes("cardio");
 }
 
 /** Línea "2 series de 8-12 repeticiones, 90s de descanso" (o su
@@ -12,7 +12,7 @@ export function summarizeTarget(exercise: SessionExerciseInfo): string {
   if (sets.length === 0) return "Sin series definidas";
   const setLabel = `${sets.length} serie${sets.length > 1 ? "s" : ""}`;
 
-  if (isCardioGroup(exercise.muscle_group)) {
+  if (isCardioGroup(exercise.muscle_groups)) {
     const minutes = sets.map((s) => s.target_minutes).filter((v): v is number => v != null);
     const levels = sets.map((s) => s.target_level).filter((v): v is number => v != null);
     const minutesLabel = minutes.length

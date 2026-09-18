@@ -56,10 +56,67 @@ export const muscleGroupLabels: Record<string, string> = {
   core: "Core",
   cardio: "Cardio",
   full_body: "Cuerpo completo",
+  gluteos: "Glúteos",
+  gluteo_medio: "Glúteo medio",
+  femorales: "Femorales",
+  cuadriceps: "Cuádriceps",
+  pantorrillas: "Pantorrillas",
+  aductores: "Aductores",
+  abdomen: "Abdomen",
+  oblicuos: "Oblicuos",
+  pecho_superior: "Pecho superior",
+  pecho_inferior: "Pecho inferior",
+  dorsales: "Dorsales",
+  trapecio: "Trapecio",
+  deltoide_anterior: "Deltoide anterior",
+  deltoide_lateral: "Deltoide lateral",
+  deltoide_posterior: "Deltoide posterior",
+  biceps: "Bíceps",
+  triceps: "Tríceps",
+  braquial: "Braquial",
+  tibial_anterior: "Tibial anterior",
+  agarre: "Agarre",
 };
+
+/** Orden en el que se muestran los grupos musculares en los selectores de
+ * checkboxes — agrupados por zona del cuerpo, no alfabético. */
+export const muscleGroupOrder = [
+  "chest",
+  "pecho_superior",
+  "pecho_inferior",
+  "back",
+  "dorsales",
+  "trapecio",
+  "shoulders",
+  "deltoide_anterior",
+  "deltoide_lateral",
+  "deltoide_posterior",
+  "arms",
+  "biceps",
+  "triceps",
+  "braquial",
+  "agarre",
+  "core",
+  "abdomen",
+  "oblicuos",
+  "legs",
+  "gluteos",
+  "gluteo_medio",
+  "femorales",
+  "cuadriceps",
+  "aductores",
+  "pantorrillas",
+  "tibial_anterior",
+  "cardio",
+  "full_body",
+] as const;
 
 export function muscleGroupLabel(value: string): string {
   return muscleGroupLabels[value] ?? value;
+}
+
+export function muscleGroupsLabel(values: string[]): string {
+  return values.map(muscleGroupLabel).join(" + ");
 }
 
 export const equipmentLabels: Record<string, string> = {
@@ -72,10 +129,40 @@ export const equipmentLabels: Record<string, string> = {
   resistance_band: "Banda de resistencia",
   bench: "Banco",
   other: "Otro",
+  pull_up_bar: "Barra de dominadas",
+  cardio_machine: "Máquina de cardio",
+  disc: "Disco",
+  landmine: "Landmine",
+  fitball: "Fitball",
+  ab_wheel: "Rueda abdominal",
+  smith_machine: "Multipower",
 };
+
+export const equipmentOrder = [
+  "bodyweight",
+  "barbell",
+  "dumbbell",
+  "kettlebell",
+  "machine",
+  "smith_machine",
+  "cable",
+  "bench",
+  "resistance_band",
+  "pull_up_bar",
+  "landmine",
+  "disc",
+  "fitball",
+  "ab_wheel",
+  "cardio_machine",
+  "other",
+] as const;
 
 export function equipmentLabel(value: string): string {
   return equipmentLabels[value] ?? value;
+}
+
+export function equipmentItemsLabel(values: string[]): string {
+  return values.map(equipmentLabel).join(" + ");
 }
 
 /** ISO 8601: 1 = lunes ... 7 = domingo. */

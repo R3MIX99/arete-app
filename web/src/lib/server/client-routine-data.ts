@@ -6,8 +6,8 @@ import type { SessionExerciseInfo } from "@/lib/types/client-panel";
 interface ExerciseJoin {
   name: string;
   description: string | null;
-  muscle_group: string;
-  equipment: string;
+  muscle_groups: string[];
+  equipment_items: string[];
   video_url: string | null;
   image_path: string | null;
 }
@@ -44,7 +44,7 @@ export async function fetchRoutineSessionData(supabase: SupabaseClient<any>, rou
     supabase
       .from("routine_exercises")
       .select(
-        "id, exercise_id, order_index, notes, exercises(name, description, muscle_group, equipment, video_url, image_path), routine_exercise_sets(id, set_number, target_reps_min, target_reps_max, suggested_weight, rest_seconds, target_minutes, target_level)",
+        "id, exercise_id, order_index, notes, exercises(name, description, muscle_groups, equipment_items, video_url, image_path), routine_exercise_sets(id, set_number, target_reps_min, target_reps_max, suggested_weight, rest_seconds, target_minutes, target_level)",
       )
       .eq("routine_id", routineId)
       .order("order_index"),
@@ -65,8 +65,8 @@ export async function fetchRoutineSessionData(supabase: SupabaseClient<any>, rou
       exercise_id: row.exercise_id,
       exercise_name: ex?.name ?? "Ejercicio",
       exercise_description: ex?.description ?? null,
-      muscle_group: ex?.muscle_group ?? "",
-      equipment: ex?.equipment ?? "",
+      muscle_groups: ex?.muscle_groups ?? [],
+      equipment_items: ex?.equipment_items ?? [],
       video_url: ex?.video_url ?? null,
       image_url: uploadedImage ?? thumbs?.primary ?? null,
       image_fallback_url: thumbs?.fallback ?? null,

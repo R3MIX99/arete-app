@@ -33,8 +33,8 @@ export interface RoutineSummaryWithFeedback extends RoutineSummary {
 export interface ExerciseOption {
   id: string;
   name: string;
-  muscle_group: string;
-  equipment: string;
+  muscle_groups: string[];
+  equipment_items: string[];
   video_url: string | null;
 }
 
@@ -55,9 +55,9 @@ export interface RoutineExerciseInput {
   id?: string;
   exercise_id: string;
   exercise_name: string;
-  // Grupo muscular del ejercicio — determina si sus series se capturan
-  // como reps/descanso (fuerza) o minutos/nivel (cardio).
-  exercise_muscle_group: string;
+  // Grupos musculares del ejercicio — si incluyen "cardio" determina que
+  // sus series se capturan como minutos/nivel en vez de reps/descanso.
+  exercise_muscle_groups: string[];
   exercise_video_url: string | null;
   order_index: number;
   notes: string;

@@ -14,8 +14,8 @@ export interface SessionExerciseInfo {
   exercise_id: string;
   exercise_name: string;
   exercise_description: string | null;
-  muscle_group: string;
-  equipment: string;
+  muscle_groups: string[];
+  equipment_items: string[];
   video_url: string | null;
   /** URL pública de la foto del ejercicio (bucket exercise-images), ya
    * resuelta en el servidor. Si no tiene foto, la miniatura de su
@@ -60,7 +60,7 @@ export interface CompletedSessionRow {
 export interface ClientExerciseProgress {
   exerciseId: string;
   exerciseName: string;
-  muscleGroup: string;
+  muscleGroups: string[];
   logs: { date: string; weight: number; reps: number | null }[];
   /** Peso y reps de la serie más reciente — para el chip de "ahora
    * mismo estás en" en la lista de Evolución, sin tener que entrar al

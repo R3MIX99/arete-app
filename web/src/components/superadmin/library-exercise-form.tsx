@@ -10,42 +10,24 @@ import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compress";
 import { youtubeVideoId } from "@/lib/youtube";
 import type { ExerciseDetail } from "@/lib/types/exercise";
+import { muscleGroupLabels, muscleGroupOrder, equipmentLabels, equipmentOrder } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CheckboxGroup } from "@/components/ui/checkbox-group";
 
-const MUSCLE_GROUP_OPTIONS = [
-  { value: "chest", label: "Pecho" },
-  { value: "back", label: "Espalda" },
-  { value: "shoulders", label: "Hombros" },
-  { value: "arms", label: "Brazos" },
-  { value: "legs", label: "Piernas" },
-  { value: "core", label: "Core" },
-  { value: "cardio", label: "Cardio" },
-  { value: "full_body", label: "Cuerpo completo" },
-];
+const MUSCLE_GROUP_OPTIONS = muscleGroupOrder.map((value) => ({
+  value,
+  label: muscleGroupLabels[value],
+}));
 
-const EQUIPMENT_OPTIONS = [
-  { value: "bodyweight", label: "Peso corporal" },
-  { value: "barbell", label: "Barra" },
-  { value: "dumbbell", label: "Mancuernas" },
-  { value: "machine", label: "Máquina" },
-  { value: "cable", label: "Polea" },
-  { value: "kettlebell", label: "Kettlebell" },
-  { value: "resistance_band", label: "Banda de resistencia" },
-  { value: "bench", label: "Banco" },
-  { value: "other", label: "Otro" },
-];
+const EQUIPMENT_OPTIONS = equipmentOrder.map((value) => ({
+  value,
+  label: equipmentLabels[value],
+}));
 
 /**
  * Crear/editar un ejercicio de la biblioteca de Aretia (trainer_id
@@ -62,8 +44,12 @@ export function LibraryExerciseForm({
 }) {
   const router = useRouter();
   const [name, setName] = React.useState(exercise?.name ?? "");
-  const [muscleGroup, setMuscleGroup] = React.useState(exercise?.muscle_group ?? "chest");
-  const [equipment, setEquipment] = React.useState(exercise?.equipment ?? "bodyweight");
+  const [muscleGroups, setMuscleGroups] = React.useState<string[]>(
+    exercise?.muscle_groups ?? ["chest"],
+  );
+  const [equipmentItems, setEquipmentItems] = React.useState<string[]>(
+    exercise?.equipment_items ?? ["bodyweight"],
+  );
   const [description, setDescription] = React.useState(exercise?.description ?? "");
   const [videoUrl, setVideoUrl] = React.useState(exercise?.video_url ?? "");
   const [imagePath, setImagePath] = React.useState<string | null>(exercise?.image_path ?? null);
@@ -101,14 +87,22 @@ export function LibraryExerciseForm({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (muscleGroups.length === 0) {
+      setError("Elige al menos un grupo muscular.");
+      return;
+    }
+    if (equipmentItems.length === 0) {
+      setError("Elige al menos un tipo de equipo.");
+      return;
+    }
     setSaving(true);
     setError(null);
 
     const supabase = createClient();
     const payload = {
       name,
-      muscle_group: muscleGroup,
-      equipment,
+      muscle_groups: muscleGroups,
+      equipment_items: equipmentItems,
       description: description || null,
       video_url: videoUrl || null,
       image_path: imagePath,
@@ -252,43 +246,25 @@ export function LibraryExerciseForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="muscle_group">Grupo muscular</Label>
-                  <Select
-                    value={muscleGroup}
-                    onValueChange={(v) => setMuscleGroup(v as typeof muscleGroup)}
-                  >
-                    <SelectTrigger id="muscle_group">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MUSCLE_GROUP_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="equipment">Equipo</Label>
-                  <Select
-                    value={equipment}
-                    onValueChange={(v) => setEquipment(v as typeof equipment)}
-                  >
-                    <SelectTrigger id="equipment">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {EQUIPMENT_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Grupo muscular (elige uno o varios)</Label>
+                <CheckboxGroup
+                  idPrefix="muscle_group"
+                  options={MUSCLE_GROUP_OPTIONS}
+                  value={muscleGroups}
+                  onChange={setMuscleGroups}
+                  columns={2}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Equipo (elige uno o varios)</Label>
+                <CheckboxGroup
+                  idPrefix="equipment"
+                  options={EQUIPMENT_OPTIONS}
+                  value={equipmentItems}
+                  onChange={setEquipmentItems}
+                  columns={2}
+                />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="description">Descripción (opcional)</Label>

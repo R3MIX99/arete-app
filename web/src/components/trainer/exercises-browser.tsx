@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, Dumbbell, PlayCircle, SlidersHorizontal, FilterX } from "lucide-react";
+import { Search, Plus, Dumbbell, PlayCircle, SlidersHorizontal, FilterX, FileSpreadsheet } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
+import { muscleGroupLabel, muscleGroupOrder, equipmentLabel, equipmentOrder, equipmentItemsLabel } from "@/lib/format";
 import { youtubeThumbnails } from "@/lib/youtube";
 import type { ExerciseSummary, MuscleGroup, Equipment } from "@/lib/types/exercise";
 import { Input } from "@/components/ui/input";
@@ -22,29 +22,11 @@ import {
 } from "@/components/ui/select";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { MobileFab } from "@/components/trainer/mobile-fab";
+import { ImportExercisesDialog } from "@/components/trainer/import-exercises-dialog";
 
-const MUSCLE_GROUPS: MuscleGroup[] = [
-  "chest",
-  "back",
-  "shoulders",
-  "arms",
-  "legs",
-  "core",
-  "cardio",
-  "full_body",
-];
+const MUSCLE_GROUPS = muscleGroupOrder as unknown as MuscleGroup[];
 
-const EQUIPMENT: Equipment[] = [
-  "bodyweight",
-  "barbell",
-  "dumbbell",
-  "machine",
-  "cable",
-  "kettlebell",
-  "resistance_band",
-  "bench",
-  "other",
-];
+const EQUIPMENT = equipmentOrder as unknown as Equipment[];
 
 type OriginFilter = "all" | "community" | "created";
 
@@ -66,6 +48,7 @@ export function ExercisesBrowser({
   const [equipment, setEquipment] = React.useState<Equipment | null>(null);
   const [origin, setOrigin] = React.useState<OriginFilter>("all");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = React.useState(false);
 
   // "Creados" = lo que yo escribí desde cero. "Comunidad" = esenciales
   // de Aretia o copias que hice de otro entrenador — no nacieron conmigo.
@@ -78,8 +61,8 @@ export function ExercisesBrowser({
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     return exercises.filter((exercise) => {
-      if (muscleGroup && exercise.muscle_group !== muscleGroup) return false;
-      if (equipment && exercise.equipment !== equipment) return false;
+      if (muscleGroup && !exercise.muscle_groups.includes(muscleGroup)) return false;
+      if (equipment && !exercise.equipment_items.includes(equipment)) return false;
       if (!matchesOrigin(exercise)) return false;
       if (q && !exercise.name.toLowerCase().includes(q)) return false;
       return true;
@@ -120,6 +103,15 @@ export function ExercisesBrowser({
             {hasActiveFilters && (
               <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
             )}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Importar desde Excel"
+            className="shrink-0 md:hidden"
+            onClick={() => setImportOpen(true)}
+          >
+            <FileSpreadsheet className="size-4" />
           </Button>
         </div>
 
@@ -196,13 +188,21 @@ export function ExercisesBrowser({
           </Button>
         </div>
 
-        <Button asChild className="ml-auto hidden md:inline-flex">
-          <Link href="/entrenador/ejercicios/nuevo">
-            <Plus />
-            Nuevo ejercicio
-          </Link>
-        </Button>
+        <div className="ml-auto hidden items-center gap-2 md:flex">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <FileSpreadsheet />
+            Importar desde Excel
+          </Button>
+          <Button asChild>
+            <Link href="/entrenador/ejercicios/nuevo">
+              <Plus />
+              Nuevo ejercicio
+            </Link>
+          </Button>
+        </div>
       </div>
+
+      <ImportExercisesDialog open={importOpen} onOpenChange={setImportOpen} trainerId={trainerId} />
 
       <MobileFab
         href="/entrenador/ejercicios/nuevo"
@@ -336,11 +336,13 @@ export function ExercisesBrowser({
                     <div className="min-w-0 flex-1 py-1">
                       <p className="truncate text-sm font-semibold">{exercise.name}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
+                        {exercise.muscle_groups.map((group) => (
+                          <Badge key={group} variant="secondary">
+                            {muscleGroupLabel(group)}
+                          </Badge>
+                        ))}
                         <Badge variant="secondary">
-                          {muscleGroupLabel(exercise.muscle_group)}
-                        </Badge>
-                        <Badge variant="secondary">
-                          {equipmentLabel(exercise.equipment)}
+                          {equipmentItemsLabel(exercise.equipment_items)}
                         </Badge>
                       </div>
                     </div>

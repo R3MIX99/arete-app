@@ -5,8 +5,7 @@ import { fetchKnowledgeContext, knowledgeContextBlock } from "./_shared/knowledg
 
 interface ScoreRoutineExercise {
   exercise_name: string;
-  muscle_group: string;
-  equipment: string;
+  muscle_groups: string[];
   is_cardio: boolean;
   sets_count: number;
   target_reps_min?: number | null;
@@ -71,7 +70,7 @@ Deno.serve(async (req: Request) => {
         const detail = e.is_cardio
           ? `${e.sets_count} series de ~${e.target_minutes ?? "?"} min`
           : `${e.sets_count} series de ${e.target_reps_min ?? "?"}-${e.target_reps_max ?? "?"} reps`;
-        return `${i + 1}. ${e.exercise_name} — grupo:${e.muscle_group}, equipo:${e.equipment} — ${detail}`;
+        return `${i + 1}. ${e.exercise_name} — grupos:${e.muscle_groups.join("+")} — ${detail}`;
       })
       .join("\n");
 

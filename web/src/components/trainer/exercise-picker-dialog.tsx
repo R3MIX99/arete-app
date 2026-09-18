@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Search, Dumbbell } from "lucide-react";
 
-import { muscleGroupLabel, equipmentLabel } from "@/lib/format";
+import { muscleGroupLabel, muscleGroupOrder, equipmentItemsLabel } from "@/lib/format";
 import type { ExerciseOption } from "@/lib/types/routine";
 import type { MuscleGroup } from "@/lib/types/exercise";
 import {
@@ -22,16 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const MUSCLE_GROUPS: MuscleGroup[] = [
-  "chest",
-  "back",
-  "shoulders",
-  "arms",
-  "legs",
-  "core",
-  "cardio",
-  "full_body",
-];
+const MUSCLE_GROUPS = muscleGroupOrder as unknown as MuscleGroup[];
 
 export function ExercisePickerDialog({
   open,
@@ -48,7 +39,7 @@ export function ExercisePickerDialog({
   const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup | null>(null);
 
   const filtered = exercises.filter((e) => {
-    if (muscleGroup && e.muscle_group !== muscleGroup) return false;
+    if (muscleGroup && !e.muscle_groups.includes(muscleGroup)) return false;
     if (!e.name.toLowerCase().includes(query.trim().toLowerCase())) return false;
     return true;
   });
@@ -109,12 +100,14 @@ export function ExercisePickerDialog({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{exercise.name}</p>
-                  <div className="mt-0.5 flex gap-1.5">
+                  <div className="mt-0.5 flex flex-wrap gap-1.5">
+                    {exercise.muscle_groups.map((group) => (
+                      <Badge key={group} variant="secondary" className="text-[10px]">
+                        {muscleGroupLabel(group)}
+                      </Badge>
+                    ))}
                     <Badge variant="secondary" className="text-[10px]">
-                      {muscleGroupLabel(exercise.muscle_group)}
-                    </Badge>
-                    <Badge variant="secondary" className="text-[10px]">
-                      {equipmentLabel(exercise.equipment)}
+                      {equipmentItemsLabel(exercise.equipment_items)}
                     </Badge>
                   </div>
                 </div>
