@@ -48,7 +48,12 @@ export async function updateSession(request: NextRequest) {
     // redirigían a /login, así que el verificador de Google veía el
     // formulario de login en vez del contenido real.
     request.nextUrl.pathname.startsWith("/privacidad") ||
-    request.nextUrl.pathname.startsWith("/terminos");
+    request.nextUrl.pathname.startsWith("/terminos") ||
+    // Soporte y eliminación de cuenta también son públicas: Google Play
+    // exige una URL web para pedir el borrado de la cuenta, y quien no
+    // puede entrar a su cuenta necesita poder pedir ayuda.
+    request.nextUrl.pathname.startsWith("/soporte") ||
+    request.nextUrl.pathname.startsWith("/eliminar-cuenta");
   const isPublicAsset =
     request.nextUrl.pathname.startsWith("/_next") ||
     // Las plantillas de correo (public/emails/*.html) las carga GoTrue

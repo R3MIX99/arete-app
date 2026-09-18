@@ -8,18 +8,15 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * despliegue nuevo en Vercel se refleja solo, sin tener que recompilar
  * ni resubir nada a las tiendas.
  *
- * ⚠️ server.url todavía apunta al dominio temporal de Vercel — en
- * cuanto aretia.mx esté comprado y app.aretia.mx conectado, hay que
- * cambiar esta URL antes de generar el build que se sube a las tiendas
- * (Apple y Google verifican el dominio real, no sirve dejar el de
- * Vercel para la versión pública).
+ * server.url apunta al dominio real de producción (app.aretia.com.mx),
+ * que es el que Apple y Google verifican para la versión pública.
  */
 const config: CapacitorConfig = {
   appId: "mx.aretia.app",
   appName: "Aretia",
   webDir: "public-empty",
   server: {
-    url: "https://arete-app-seven.vercel.app",
+    url: "https://app.aretia.com.mx",
     cleartext: false,
   },
   ios: {

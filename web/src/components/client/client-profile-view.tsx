@@ -4,13 +4,11 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
-  AlertTriangle,
   Building2,
   ChevronLeft,
   Loader2,
   Mail,
   Phone,
-  Trash2,
   User,
   ZoomIn,
 } from "lucide-react";
@@ -31,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DeleteAccountCard } from "@/components/account/delete-account-card";
 import {
   Select,
   SelectContent,
@@ -68,8 +66,6 @@ export function ClientProfileView({
   const [savingNotifications, setSavingNotifications] = React.useState(false);
 
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
-  const [deleteOpen, setDeleteOpen] = React.useState(false);
-  const [requestingDeletion, setRequestingDeletion] = React.useState(false);
 
   // Preferencia de este dispositivo (localStorage, no la cuenta). Con
   // inicializador perezoso en vez de un efecto que llame a setState: la
@@ -131,22 +127,6 @@ export function ClientProfileView({
       toast.error("No se pudieron guardar las notificaciones");
       return;
     }
-    router.refresh();
-  }
-
-  async function handleRequestDeletion() {
-    setRequestingDeletion(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ deletion_requested_at: new Date().toISOString() })
-      .eq("id", profile.id);
-    setRequestingDeletion(false);
-    setDeleteOpen(false);
-    if (error) {
-      toast.error("No se pudo enviar la solicitud");
-      return;
-    }
-    toast.success("Solicitud enviada");
     router.refresh();
   }
 
@@ -395,45 +375,7 @@ export function ClientProfileView({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Cuenta</CardTitle>
-        </CardHeader>
-        {/* Cerrar sesión ya no está aquí: vive en el menú del avatar,
-            arriba, para no tener la misma acción en dos lugares. */}
-        <CardContent className="flex flex-col gap-3">
-          {profile.deletion_requested_at ? (
-            <div className="flex flex-col gap-1 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-              <p className="flex items-center gap-2 text-sm font-medium text-destructive">
-                <AlertTriangle className="size-4" /> Eliminación solicitada
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Pediste eliminar tu cuenta el {formatDate(profile.deletion_requested_at.slice(0, 10))}.
-                Tu entrenador se pondrá en contacto contigo para completar el proceso.
-              </p>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full text-destructive hover:text-destructive"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 /> Solicitar eliminación de cuenta
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title="¿Solicitar la eliminación de tu cuenta?"
-        description="Se avisará a tu entrenador para que procese la baja de tu cuenta y de todos tus datos. Mientras tanto puedes seguir usando la app con normalidad, y puedes pedirle que cancele la solicitud."
-        confirmLabel="Solicitar eliminación"
-        loading={requestingDeletion}
-        onConfirm={handleRequestDeletion}
-      />
+      <DeleteAccountCard userId={profile.id} role="client" />
     </div>
   );
 }

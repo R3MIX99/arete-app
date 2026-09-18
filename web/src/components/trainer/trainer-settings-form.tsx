@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ThemePicker } from "@/components/theme-picker";
+import { DeleteAccountCard } from "@/components/account/delete-account-card";
 
 export function TrainerSettingsForm({ settings }: { settings: TrainerSettings }) {
   const router = useRouter();
@@ -327,6 +328,8 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
             </p>
           </CardContent>
         </Card>
+
+        <DeleteAccountCard userId={settings.id} role="trainer" />
       </div>
     </div>
   );

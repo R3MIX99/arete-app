@@ -121,6 +121,9 @@ export default async function RootPage() {
           <Link href="/privacidad" className="underline hover:text-foreground">
             Política de privacidad
           </Link>
+          <Link href="/soporte" className="underline hover:text-foreground">
+            Soporte
+          </Link>
         </div>
         <p>Aretia, operada por Codeal.ai.</p>
       </footer>

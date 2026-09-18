@@ -172,6 +172,12 @@ export default function LoginPage() {
           </a>
           .
         </p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          ¿Necesitas ayuda?{" "}
+          <a href="/soporte" className="underline hover:text-foreground">
+            Contacta a soporte
+          </a>
+        </p>
       </div>
     </div>
   );
