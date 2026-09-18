@@ -87,7 +87,15 @@ export function ImportExercisesDialog({
     );
   }
 
+  function toggleAll(checked: boolean) {
+    setRows((prev) =>
+      prev ? prev.map((r) => (r.missingName ? r : { ...r, included: checked })) : prev,
+    );
+  }
+
   const includedCount = rows?.filter((r) => r.included).length ?? 0;
+  const selectableCount = rows?.filter((r) => !r.missingName).length ?? 0;
+  const allSelected = selectableCount > 0 && includedCount === selectableCount;
 
   async function handleImport() {
     if (!rows) return;
@@ -165,14 +173,25 @@ export function ImportExercisesDialog({
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
               <span>
                 {rows.length} fila{rows.length === 1 ? "" : "s"} encontradas — {includedCount} se
                 importarán
               </span>
-              <Button type="button" variant="ghost" size="sm" onClick={reset}>
-                Elegir otro archivo
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={selectableCount === 0}
+                  onClick={() => toggleAll(!allSelected)}
+                >
+                  {allSelected ? "Deseleccionar todos" : "Seleccionar todos"}
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={reset}>
+                  Elegir otro archivo
+                </Button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-2 overflow-y-auto pr-1">
