@@ -134,9 +134,7 @@ export function SidebarNav({
                 <Icon className="size-[18px] shrink-0" />
                 {!collapsed && <span className="truncate">{item.label}</span>}
                 {item.href === TRAINER_SUPPORT_HREF ? (
-                  <SupportUnreadBadge
-                    className={collapsed ? "absolute -top-1 -right-1 min-w-4 px-1 text-[10px]" : "ml-auto"}
-                  />
+                  <SupportUnreadBadge className="top-1 right-1" />
                 ) : null}
                 {active && !collapsed && (
                   <span

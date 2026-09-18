@@ -72,7 +72,7 @@ export function MobileNav({
                   <Link
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium"
+                    className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium"
                     style={{
                       color: active ? "var(--sb-text)" : "var(--sb-text-secondary)",
                       background: active ? "var(--sb-active)" : "transparent",
@@ -80,7 +80,7 @@ export function MobileNav({
                   >
                     <Icon className="size-[18px] shrink-0" />
                     <span className="truncate">{item.label}</span>
-                    {item.href === TRAINER_SUPPORT_HREF ? <SupportUnreadBadge className="ml-auto" /> : null}
+                    {item.href === TRAINER_SUPPORT_HREF ? <SupportUnreadBadge className="top-1.5 right-2" /> : null}
                   </Link>
                 </li>
               );

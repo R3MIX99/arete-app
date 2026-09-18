@@ -5,7 +5,7 @@ import * as React from "react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-/** Globito con los mensajes de soporte sin leer del entrenador. Se
+/** Punto pulsante que avisa que hay mensajes de soporte sin leer. Se
  * actualiza solo por tiempo real cuando llega una respuesta. */
 export function SupportUnreadBadge({ className }: { className?: string }) {
   const supabase = React.useMemo(() => createClient(), []);
@@ -37,14 +37,15 @@ export function SupportUnreadBadge({ className }: { className?: string }) {
 
   if (count === 0) return null;
 
+  // Solo un punto que pulsa, sin número: avisa que hay respuesta nueva. Se
+  // posiciona en la esquina del elemento padre (que debe ser `relative`).
   return (
     <span
-      className={cn(
-        "flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground",
-        className,
-      )}
+      className={cn("pointer-events-none absolute flex size-2.5", className)}
+      aria-label="Tienes mensajes nuevos de soporte"
     >
-      {count > 9 ? "9+" : count}
+      <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
+      <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
     </span>
   );
 }
