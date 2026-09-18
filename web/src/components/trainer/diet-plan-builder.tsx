@@ -12,6 +12,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Salad,
   Trash,
   Trash2,
   UserMinus,
@@ -54,6 +55,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Switch } from "@/components/ui/switch";
 import { DishPickerDialog } from "@/components/trainer/dish-picker-dialog";
 import { FoodPickerDialog } from "@/components/trainer/food-picker-dialog";
 import { QuantityDialog } from "@/components/trainer/quantity-dialog";
@@ -64,6 +66,9 @@ interface PlanInfo {
   name: string;
   goal_label: string | null;
   daily_calorie_target: number | null;
+  trainer_id?: string;
+  is_shared?: boolean;
+  owner_name?: string | null;
 }
 
 export function DietPlanBuilder({
@@ -77,6 +82,7 @@ export function DietPlanBuilder({
   communityDishes,
   clients,
   assignments,
+  isGymMember = false,
 }: {
   trainerId: string;
   plan: PlanInfo;
@@ -88,8 +94,12 @@ export function DietPlanBuilder({
   communityDishes?: CommunityDishOption[];
   clients: ClientProfile[];
   assignments: DietPlanAssignmentSummary[];
+  isGymMember?: boolean;
 }) {
   const router = useRouter();
+  // Biblioteca de gimnasio: se puede ver/usar el plan de un compañero,
+  // nunca editarlo — mismo criterio que routine-form.tsx / program-builder.tsx.
+  const readOnly = Boolean(plan.trainer_id) && plan.trainer_id !== trainerId;
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
@@ -456,26 +466,40 @@ export function DietPlanBuilder({
             <ArrowLeft /> Volver a nutrición
           </Link>
         </Button>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Editar información"
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil /> <span className="hidden md:inline">Editar información</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Eliminar"
-            className="text-destructive hover:text-destructive"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash /> <span className="hidden md:inline">Eliminar</span>
-          </Button>
-        </div>
+        {!readOnly ? (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Editar información"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil /> <span className="hidden md:inline">Editar información</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Eliminar"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash /> <span className="hidden md:inline">Eliminar</span>
+            </Button>
+          </div>
+        ) : null}
       </div>
+
+      {readOnly ? (
+        <Card>
+          <CardContent className="flex items-center gap-3 py-4">
+            <Salad className="size-5 shrink-0 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Plan de {plan.owner_name ?? "otro miembro del equipo"} — lo puedes ver y asignar a
+              tus clientes, pero no editarlo.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_20rem] md:items-start">
         {/* Columna izquierda: info del plan + bloques de comida. */}
@@ -504,16 +528,18 @@ export function DietPlanBuilder({
             <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Bloques
             </h2>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={addingBlock}
-              onClick={handleAddBlock}
-            >
-              {addingBlock ? <Loader2 className="animate-spin" /> : <Plus />}
-              Agregar bloque
-            </Button>
+            {!readOnly ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={addingBlock}
+                onClick={handleAddBlock}
+              >
+                {addingBlock ? <Loader2 className="animate-spin" /> : <Plus />}
+                Agregar bloque
+              </Button>
+            ) : null}
           </div>
 
           {sortedBlocks.map((block, index) => {
@@ -536,6 +562,8 @@ export function DietPlanBuilder({
                       }}
                       className="h-8 max-w-[14rem]"
                     />
+                  ) : readOnly ? (
+                    <CardTitle className="text-sm">{block.name}</CardTitle>
                   ) : (
                     <button
                       type="button"
@@ -547,6 +575,7 @@ export function DietPlanBuilder({
                     </button>
                   )}
 
+                  {!readOnly ? (
                   <div className="flex shrink-0 items-center justify-end gap-0.5">
                     <Button
                       type="button"
@@ -636,6 +665,7 @@ export function DietPlanBuilder({
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
+                  ) : null}
                 </div>
                 <CardContent className="flex flex-col gap-1.5">
                   {block.image_path && (
@@ -655,14 +685,16 @@ export function DietPlanBuilder({
                           )
                         }
                       />
-                      <button
-                        type="button"
-                        aria-label="Quitar foto del bloque"
-                        onClick={() => handleRemoveBlockImage(block.id)}
-                        className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-black/60 text-white"
-                      >
-                        <X className="size-3" />
-                      </button>
+                      {!readOnly ? (
+                        <button
+                          type="button"
+                          aria-label="Quitar foto del bloque"
+                          onClick={() => handleRemoveBlockImage(block.id)}
+                          className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-black/60 text-white"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      ) : null}
                     </div>
                   )}
                   {blockItems.length === 0 ? (
@@ -682,21 +714,23 @@ export function DietPlanBuilder({
                             {Math.round(item.calories)} kcal · {Math.round(item.protein)}g prot
                           </p>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Quitar"
-                          className="shrink-0 text-destructive hover:text-destructive"
-                          disabled={removingId === item.id}
-                          onClick={() => handleRemoveItem(item.id)}
-                        >
-                          {removingId === item.id ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="size-3.5" />
-                          )}
-                        </Button>
+                        {!readOnly ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Quitar"
+                            className="shrink-0 text-destructive hover:text-destructive"
+                            disabled={removingId === item.id}
+                            onClick={() => handleRemoveItem(item.id)}
+                          >
+                            {removingId === item.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-3.5" />
+                            )}
+                          </Button>
+                        ) : null}
                       </div>
                     ))
                   )}
@@ -769,7 +803,12 @@ export function DietPlanBuilder({
         </div>
       </div>
 
-      <EditDietPlanInfoDialog open={editOpen} onOpenChange={setEditOpen} plan={plan} />
+      <EditDietPlanInfoDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        plan={plan}
+        isGymMember={isGymMember}
+      />
 
       <ConfirmDialog
         open={deleteOpen}
@@ -882,10 +921,12 @@ function EditDietPlanInfoDialog({
   open,
   onOpenChange,
   plan,
+  isGymMember,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   plan: PlanInfo;
+  isGymMember: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -896,7 +937,9 @@ function EditDietPlanInfoDialog({
         {/* Se monta sólo mientras el diálogo está abierto: así el formulario
          * siempre arranca con los valores actuales del plan, sin necesitar
          * un efecto que sincronice el estado al abrir. */}
-        {open && <EditDietPlanInfoForm plan={plan} onOpenChange={onOpenChange} />}
+        {open && (
+          <EditDietPlanInfoForm plan={plan} onOpenChange={onOpenChange} isGymMember={isGymMember} />
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -905,9 +948,11 @@ function EditDietPlanInfoDialog({
 function EditDietPlanInfoForm({
   plan,
   onOpenChange,
+  isGymMember,
 }: {
   plan: PlanInfo;
   onOpenChange: (open: boolean) => void;
+  isGymMember: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = React.useState(plan.name);
@@ -915,6 +960,7 @@ function EditDietPlanInfoForm({
   const [dailyCalorieTarget, setDailyCalorieTarget] = React.useState<number | "">(
     plan.daily_calorie_target ?? "",
   );
+  const [isShared, setIsShared] = React.useState(plan.is_shared ?? false);
   const [saving, setSaving] = React.useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -928,6 +974,7 @@ function EditDietPlanInfoForm({
         name,
         goal_label: goalLabel || null,
         daily_calorie_target: dailyCalorieTarget === "" ? null : Number(dailyCalorieTarget),
+        is_shared: isGymMember ? isShared : false,
       })
       .eq("id", plan.id);
     setSaving(false);
@@ -987,6 +1034,18 @@ function EditDietPlanInfoForm({
           }
         />
       </div>
+      {isGymMember ? (
+        <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
+          <div>
+            <p className="text-sm font-medium">Compartir con el equipo</p>
+            <p className="text-xs text-muted-foreground">
+              Tus compañeros de gimnasio podrán verlo y asignarlo a sus clientes — nunca
+              editarlo, eso solo lo puedes hacer tú.
+            </p>
+          </div>
+          <Switch checked={isShared} onCheckedChange={setIsShared} />
+        </div>
+      ) : null}
       <Button type="submit" disabled={saving} className="w-fit">
         {saving ? <Loader2 className="animate-spin" /> : null}
         Guardar cambios

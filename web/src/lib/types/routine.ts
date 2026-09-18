@@ -76,4 +76,10 @@ export interface RoutineDetail {
   ai_score: number | null;
   ai_score_summary: string | null;
   ai_analyzed_at: string | null;
+  /** Dueño real — solo se llena en modo "edit". Si no coincide con
+   *  quien mira, el formulario entra en modo solo lectura (biblioteca
+   *  de gimnasio: se puede ver/usar lo compartido, nunca editarlo). */
+  trainer_id?: string;
+  is_shared?: boolean;
+  owner_name?: string | null;
 }

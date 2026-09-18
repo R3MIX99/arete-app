@@ -69,10 +69,13 @@ export default async function ProgramDetailPage({
     { data: routines },
     { data: clients },
     { data: assignments },
+    { data: profile },
   ] = await Promise.all([
     supabase
       .from("programs")
-      .select("id, name, description, duration_weeks, goal")
+      .select(
+        "id, name, description, duration_weeks, goal, trainer_id, is_shared, owner:trainer_id(full_name)",
+      )
       .eq("id", id)
       .single(),
     supabase
@@ -93,9 +96,15 @@ export default async function ProgramDetailPage({
       .from("client_assignments")
       .select("id, client_id, start_date, profiles!client_assignments_client_id_fkey(full_name)")
       .eq("program_id", id),
+    supabase.from("profiles").select("gym_id").eq("id", user.id).maybeSingle(),
   ]);
 
   if (!program) notFound();
+
+  const programRow = program as typeof program & {
+    owner: { full_name: string } | { full_name: string }[] | null;
+  };
+  const ownerName = one(programRow.owner)?.full_name ?? null;
 
   const clientProfiles: ClientProfile[] = ((clients ?? []) as ClientRow[]).map((row) => ({
     id: row.id,
@@ -159,12 +168,16 @@ export default async function ProgramDetailPage({
         description: program.description,
         duration_weeks: program.duration_weeks,
         goal: program.goal as ClientGoal | null,
+        trainer_id: programRow.trainer_id,
+        is_shared: programRow.is_shared,
+        owner_name: ownerName,
       }}
       slots={slots}
       routineCatalog={(routines ?? []) as RoutineOption[]}
       clients={clientProfiles}
       assignments={programAssignments}
       overridesByAssignment={overridesByAssignment}
+      isGymMember={Boolean(profile?.gym_id)}
     />
   );
 }

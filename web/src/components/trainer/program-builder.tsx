@@ -7,6 +7,7 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  CalendarRange,
   ChevronDown,
   Copy,
   Loader2,
@@ -37,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +64,9 @@ interface ProgramDetail {
   description: string | null;
   duration_weeks: number;
   goal: ClientGoal | null;
+  trainer_id?: string;
+  is_shared?: boolean;
+  owner_name?: string | null;
 }
 
 interface SlotTarget {
@@ -77,6 +82,7 @@ export function ProgramBuilder({
   clients,
   assignments,
   overridesByAssignment,
+  isGymMember = false,
 }: {
   trainerId: string;
   program: ProgramDetail;
@@ -85,8 +91,12 @@ export function ProgramBuilder({
   clients: ClientProfile[];
   assignments: ProgramAssignment[];
   overridesByAssignment: Record<string, SlotOverride[]>;
+  isGymMember?: boolean;
 }) {
   const router = useRouter();
+  // Biblioteca de gimnasio: se puede ver/usar lo de un compañero, nunca
+  // editarlo — mismo criterio que routine-form.tsx.
+  const readOnly = Boolean(program.trainer_id) && program.trainer_id !== trainerId;
 
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
@@ -417,28 +427,45 @@ export function ProgramBuilder({
             <ArrowLeft /> Volver a programas
           </Link>
         </Button>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Editar información"
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil />
-            <span className="hidden md:inline">Editar información</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Eliminar programa"
-            className="text-destructive hover:text-destructive"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash2 />
-            <span className="hidden md:inline">Eliminar programa</span>
-          </Button>
-        </div>
+        {!readOnly ? (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Editar información"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil />
+              <span className="hidden md:inline">Editar información</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Eliminar programa"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 />
+              <span className="hidden md:inline">Eliminar programa</span>
+            </Button>
+          </div>
+        ) : null}
       </div>
+
+      {readOnly ? (
+        <Card>
+          <CardContent className="flex items-center gap-3 py-4 text-sm">
+            <CalendarRange className="size-4 shrink-0 text-muted-foreground" />
+            <p className="text-muted-foreground">
+              Programa de{" "}
+              <span className="font-medium text-foreground">
+                {program.owner_name ?? "otro miembro del equipo"}
+              </span>{" "}
+              — lo puedes ver y asignar a tus clientes, pero no editarlo.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_20rem] md:items-start">
         {/* Columna izquierda: info del programa + semanas. */}
@@ -465,16 +492,18 @@ export function ProgramBuilder({
             <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Semanas
             </h2>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={addingWeek}
-              onClick={handleAddWeek}
-            >
-              {addingWeek ? <Loader2 className="animate-spin" /> : <Plus />}
-              Agregar semana
-            </Button>
+            {!readOnly ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={addingWeek}
+                onClick={handleAddWeek}
+              >
+                {addingWeek ? <Loader2 className="animate-spin" /> : <Plus />}
+                Agregar semana
+              </Button>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-3">
@@ -502,68 +531,70 @@ export function ProgramBuilder({
                         className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
                       />
                     </button>
-                    <div className="flex shrink-0 items-center justify-end gap-0.5">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Subir semana"
-                        disabled={week === 1 || movingWeek !== null}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMoveWeek(week, -1);
-                        }}
-                      >
-                        {movingWeek === week ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <ArrowUp className="size-4" />
-                        )}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Bajar semana"
-                        disabled={week === program.duration_weeks || movingWeek !== null}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMoveWeek(week, 1);
-                        }}
-                      >
-                        <ArrowDown className="size-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Clonar semana"
-                        className="md:w-auto md:px-3"
-                        disabled={filledDays === 0}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCloningFromWeek(week);
-                          setCloneTargetWeek("");
-                        }}
-                      >
-                        <Copy className="size-4" />
-                        <span className="hidden md:inline">Clonar semana</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Eliminar semana"
-                        className="text-destructive hover:text-destructive"
-                        disabled={program.duration_weeks <= 1}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setWeekToDelete(week);
-                        }}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
+                    {!readOnly ? (
+                      <div className="flex shrink-0 items-center justify-end gap-0.5">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Subir semana"
+                          disabled={week === 1 || movingWeek !== null}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveWeek(week, -1);
+                          }}
+                        >
+                          {movingWeek === week ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <ArrowUp className="size-4" />
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Bajar semana"
+                          disabled={week === program.duration_weeks || movingWeek !== null}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveWeek(week, 1);
+                          }}
+                        >
+                          <ArrowDown className="size-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Clonar semana"
+                          className="md:w-auto md:px-3"
+                          disabled={filledDays === 0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCloningFromWeek(week);
+                            setCloneTargetWeek("");
+                          }}
+                        >
+                          <Copy className="size-4" />
+                          <span className="hidden md:inline">Clonar semana</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Eliminar semana"
+                          className="text-destructive hover:text-destructive"
+                          disabled={program.duration_weeks <= 1}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setWeekToDelete(week);
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
                   <CardContent
                     className={`${isOpen ? "flex" : "hidden"} flex-col gap-1.5`}
@@ -593,30 +624,34 @@ export function ProgramBuilder({
                                   className="w-fit gap-2 py-1.5 pr-1.5 pl-3 text-sm"
                                 >
                                   {slot.routine_name}
-                                  <button
-                                    type="button"
-                                    aria-label="Quitar rutina"
-                                    disabled={removingSlotId === slot.id}
-                                    onClick={() => handleRemoveSlot(slot.id)}
-                                    className="rounded-full p-1.5 hover:bg-destructive/15 hover:text-destructive"
-                                  >
-                                    {removingSlotId === slot.id ? (
-                                      <Loader2 className="size-4 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="size-4" />
-                                    )}
-                                  </button>
+                                  {!readOnly ? (
+                                    <button
+                                      type="button"
+                                      aria-label="Quitar rutina"
+                                      disabled={removingSlotId === slot.id}
+                                      onClick={() => handleRemoveSlot(slot.id)}
+                                      className="rounded-full p-1.5 hover:bg-destructive/15 hover:text-destructive"
+                                    >
+                                      {removingSlotId === slot.id ? (
+                                        <Loader2 className="size-4 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="size-4" />
+                                      )}
+                                    </button>
+                                  ) : null}
                                 </Badge>
                               ))
                             )}
 
-                            <button
-                              type="button"
-                              onClick={() => openRoutinePickerFor(week, day)}
-                              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-[0.98] active:bg-accent md:w-fit md:justify-start md:px-3 md:py-1.5"
-                            >
-                              <Plus className="size-4" /> Agregar rutina
-                            </button>
+                            {!readOnly ? (
+                              <button
+                                type="button"
+                                onClick={() => openRoutinePickerFor(week, day)}
+                                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-[0.98] active:bg-accent md:w-fit md:justify-start md:px-3 md:py-1.5"
+                              >
+                                <Plus className="size-4" /> Agregar rutina
+                              </button>
+                            ) : null}
                           </div>
                         </div>
                       );
@@ -691,6 +726,7 @@ export function ProgramBuilder({
         open={editOpen}
         onOpenChange={setEditOpen}
         program={program}
+        isGymMember={isGymMember}
       />
 
       <ConfirmDialog
@@ -810,10 +846,12 @@ function EditProgramInfoDialog({
   open,
   onOpenChange,
   program,
+  isGymMember,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   program: ProgramDetail;
+  isGymMember: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -825,7 +863,7 @@ function EditProgramInfoDialog({
          * siempre arranca con los valores actuales del programa, sin
          * necesitar un efecto que sincronice el estado al abrir. */}
         {open && (
-          <EditProgramInfoForm program={program} onOpenChange={onOpenChange} />
+          <EditProgramInfoForm program={program} onOpenChange={onOpenChange} isGymMember={isGymMember} />
         )}
       </DialogContent>
     </Dialog>
@@ -835,14 +873,17 @@ function EditProgramInfoDialog({
 function EditProgramInfoForm({
   program,
   onOpenChange,
+  isGymMember,
 }: {
   program: ProgramDetail;
   onOpenChange: (open: boolean) => void;
+  isGymMember: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = React.useState(program.name);
   const [description, setDescription] = React.useState(program.description ?? "");
   const [goal, setGoal] = React.useState(program.goal ?? "");
+  const [isShared, setIsShared] = React.useState(program.is_shared ?? false);
   const [saving, setSaving] = React.useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -855,6 +896,7 @@ function EditProgramInfoForm({
         name,
         description: description || null,
         goal: goal || null,
+        is_shared: isGymMember ? isShared : false,
       })
       .eq("id", program.id);
     setSaving(false);
@@ -897,6 +939,18 @@ function EditProgramInfoForm({
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
+      {isGymMember ? (
+        <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
+          <div>
+            <p className="text-sm font-medium">Compartir con el equipo</p>
+            <p className="text-xs text-muted-foreground">
+              Tus compañeros de gimnasio podrán verlo y asignarlo a sus clientes — nunca
+              editarlo, eso solo lo puedes hacer tú.
+            </p>
+          </div>
+          <Switch checked={isShared} onCheckedChange={setIsShared} />
+        </div>
+      ) : null}
       <Button type="submit" disabled={saving} className="w-fit">
         {saving ? <Loader2 className="animate-spin" /> : null}
         Guardar cambios

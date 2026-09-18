@@ -120,10 +120,13 @@ export default async function DietPlanDetailPage({
     { data: assignments },
     { data: communityFoodRows },
     { data: communityDishRows },
+    { data: profile },
   ] = await Promise.all([
     supabase
       .from("diet_plans")
-      .select("id, name, goal_label, daily_calorie_target")
+      .select(
+        "id, name, goal_label, daily_calorie_target, trainer_id, is_shared, owner:trainer_id(full_name)",
+      )
       .eq("id", id)
       .single(),
     supabase
@@ -179,9 +182,15 @@ export default async function DietPlanDetailPage({
         "id, name, description, meal_type, trainer_id, image_path, forked_from, profiles!dishes_trainer_id_fkey(full_name)",
       )
       .order("name"),
+    supabase.from("profiles").select("gym_id").eq("id", user.id).maybeSingle(),
   ]);
 
   if (!plan) notFound();
+
+  const planRow = plan as typeof plan & {
+    owner: { full_name: string } | { full_name: string }[] | null;
+  };
+  const planOwnerName = one(planRow.owner)?.full_name ?? null;
 
   const clientProfiles: ClientProfile[] = ((clients ?? []) as ClientRow[]).map((row) => ({
     id: row.id,
@@ -344,7 +353,15 @@ export default async function DietPlanDetailPage({
   return (
     <DietPlanBuilder
       trainerId={user.id}
-      plan={plan}
+      plan={{
+        id: planRow.id,
+        name: planRow.name,
+        goal_label: planRow.goal_label,
+        daily_calorie_target: planRow.daily_calorie_target,
+        trainer_id: planRow.trainer_id,
+        is_shared: planRow.is_shared,
+        owner_name: planOwnerName,
+      }}
       blocks={(blocks ?? []) as DietPlanBlock[]}
       mealItems={mealItems}
       foodCatalog={foodOptions}
@@ -353,6 +370,7 @@ export default async function DietPlanDetailPage({
       communityDishes={communityDishes}
       clients={clientProfiles}
       assignments={assignmentSummaries}
+      isGymMember={Boolean(profile?.gym_id)}
     />
   );
 }

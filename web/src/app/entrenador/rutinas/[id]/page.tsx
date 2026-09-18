@@ -40,12 +40,12 @@ export default async function RoutineDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: routine }, { data: routineExercises }, { data: exercises }] =
+  const [{ data: routine }, { data: routineExercises }, { data: exercises }, { data: profile }] =
     await Promise.all([
       supabase
         .from("routines")
         .select(
-          "id, name, description, level, goal, image_path, ai_score, ai_score_summary, ai_analyzed_at",
+          "id, name, description, level, goal, image_path, ai_score, ai_score_summary, ai_analyzed_at, trainer_id, is_shared, owner:trainer_id(full_name)",
         )
         .eq("id", id)
         .single(),
@@ -62,9 +62,17 @@ export default async function RoutineDetailPage({
         .select("id, name, muscle_group, equipment, video_url")
         .or(`trainer_id.is.null,trainer_id.eq.${user.id}`)
         .order("name"),
+      supabase.from("profiles").select("gym_id").eq("id", user.id).maybeSingle(),
     ]);
 
   if (!routine) notFound();
+
+  const routineRow = routine as RoutineDetail & {
+    owner: { full_name: string } | { full_name: string }[] | null;
+  };
+  const ownerName = Array.isArray(routineRow.owner)
+    ? (routineRow.owner[0]?.full_name ?? null)
+    : (routineRow.owner?.full_name ?? null);
 
   const initialExercises: RoutineExerciseInput[] = (
     (routineExercises ?? []) as RoutineExerciseRow[]
@@ -93,10 +101,11 @@ export default async function RoutineDetailPage({
   return (
     <RoutineForm
       mode="edit"
-      routine={routine as RoutineDetail}
+      routine={{ ...(routineRow as RoutineDetail), owner_name: ownerName }}
       initialExercises={initialExercises}
       exerciseCatalog={(exercises ?? []) as ExerciseOption[]}
       trainerId={user.id}
+      isGymMember={Boolean(profile?.gym_id)}
     />
   );
 }

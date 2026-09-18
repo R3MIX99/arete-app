@@ -41,7 +41,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ExercisePickerDialog } from "@/components/trainer/exercise-picker-dialog";
@@ -98,14 +100,21 @@ export function RoutineForm({
   initialExercises,
   exerciseCatalog,
   trainerId,
+  isGymMember = false,
 }: {
   mode: "create" | "edit";
   routine?: RoutineDetail;
+  isGymMember?: boolean;
   initialExercises?: RoutineExerciseInput[];
   exerciseCatalog: ExerciseOption[];
   trainerId: string;
 }) {
   const router = useRouter();
+  // Biblioteca de gimnasio: se puede ver/usar lo de un compañero, nunca
+  // editarlo — solo el dueño edita (decisión: cada quien es dueño de
+  // lo suyo, compartir es solo para que los demás lo vean y lo asignen).
+  const readOnly = mode === "edit" && Boolean(routine?.trainer_id) && routine!.trainer_id !== trainerId;
+  const [isShared, setIsShared] = React.useState(routine?.is_shared ?? false);
   const [name, setName] = React.useState(routine?.name ?? "");
   const [description, setDescription] = React.useState(routine?.description ?? "");
   const [level, setLevel] = React.useState(routine?.level ?? "beginner");
@@ -307,6 +316,7 @@ export function RoutineForm({
       level,
       goal: goal || null,
       image_path: imagePath,
+      is_shared: isGymMember ? isShared : false,
     };
 
     let routineId = routine?.id;
@@ -465,6 +475,62 @@ export function RoutineForm({
     router.refresh();
   }
 
+  if (readOnly) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 md:p-8">
+        <Button variant="ghost" size="sm" className="w-fit" asChild>
+          <Link href="/entrenador/rutinas">
+            <ArrowLeft /> Volver a rutinas
+          </Link>
+        </Button>
+
+        <Card>
+          <CardContent className="flex items-center gap-3 py-4 text-sm">
+            <Dumbbell className="size-4 shrink-0 text-muted-foreground" />
+            <p className="text-muted-foreground">
+              Rutina de <span className="font-medium text-foreground">{routine?.owner_name ?? "otro miembro del equipo"}</span> —
+              la puedes ver y asignar a tus clientes, pero no editarla.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{name}</CardTitle>
+            {description ? <CardDescription>{description}</CardDescription> : null}
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imageUrl} alt="" className="h-40 w-full rounded-lg object-cover" />
+            ) : null}
+            <div className="flex flex-wrap gap-1.5">
+              <Badge variant="secondary">
+                {LEVEL_OPTIONS.find((o) => o.value === level)?.label ?? level}
+              </Badge>
+              {goal ? (
+                <Badge variant="secondary">
+                  {GOAL_OPTIONS.find((o) => o.value === goal)?.label ?? goal}
+                </Badge>
+              ) : null}
+            </div>
+            <div className="flex flex-col gap-2">
+              {exercises.map((ex, i) => (
+                <div key={ex.id ?? i} className="rounded-lg border border-border/80 p-3">
+                  <p className="text-sm font-medium">{ex.exercise_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {ex.sets.length} {ex.sets.length === 1 ? "serie" : "series"}
+                    {ex.notes ? ` · ${ex.notes}` : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 md:p-8">
       <div className="flex items-center justify-between">
@@ -590,6 +656,18 @@ export function RoutineForm({
                 </Select>
               </div>
             </div>
+            {isGymMember ? (
+              <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium">Compartir con el equipo</p>
+                  <p className="text-xs text-muted-foreground">
+                    Tus compañeros de gimnasio podrán verla y asignarla a sus clientes — nunca
+                    editarla, eso solo lo puedes hacer tú.
+                  </p>
+                </div>
+                <Switch checked={isShared} onCheckedChange={setIsShared} />
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
