@@ -638,7 +638,7 @@ export function DietPlanBuilder({
                 </div>
                 <CardContent className="flex flex-col gap-1.5">
                   {block.image_path && (
-                    <div className="relative mb-1 aspect-[4/3] w-full overflow-hidden rounded-lg border border-border">
+                    <div className="relative mb-1 size-20 shrink-0 overflow-hidden rounded-lg border border-border">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={
@@ -652,9 +652,9 @@ export function DietPlanBuilder({
                         type="button"
                         aria-label="Quitar foto del bloque"
                         onClick={() => handleRemoveBlockImage(block.id)}
-                        className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-black/60 text-white"
+                        className="absolute top-0.5 right-0.5 flex size-4 items-center justify-center rounded-full bg-black/60 text-white"
                       >
-                        <X className="size-3.5" />
+                        <X className="size-2.5" />
                       </button>
                     </div>
                   )}
