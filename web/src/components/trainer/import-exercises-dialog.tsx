@@ -72,6 +72,24 @@ export function ImportExercisesDialog({
       const firstSheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[firstSheetName];
       const sheetRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
+
+      // Cuando una celda es un hipervínculo (p. ej. "Ver video" con el
+      // enlace real "por debajo"), sheet_to_json solo trae el texto que
+      // se ve, no la URL — hay que leer el link real celda por celda y
+      // reemplazar el texto visible con el enlace de verdad.
+      const range = sheet["!ref"] ? XLSX.utils.decode_range(sheet["!ref"]) : null;
+      if (range) {
+        for (let r = range.s.r; r <= range.e.r; r++) {
+          for (let c = range.s.c; c <= range.e.c; c++) {
+            const address = XLSX.utils.encode_cell({ r, c });
+            const target = sheet[address]?.l?.Target;
+            if (target && sheetRows[r - range.s.r]) {
+              sheetRows[r - range.s.r][c - range.s.c] = target;
+            }
+          }
+        }
+      }
+
       const parsed = parseExerciseRows(sheetRows);
       if (parsed.length === 0) {
         toast.error("No se encontraron filas con datos en el archivo.");
@@ -216,7 +234,9 @@ export function ImportExercisesDialog({
             <div className="flex flex-col gap-2 overflow-y-auto pr-1">
               {rows.map((row) => {
                 const hasWarning =
-                  row.muscleGroups.unmapped.length > 0 || row.equipmentItems.unmapped.length > 0;
+                  row.muscleGroups.unmapped.length > 0 ||
+                  row.equipmentItems.unmapped.length > 0 ||
+                  Boolean(row.videoUrlDiscarded);
                 const shownMuscleGroups =
                   row.muscleGroups.values.length > 0 ? row.muscleGroups.values : [FALLBACK_MUSCLE_GROUP];
                 const shownEquipment =
@@ -265,9 +285,20 @@ export function ImportExercisesDialog({
                         </TooltipTrigger>
                         <TooltipContent>
                           <p className="max-w-56 text-xs">
-                            No se reconoció:{" "}
-                            {[...row.muscleGroups.unmapped, ...row.equipmentItems.unmapped].join(", ")}
-                            . Se usó un valor genérico — revísalo después de importar.
+                            {row.muscleGroups.unmapped.length > 0 ||
+                            row.equipmentItems.unmapped.length > 0 ? (
+                              <>
+                                No se reconoció:{" "}
+                                {[...row.muscleGroups.unmapped, ...row.equipmentItems.unmapped].join(
+                                  ", ",
+                                )}
+                                . Se usó un valor genérico — revísalo después de importar.
+                                {row.videoUrlDiscarded ? " " : null}
+                              </>
+                            ) : null}
+                            {row.videoUrlDiscarded
+                              ? `El enlace "${row.videoUrlDiscarded}" no es un video válido de YouTube — no se guardó.`
+                              : null}
                           </p>
                         </TooltipContent>
                       </Tooltip>

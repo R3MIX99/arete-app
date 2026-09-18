@@ -151,6 +151,10 @@ export interface ParsedExerciseRow {
   equipmentItems: ParsedField;
   description: string | null;
   videoUrl: string | null;
+  /** Cuando la celda de enlace traía algo pero no era un video de
+   * YouTube válido (p. ej. un enlace de búsqueda) — para avisar en vez
+   * de descartarlo en silencio. */
+  videoUrlDiscarded: string | null;
   /** true si el nombre viene vacío — fila inválida, nunca se importa. */
   missingName: boolean;
 }
@@ -200,6 +204,7 @@ export function parseExerciseRows(sheetRows: unknown[][]): ParsedExerciseRow[] {
       // (p. ej. enlaces de búsqueda de YouTube) se descarta, porque la
       // base de datos exige que video_url sea un enlace de YouTube válido.
       videoUrl: rawVideo && youtubeVideoId(rawVideo) ? rawVideo : null,
+      videoUrlDiscarded: rawVideo && !youtubeVideoId(rawVideo) ? rawVideo : null,
       missingName: name === "",
     });
   }
