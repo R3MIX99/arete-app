@@ -514,19 +514,103 @@ export function RoutineForm({
                 </Badge>
               ) : null}
             </div>
-            <div className="flex flex-col gap-2">
-              {exercises.map((ex, i) => (
-                <div key={ex.id ?? i} className="rounded-lg border border-border/80 p-3">
-                  <p className="text-sm font-medium">{ex.exercise_name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {ex.sets.length} {ex.sets.length === 1 ? "serie" : "series"}
-                    {ex.notes ? ` · ${ex.notes}` : ""}
-                  </p>
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
+
+        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          Ejercicios
+        </h2>
+
+        {exercises.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
+              <Dumbbell className="size-6" />
+              <p className="text-sm">Esta rutina todavía no tiene ejercicios.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {exercises.map((exercise, exerciseIndex) => {
+              const videoId = exercise.exercise_video_url
+                ? youtubeVideoId(exercise.exercise_video_url)
+                : null;
+              return (
+                <Card key={exercise.id ?? exerciseIndex}>
+                  <CardContent className="flex flex-col gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <div
+                        className={
+                          videoId
+                            ? "flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary"
+                            : "flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground/[0.06] text-muted-foreground"
+                        }
+                      >
+                        {videoId ? <PlayCircle className="size-4" /> : <Dumbbell className="size-4" />}
+                      </div>
+                      <p className="min-w-0 truncate text-sm font-semibold">
+                        {exercise.exercise_name}
+                      </p>
+                    </div>
+
+                    {videoId && (
+                      <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
+                        <iframe
+                          className="size-full"
+                          src={`https://www.youtube.com/embed/${videoId}`}
+                          title={exercise.exercise_name}
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
+
+                    {exercise.notes ? (
+                      <p className="text-sm text-muted-foreground">{exercise.notes}</p>
+                    ) : null}
+
+                    <Separator />
+
+                    {isCardioGroup(exercise.exercise_muscle_group) ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="grid grid-cols-[2rem_1fr_1fr] gap-2 text-[11px] font-medium text-muted-foreground uppercase">
+                          <span>Serie</span>
+                          <span>Minutos</span>
+                          <span>Nivel (1-10)</span>
+                        </div>
+                        {exercise.sets.map((set, setIndex) => (
+                          <div key={setIndex} className="grid grid-cols-[2rem_1fr_1fr] items-center gap-2">
+                            <span className="text-sm font-medium tabular-nums">{set.set_number}</span>
+                            <span className="text-sm tabular-nums">{set.target_minutes ?? "—"}</span>
+                            <span className="text-sm tabular-nums">{set.target_level ?? "—"}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <div className="grid grid-cols-[2rem_1fr_1fr_1fr] gap-2 text-[11px] font-medium text-muted-foreground uppercase">
+                          <span>Serie</span>
+                          <span>Reps min</span>
+                          <span>Reps max</span>
+                          <span>Descanso (s)</span>
+                        </div>
+                        {exercise.sets.map((set, setIndex) => (
+                          <div
+                            key={setIndex}
+                            className="grid grid-cols-[2rem_1fr_1fr_1fr] items-center gap-2"
+                          >
+                            <span className="text-sm font-medium tabular-nums">{set.set_number}</span>
+                            <span className="text-sm tabular-nums">{set.target_reps_min ?? "—"}</span>
+                            <span className="text-sm tabular-nums">{set.target_reps_max ?? "—"}</span>
+                            <span className="text-sm tabular-nums">{set.rest_seconds ?? "—"}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }

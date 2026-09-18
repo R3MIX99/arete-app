@@ -621,7 +621,11 @@ export function ProgramBuilder({
                                 <Badge
                                   key={slot.id}
                                   variant="outline"
-                                  className="w-fit gap-2 py-1.5 pr-1.5 pl-3 text-sm"
+                                  className={
+                                    readOnly
+                                      ? "w-fit gap-2 px-3 py-1.5 text-sm"
+                                      : "w-fit gap-2 py-1.5 pr-1.5 pl-3 text-sm"
+                                  }
                                 >
                                   {slot.routine_name}
                                   {!readOnly ? (
