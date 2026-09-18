@@ -114,6 +114,7 @@ export function DietPlanBuilder({
   const [blockToDelete, setBlockToDelete] = React.useState<string | null>(null);
   const [deletingBlock, setDeletingBlock] = React.useState(false);
   const [uploadingBlockImageId, setUploadingBlockImageId] = React.useState<string | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = React.useState<string | null>(null);
   const blockImageInputs = React.useRef<Record<string, HTMLInputElement | null>>({});
 
   const sortedBlocks = React.useMemo(
@@ -638,7 +639,7 @@ export function DietPlanBuilder({
                 </div>
                 <CardContent className="flex flex-col gap-1.5">
                   {block.image_path && (
-                    <div className="relative mb-1 size-20 shrink-0 overflow-hidden rounded-lg border border-border">
+                    <div className="relative mb-1 size-28 shrink-0 overflow-hidden rounded-lg border border-border">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={
@@ -646,15 +647,21 @@ export function DietPlanBuilder({
                             .data.publicUrl
                         }
                         alt=""
-                        className="h-full w-full object-cover"
+                        className="h-full w-full cursor-zoom-in object-cover"
+                        onClick={() =>
+                          setPreviewImageUrl(
+                            createClient().storage.from("food-images").getPublicUrl(block.image_path!)
+                              .data.publicUrl,
+                          )
+                        }
                       />
                       <button
                         type="button"
                         aria-label="Quitar foto del bloque"
                         onClick={() => handleRemoveBlockImage(block.id)}
-                        className="absolute top-0.5 right-0.5 flex size-4 items-center justify-center rounded-full bg-black/60 text-white"
+                        className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-black/60 text-white"
                       >
-                        <X className="size-2.5" />
+                        <X className="size-3" />
                       </button>
                     </div>
                   )}
@@ -844,6 +851,20 @@ export function DietPlanBuilder({
         loading={unassigning}
         onConfirm={handleUnassign}
       />
+
+      <Dialog open={previewImageUrl !== null} onOpenChange={(open) => !open && setPreviewImageUrl(null)}>
+        <DialogContent className="max-w-2xl border-none bg-transparent p-0 shadow-none" showCloseButton={false}>
+          <DialogTitle className="sr-only">Foto del bloque</DialogTitle>
+          {previewImageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewImageUrl}
+              alt=""
+              className="max-h-[80vh] w-full rounded-lg object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
