@@ -2,7 +2,17 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, Dumbbell, PlayCircle, SlidersHorizontal, FilterX, FileSpreadsheet } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Dumbbell,
+  PlayCircle,
+  SlidersHorizontal,
+  FilterX,
+  FileSpreadsheet,
+  LayoutGrid,
+  List,
+} from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { muscleGroupLabel, muscleGroupOrder, equipmentLabel, equipmentOrder, equipmentItemsLabel } from "@/lib/format";
@@ -23,6 +33,7 @@ import {
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { MobileFab } from "@/components/trainer/mobile-fab";
 import { ImportExercisesDialog } from "@/components/trainer/import-exercises-dialog";
+import { ExerciseTableView, type ExerciseSortOption } from "@/components/trainer/exercise-table-view";
 
 const MUSCLE_GROUPS = muscleGroupOrder as unknown as MuscleGroup[];
 
@@ -36,13 +47,16 @@ const ORIGIN_OPTIONS: { value: OriginFilter; label: string }[] = [
   { value: "created", label: "Creados" },
 ];
 
-type SortOption = "name_asc" | "date_desc" | "date_asc";
+type SortOption = ExerciseSortOption;
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "name_asc", label: "Nombre (A-Z)" },
+  { value: "name_desc", label: "Nombre (Z-A)" },
   { value: "date_desc", label: "Más reciente" },
   { value: "date_asc", label: "Menos reciente" },
 ];
+
+type ViewMode = "grid" | "table";
 
 export function ExercisesBrowser({
   exercises,
@@ -56,6 +70,7 @@ export function ExercisesBrowser({
   const [equipment, setEquipment] = React.useState<Equipment | null>(null);
   const [origin, setOrigin] = React.useState<OriginFilter>("all");
   const [sort, setSort] = React.useState<SortOption>("name_asc");
+  const [view, setView] = React.useState<ViewMode>("grid");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [importOpen, setImportOpen] = React.useState(false);
 
@@ -84,6 +99,9 @@ export function ExercisesBrowser({
         break;
       case "date_asc":
         sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+        break;
+      case "name_desc":
+        sorted.sort((a, b) => b.name.localeCompare(a.name));
         break;
       default:
         sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -125,6 +143,15 @@ export function ExercisesBrowser({
             {hasActiveFilters && (
               <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
             )}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={view === "grid" ? "Ver como tabla" : "Ver como tarjetas"}
+            className="shrink-0 md:hidden"
+            onClick={() => setView(view === "grid" ? "table" : "grid")}
+          >
+            {view === "grid" ? <List className="size-4" /> : <LayoutGrid className="size-4" />}
           </Button>
           <Button
             variant="outline"
@@ -224,6 +251,26 @@ export function ExercisesBrowser({
         </div>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
+          <div className="flex items-center rounded-lg border p-0.5">
+            <Button
+              variant={view === "grid" ? "secondary" : "ghost"}
+              size="icon"
+              className="size-8"
+              aria-label="Vista de tarjetas"
+              onClick={() => setView("grid")}
+            >
+              <LayoutGrid className="size-4" />
+            </Button>
+            <Button
+              variant={view === "table" ? "secondary" : "ghost"}
+              size="icon"
+              className="size-8"
+              aria-label="Vista de tabla"
+              onClick={() => setView("table")}
+            >
+              <List className="size-4" />
+            </Button>
+          </div>
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <FileSpreadsheet />
             Importar desde Excel
@@ -326,6 +373,13 @@ export function ExercisesBrowser({
               : "Ningún ejercicio coincide con la búsqueda o los filtros."}
           </p>
         </div>
+      ) : view === "table" ? (
+        <ExerciseTableView
+          exercises={filtered}
+          hrefBase="/entrenador/ejercicios"
+          sort={sort}
+          onSortChange={setSort}
+        />
       ) : (
         // Grid en vez de una sola columna: en pantallas grandes las
         // tarjetas quedaban estiradas de punta a punta, ilegibles. Con
