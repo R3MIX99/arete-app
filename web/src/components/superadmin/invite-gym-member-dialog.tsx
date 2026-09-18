@@ -100,12 +100,12 @@ export function InviteGymMemberDialog({ gymId, gymName }: { gymId: string; gymNa
 
       <ResponsiveDialog open={open} onOpenChange={setOpen} title="Invitar empleado">
         {inviteLink ? (
-          <div className="flex flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4">
             <p className="text-sm text-muted-foreground">
               Invitación creada. Mándale este enlace — todavía no hay correo automático para esto
               (llega en una fase más adelante del plan Gym).
             </p>
-            <div className="flex items-center gap-2 rounded-lg border px-3 py-2.5">
+            <div className="flex min-w-0 items-center gap-2 rounded-lg border px-3 py-2.5">
               <p className="min-w-0 flex-1 truncate text-sm">{inviteLink}</p>
               <Button size="sm" variant="outline" className="shrink-0" onClick={copyLink}>
                 <Copy className="size-3.5" /> Copiar
