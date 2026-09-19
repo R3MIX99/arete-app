@@ -2,7 +2,15 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, FileSpreadsheet, Loader2, Search, Upload } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  FileSpreadsheet,
+  Loader2,
+  Search,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +21,7 @@ import {
   type FoodCategoryRef,
   type ParsedFoodRow,
 } from "@/lib/food-import";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -30,24 +39,70 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 // Se importa en lotes para que la barra avance de verdad conforme se guarda.
 const IMPORT_BATCH_SIZE = 20;
 
+export interface ExistingFood {
+  id: string;
+  name: string;
+  trainer_id: string | null;
+}
+
 interface ReviewRow extends ParsedFoodRow {
   included: boolean;
-  /** Ya existe un alimento con ese nombre (en tu catálogo o repetido en el
-   * archivo) — arranca sin seleccionar. */
-  duplicate: boolean;
+  /** Ya hay un alimento con ese nombre en el catálogo. */
+  existing: { id: string; canReplace: boolean } | null;
+  /** El mismo nombre aparece antes en el propio archivo. */
+  repeatedInFile: boolean;
+}
+
+type DuplicateAction = "skip" | "replace";
+
+function DecisionCard({
+  selected,
+  title,
+  description,
+  onSelect,
+}: {
+  selected: boolean;
+  title: string;
+  description: string;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onSelect}
+      className={cn(
+        "flex items-start gap-3 rounded-xl border p-4 text-left transition-colors",
+        selected ? "border-primary bg-primary/5" : "hover:border-primary/40",
+      )}
+    >
+      <span
+        className={cn(
+          "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border",
+          selected ? "border-primary bg-primary text-primary-foreground" : "border-input",
+        )}
+      >
+        {selected ? <Check className="size-3.5" /> : null}
+      </span>
+      <span className="flex flex-col gap-0.5">
+        <span className="text-sm font-semibold">{title}</span>
+        <span className="text-sm text-muted-foreground">{description}</span>
+      </span>
+    </button>
+  );
 }
 
 export function ImportFoodsDialog({
   open,
   onOpenChange,
   trainerId,
-  existingNames,
+  existingFoods,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** null = se importa al catálogo global de Aretia (superadmin). */
   trainerId: string | null;
-  existingNames: string[];
+  existingFoods: ExistingFood[];
 }) {
   const router = useRouter();
   const [rows, setRows] = React.useState<ReviewRow[] | null>(null);
@@ -56,12 +111,16 @@ export function ImportFoodsDialog({
   const [importing, setImporting] = React.useState(false);
   const [progress, setProgress] = React.useState({ done: 0, total: 0 });
   const [query, setQuery] = React.useState("");
+  const [step, setStep] = React.useState<"review" | "confirm">("review");
+  const [duplicateAction, setDuplicateAction] = React.useState<DuplicateAction>("skip");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   function reset() {
     setRows(null);
     setFileName(null);
     setQuery("");
+    setStep("review");
+    setDuplicateAction("skip");
   }
 
   async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
@@ -108,14 +167,30 @@ export function ImportFoodsDialog({
         return;
       }
 
-      const known = new Set(existingNames.map(normalizeFoodName));
+      // Si hay dos con el mismo nombre (uno esencial y uno tuyo), se
+      // prefiere el tuyo: es el único que se puede reemplazar.
+      const existingByName = new Map<string, ExistingFood>();
+      for (const food of existingFoods) {
+        const key = normalizeFoodName(food.name);
+        const current = existingByName.get(key);
+        if (!current || (food.trainer_id === trainerId && current.trainer_id !== trainerId)) {
+          existingByName.set(key, food);
+        }
+      }
+
       const seenInFile = new Set<string>();
       setRows(
         parsed.map((row) => {
           const key = normalizeFoodName(row.name);
-          const duplicate = key !== "" && (known.has(key) || seenInFile.has(key));
+          const match = key ? existingByName.get(key) : undefined;
+          const repeatedInFile = key !== "" && seenInFile.has(key);
           if (key) seenInFile.add(key);
-          return { ...row, duplicate, included: row.errors.length === 0 && !duplicate };
+          return {
+            ...row,
+            existing: match ? { id: match.id, canReplace: match.trainer_id === trainerId } : null,
+            repeatedInFile,
+            included: row.errors.length === 0 && !repeatedInFile,
+          };
         }),
       );
     } catch (err) {
@@ -139,9 +214,13 @@ export function ImportFoodsDialog({
     return q ? rows.filter((r) => normalizeFoodName(r.name).includes(q)) : rows;
   }, [rows, query]);
 
-  const includedCount = rows?.filter((r) => r.included).length ?? 0;
+  const chosen = rows?.filter((r) => r.included && r.errors.length === 0) ?? [];
+  const newRows = chosen.filter((r) => !r.existing);
+  const duplicateRows = chosen.filter((r) => r.existing);
+  const replaceableRows = duplicateRows.filter((r) => r.existing?.canReplace);
+  const lockedRows = duplicateRows.length - replaceableRows.length;
   const errorCount = rows?.filter((r) => r.errors.length > 0).length ?? 0;
-  const duplicateCount = rows?.filter((r) => r.duplicate).length ?? 0;
+  const existingCount = rows?.filter((r) => r.existing).length ?? 0;
   const visibleSelectable = visible.filter((r) => r.errors.length === 0);
   const allVisibleSelected =
     visibleSelectable.length > 0 && visibleSelectable.every((r) => r.included);
@@ -153,48 +232,80 @@ export function ImportFoodsDialog({
     );
   }
 
-  async function handleImport() {
-    if (!rows) return;
-    const toImport = rows.filter((r) => r.included && r.errors.length === 0);
-    if (toImport.length === 0) return;
+  function handleConfirmClick() {
+    if (duplicateRows.length > 0) setStep("confirm");
+    else void runImport("skip");
+  }
+
+  async function runImport(action: DuplicateAction) {
+    const toReplace = action === "replace" ? replaceableRows : [];
+    const total = newRows.length + toReplace.length;
+    if (total === 0) {
+      toast.info("No hay nada que importar con esa elección.");
+      return;
+    }
 
     setImporting(true);
-    setProgress({ done: 0, total: toImport.length });
+    setProgress({ done: 0, total });
     const supabase = createClient();
+    let done = 0;
+    let failedUpdates = 0;
 
-    let imported = 0;
-    for (let i = 0; i < toImport.length; i += IMPORT_BATCH_SIZE) {
-      const batch = toImport.slice(i, i + IMPORT_BATCH_SIZE);
-      const { error } = await supabase.from("foods").insert(
-        batch.map((row) => ({
-          trainer_id: trainerId,
-          food_category_id: row.categoryId,
-          name: row.name,
-          calories_per_100g: row.calories,
-          protein_per_100g: row.protein,
-          carbs_per_100g: row.carbs,
-          fat_per_100g: row.fat,
-          household_unit_name: row.householdUnitName,
-          household_unit_grams: row.householdUnitGrams,
-        })),
-      );
+    const fields = (row: ReviewRow) => ({
+      food_category_id: row.categoryId,
+      calories_per_100g: row.calories,
+      protein_per_100g: row.protein,
+      carbs_per_100g: row.carbs,
+      fat_per_100g: row.fat,
+      household_unit_name: row.householdUnitName,
+      household_unit_grams: row.householdUnitGrams,
+    });
+
+    for (let i = 0; i < newRows.length; i += IMPORT_BATCH_SIZE) {
+      const batch = newRows.slice(i, i + IMPORT_BATCH_SIZE);
+      const { error } = await supabase
+        .from("foods")
+        .insert(batch.map((row) => ({ trainer_id: trainerId, name: row.name, ...fields(row) })));
       if (error) {
         setImporting(false);
         toast.error("No se pudieron importar los alimentos", {
-          description:
-            imported > 0 ? `Se alcanzaron a guardar ${imported}. ${error.message}` : error.message,
+          description: done > 0 ? `Se alcanzaron a guardar ${done}. ${error.message}` : error.message,
         });
-        if (imported > 0) router.refresh();
+        if (done > 0) router.refresh();
         return;
       }
-      imported += batch.length;
-      setProgress({ done: imported, total: toImport.length });
+      done += batch.length;
+      setProgress({ done, total });
+    }
+
+    // Reemplazar = actualizar el alimento que ya existe (mismo id), así los
+    // platillos y planes que lo usan no se rompen.
+    for (const row of toReplace) {
+      const { data, error } = await supabase
+        .from("foods")
+        .update(fields(row))
+        .eq("id", row.existing!.id)
+        .select("id");
+      if (error || !data || data.length === 0) failedUpdates += 1;
+      done += 1;
+      setProgress({ done, total });
     }
 
     setImporting(false);
-    toast.success(
-      `Se importaron ${toImport.length} alimento${toImport.length === 1 ? "" : "s"} a tu catálogo`,
-    );
+    const replaced = toReplace.length - failedUpdates;
+    const skipped = duplicateRows.length - replaced;
+    const parts = [
+      `${newRows.length} nuevo${newRows.length === 1 ? "" : "s"}`,
+      replaced > 0 ? `${replaced} reemplazado${replaced === 1 ? "" : "s"}` : null,
+      skipped > 0 ? `${skipped} omitido${skipped === 1 ? "" : "s"}` : null,
+    ].filter(Boolean);
+    if (failedUpdates > 0) {
+      toast.warning(`Importación con detalles: ${parts.join(", ")}`, {
+        description: `${failedUpdates} no se pudieron actualizar.`,
+      });
+    } else {
+      toast.success(`Importación lista: ${parts.join(", ")}`);
+    }
     reset();
     onOpenChange(false);
     router.refresh();
@@ -242,12 +353,89 @@ export function ImportFoodsDialog({
               Elegir archivo
             </Button>
           </div>
+        ) : step === "confirm" ? (
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
+            <div>
+              <p className="text-sm font-semibold">
+                {duplicateRows.length} alimento{duplicateRows.length === 1 ? "" : "s"} del archivo
+                ya existe{duplicateRows.length === 1 ? "" : "n"} en tu catálogo
+              </p>
+              <p className="text-sm text-muted-foreground">¿Qué hacemos con ellos?</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <DecisionCard
+                selected={duplicateAction === "skip"}
+                title="Omitirlos"
+                description="Se quedan como están. Solo se importan los alimentos nuevos."
+                onSelect={() => setDuplicateAction("skip")}
+              />
+              <DecisionCard
+                selected={duplicateAction === "replace"}
+                title="Reemplazarlos"
+                description="Se actualizan con los datos del Excel (categoría, calorías, macros y medida casera). Los platillos y planes que ya los usan se conservan."
+                onSelect={() => setDuplicateAction("replace")}
+              />
+            </div>
+
+            {duplicateAction === "replace" && lockedRows > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {lockedRows} de ellos {lockedRows === 1 ? "es un alimento esencial" : "son alimentos esenciales"}{" "}
+                de Aretia y no se pueden reemplazar: {lockedRows === 1 ? "se omite" : "se omiten"}.
+              </p>
+            ) : null}
+
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-foreground/[0.04] p-3">
+              <ul className="flex flex-col gap-1 text-sm">
+                {duplicateRows.map((r) => (
+                  <li key={r.rowNumber} className="flex items-center justify-between gap-2">
+                    <span className="truncate">{r.name}</span>
+                    {duplicateAction === "replace" && !r.existing?.canReplace ? (
+                      <Badge variant="outline" className="shrink-0 text-[10px]">
+                        Esencial: se omite
+                      </Badge>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {importing ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">
+                    Importando {progress.done} de {progress.total} alimentos…
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0}%
+                  </span>
+                </div>
+                <Progress value={progress.total > 0 ? (progress.done / progress.total) * 100 : 0} />
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" variant="ghost" onClick={() => setStep("review")}>
+                  <ArrowLeft /> Volver
+                </Button>
+                <Button type="button" onClick={() => runImport(duplicateAction)}>
+                  <Upload />
+                  Confirmar importación
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {newRows.length} nuevo{newRows.length === 1 ? "" : "s"}
+                  {duplicateAction === "replace" && replaceableRows.length > 0
+                    ? ` + ${replaceableRows.length} por reemplazar`
+                    : ""}
+                </span>
+              </div>
+            )}
+          </div>
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
               <span>
-                {rows.length} filas — {includedCount} se importarán
-                {duplicateCount > 0 ? ` · ${duplicateCount} ya existen` : ""}
+                {rows.length} filas — {newRows.length} nuevos
+                {existingCount > 0 ? ` · ${existingCount} ya existen` : ""}
                 {errorCount > 0 ? ` · ${errorCount} con errores` : ""}
               </span>
               <div className="flex items-center gap-1">
@@ -255,12 +443,12 @@ export function ImportFoodsDialog({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  disabled={visibleSelectable.length === 0 || importing}
+                  disabled={visibleSelectable.length === 0}
                   onClick={() => toggleAll(!allVisibleSelected)}
                 >
                   {allVisibleSelected ? "Deseleccionar todos" : "Seleccionar todos"}
                 </Button>
-                <Button type="button" variant="ghost" size="sm" disabled={importing} onClick={reset}>
+                <Button type="button" variant="ghost" size="sm" onClick={reset}>
                   Elegir otro archivo
                 </Button>
               </div>
@@ -292,7 +480,7 @@ export function ImportFoodsDialog({
                       <Checkbox
                         className="mt-1"
                         checked={row.included}
-                        disabled={row.errors.length > 0 || importing}
+                        disabled={row.errors.length > 0}
                         onCheckedChange={(checked) => toggleRow(row.rowNumber, checked === true)}
                       />
                       <div className="min-w-0 flex-1">
@@ -310,9 +498,14 @@ export function ImportFoodsDialog({
                           <Badge variant="secondary" className="text-[10px]">
                             {row.categoryLabel || "Sin categoría"}
                           </Badge>
-                          {row.duplicate ? (
+                          {row.existing ? (
                             <Badge variant="outline" className="text-[10px]">
                               Ya existe
+                            </Badge>
+                          ) : null}
+                          {row.repeatedInFile ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              Repetido en el archivo
                             </Badge>
                           ) : null}
                         </div>
@@ -357,12 +550,12 @@ export function ImportFoodsDialog({
             ) : (
               <Button
                 type="button"
-                disabled={includedCount === 0}
-                onClick={handleImport}
+                disabled={chosen.length === 0}
+                onClick={handleConfirmClick}
                 className="w-fit"
               >
                 <Upload />
-                Importar {includedCount} alimento{includedCount === 1 ? "" : "s"}
+                Importar {chosen.length} alimento{chosen.length === 1 ? "" : "s"}
               </Button>
             )}
           </>

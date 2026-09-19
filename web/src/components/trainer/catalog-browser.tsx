@@ -198,7 +198,7 @@ export function CatalogBrowser({
         open={importOpen}
         onOpenChange={setImportOpen}
         trainerId={trainerId}
-        existingNames={foods.map((f) => f.name)}
+        existingFoods={foods.map((f) => ({ id: f.id, name: f.name, trainer_id: f.trainer_id }))}
       />
 
       <MobileFab href={newHref} icon={Plus} label={newLabel} />

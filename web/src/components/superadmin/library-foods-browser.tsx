@@ -53,7 +53,7 @@ export function LibraryFoodsBrowser({ foods }: { foods: FoodOption[] }) {
         open={importOpen}
         onOpenChange={setImportOpen}
         trainerId={null}
-        existingNames={foods.map((f) => f.name)}
+        existingFoods={foods.map((f) => ({ id: f.id, name: f.name, trainer_id: f.trainer_id }))}
       />
 
       {filtered.length === 0 ? (
