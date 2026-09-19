@@ -8,8 +8,11 @@ import {
   Droplet,
   Milk,
   Moon,
+  Package,
+  Pill,
   Salad,
   Soup,
+  Sprout,
   Wheat,
   type LucideIcon,
 } from "lucide-react";
@@ -31,6 +34,9 @@ export const FOOD_CATEGORY_ICONS: Record<string, LucideIcon> = {
   fat: Droplet,
   dairy: Milk,
   beverage: CupSoda,
+  supplement: Pill,
+  condiment: Sprout,
+  other: Package,
 };
 
 export function foodCategoryIcon(categorySlug: string | null | undefined): LucideIcon {

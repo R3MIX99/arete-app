@@ -12,6 +12,7 @@ import {
   Star,
   UserRound,
   SlidersHorizontal,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,6 +27,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { MobileFab } from "@/components/trainer/mobile-fab";
 import { FoodDetailSheet } from "@/components/trainer/food-detail-sheet";
+import { ImportFoodsDialog } from "@/components/trainer/import-foods-dialog";
 
 export function CatalogBrowser({
   trainerId,
@@ -46,6 +48,7 @@ export function CatalogBrowser({
   const [customOnly, setCustomOnly] = React.useState(false);
   const [selectedFood, setSelectedFood] = React.useState<FoodOption | null>(null);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = React.useState(false);
   const [favoriteIds, setFavoriteIds] = React.useState(
     () => new Set(foods.filter((f) => f.is_favorite).map((f) => f.id)),
   );
@@ -163,14 +166,40 @@ export function CatalogBrowser({
               )}
             </Button>
           )}
+          {tab === "foods" && (
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Importar desde Excel"
+              className="shrink-0 md:hidden"
+              onClick={() => setImportOpen(true)}
+            >
+              <FileSpreadsheet className="size-4" />
+            </Button>
+          )}
         </div>
-        <Button asChild className="ml-auto hidden md:inline-flex">
-          <Link href={newHref}>
-            <Plus />
-            {newLabel}
-          </Link>
-        </Button>
+        <div className="ml-auto hidden items-center gap-2 md:flex">
+          {tab === "foods" && (
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <FileSpreadsheet />
+              Importar desde Excel
+            </Button>
+          )}
+          <Button asChild>
+            <Link href={newHref}>
+              <Plus />
+              {newLabel}
+            </Link>
+          </Button>
+        </div>
       </div>
+
+      <ImportFoodsDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        trainerId={trainerId}
+        existingNames={foods.map((f) => f.name)}
+      />
 
       <MobileFab href={newHref} icon={Plus} label={newLabel} />
 

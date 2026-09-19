@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Plus, Apple } from "lucide-react";
+import { Search, Plus, Apple, FileSpreadsheet } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { foodCategoryIcon } from "@/lib/food-icons";
@@ -11,9 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ImportFoodsDialog } from "@/components/trainer/import-foods-dialog";
 
 export function LibraryFoodsBrowser({ foods }: { foods: FoodOption[] }) {
   const [query, setQuery] = React.useState("");
+  const [importOpen, setImportOpen] = React.useState(false);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -33,12 +35,26 @@ export function LibraryFoodsBrowser({ foods }: { foods: FoodOption[] }) {
             className="pl-9"
           />
         </div>
-        <Button asChild className="ml-auto">
-          <Link href="/superadmin/biblioteca/alimentos/nuevo">
-            <Plus /> Nuevo alimento
-          </Link>
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <FileSpreadsheet />
+            <span className="hidden md:inline">Importar desde Excel</span>
+            <span className="md:hidden">Importar</span>
+          </Button>
+          <Button asChild>
+            <Link href="/superadmin/biblioteca/alimentos/nuevo">
+              <Plus /> Nuevo alimento
+            </Link>
+          </Button>
+        </div>
       </div>
+
+      <ImportFoodsDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        trainerId={null}
+        existingNames={foods.map((f) => f.name)}
+      />
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
