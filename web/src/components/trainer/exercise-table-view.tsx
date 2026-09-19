@@ -4,10 +4,11 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpDown, Dumbbell, PlayCircle } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { muscleGroupLabel, equipmentItemsLabel, formatDate } from "@/lib/format";
+import { muscleGroupLabel, equipmentItemsLabel, formatTimestampDate } from "@/lib/format";
 import { youtubeThumbnails } from "@/lib/youtube";
 import type { ExerciseSummary } from "@/lib/types/exercise";
 import { Badge } from "@/components/ui/badge";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
 
 export type ExerciseSortOption = "name_asc" | "name_desc" | "date_desc" | "date_asc";
@@ -65,8 +66,10 @@ export function ExerciseTableView({
   sort: ExerciseSortOption;
   onSortChange: (next: ExerciseSortOption) => void;
 }) {
+  const pagination = usePagination(exercises);
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="rounded-lg border">
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-foreground/[0.02] text-left text-xs text-muted-foreground uppercase">
@@ -88,7 +91,7 @@ export function ExerciseTableView({
           </tr>
         </thead>
         <tbody>
-          {exercises.map((exercise) => {
+          {pagination.pageItems.map((exercise) => {
             const hasVideo = Boolean(exercise.video_url);
             const uploadedImageUrl = exercise.image_path
               ? createClient().storage.from("exercise-images").getPublicUrl(exercise.image_path)
@@ -146,13 +149,15 @@ export function ExerciseTableView({
                   {equipmentItemsLabel(exercise.equipment_items)}
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">
-                  {formatDate(exercise.created_at)}
+                  {formatTimestampDate(exercise.created_at)}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      </div>
+      <TablePagination pagination={pagination} noun="ejercicios" />
     </div>
   );
 }

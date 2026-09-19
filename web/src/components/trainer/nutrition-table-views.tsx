@@ -4,10 +4,11 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { formatDate, mealTypeLabel } from "@/lib/format";
+import { formatTimestampDate, mealTypeLabel } from "@/lib/format";
 import { foodCategoryIcon, mealTypeIcon } from "@/lib/food-icons";
 import type { DishOption, FoodOption } from "@/lib/types/nutrition";
 import { Badge } from "@/components/ui/badge";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import { SortableHeader } from "@/components/trainer/exercise-table-view";
 
 export type SortDirection = "asc" | "desc";
@@ -136,6 +137,7 @@ export function FoodsTableView({
   onToggleFavorite?: (event: React.MouseEvent, food: FoodOption) => void;
 }) {
   const showFavorites = Boolean(favoriteIds && onToggleFavorite);
+  const pagination = usePagination(foods);
   const header = (key: FoodSortKey, label: string, className?: string) => (
     <SortableHeader
       label={label}
@@ -147,7 +149,8 @@ export function FoodsTableView({
   );
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="rounded-lg border">
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-foreground/[0.02] text-left text-xs text-muted-foreground uppercase">
@@ -163,7 +166,7 @@ export function FoodsTableView({
           </tr>
         </thead>
         <tbody>
-          {foods.map((food) => {
+          {pagination.pageItems.map((food) => {
             const Icon = foodCategoryIcon(food.category_slug);
             const imageUrl = food.image_path
               ? createClient().storage.from("food-images").getPublicUrl(food.image_path).data.publicUrl
@@ -212,13 +215,15 @@ export function FoodsTableView({
                     : "—"}
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">
-                  {food.created_at ? formatDate(food.created_at) : "—"}
+                  {food.created_at ? formatTimestampDate(food.created_at) : "—"}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      </div>
+      <TablePagination pagination={pagination} noun="alimentos" />
       <p className="border-t px-3 py-2 text-xs text-muted-foreground">
         Calorías y macros por cada 100 g.
       </p>
@@ -237,6 +242,7 @@ export function DishesTableView({
   onSortChange: (next: DishSort) => void;
   hrefBase?: string;
 }) {
+  const pagination = usePagination(dishes);
   const header = (key: DishSortKey, label: string, className?: string) => (
     <SortableHeader
       label={label}
@@ -248,7 +254,8 @@ export function DishesTableView({
   );
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="rounded-lg border">
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-foreground/[0.02] text-left text-xs text-muted-foreground uppercase">
@@ -259,7 +266,7 @@ export function DishesTableView({
           </tr>
         </thead>
         <tbody>
-          {dishes.map((dish) => {
+          {pagination.pageItems.map((dish) => {
             const Icon = mealTypeIcon(dish.meal_type);
             const imageUrl = dish.image_path
               ? createClient().storage.from("food-images").getPublicUrl(dish.image_path).data.publicUrl
@@ -284,13 +291,15 @@ export function DishesTableView({
                   <span className="line-clamp-1">{dish.description || "—"}</span>
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">
-                  {dish.created_at ? formatDate(dish.created_at) : "—"}
+                  {dish.created_at ? formatTimestampDate(dish.created_at) : "—"}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      </div>
+      <TablePagination pagination={pagination} noun="platillos" />
     </div>
   );
 }

@@ -218,6 +218,17 @@ export function formatDate(value: string): string {
   });
 }
 
+/** Fecha (sin hora) de un timestamp ISO completo, p. ej. `created_at`.
+ * formatDate solo entiende 'YYYY-MM-DD' y con un timestamp da "Invalid
+ * Date". */
+export function formatTimestampDate(value: string): string {
+  return new Date(value).toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 /** Para timestamps completos (con hora), a diferencia de formatDate que
  * espera un 'YYYY-MM-DD' suelto. */
 export function formatDateTime(value: string): string {
