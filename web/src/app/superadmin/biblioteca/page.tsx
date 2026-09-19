@@ -24,6 +24,7 @@ interface FoodRow {
   household_unit_name: string | null;
   household_unit_grams: number | null;
   image_path: string | null;
+  created_at: string;
   food_categories: { name: string; slug: string } | { name: string; slug: string }[] | null;
 }
 
@@ -33,6 +34,7 @@ interface DishRow {
   description: string | null;
   meal_type: DishOption["meal_type"];
   image_path: string | null;
+  created_at: string;
 }
 
 function one<T>(value: T | T[] | null): T | null {
@@ -54,13 +56,13 @@ export default async function SuperadminLibraryPage() {
     supabase
       .from("foods")
       .select(
-        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, image_path, food_categories(name, slug)",
+        "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, image_path, created_at, food_categories(name, slug)",
       )
       .is("trainer_id", null)
       .order("name"),
     supabase
       .from("dishes")
-      .select("id, name, description, meal_type, image_path")
+      .select("id, name, description, meal_type, image_path, created_at")
       .is("trainer_id", null)
       .order("name"),
   ]);
@@ -95,6 +97,7 @@ export default async function SuperadminLibraryPage() {
       image_path: r.image_path,
       is_favorite: false,
       forked_from: null,
+      created_at: r.created_at,
     };
   });
 
@@ -106,6 +109,7 @@ export default async function SuperadminLibraryPage() {
     trainer_id: null,
     image_path: r.image_path,
     forked_from: null,
+    created_at: r.created_at,
   }));
 
   return <LibraryShell exercises={exercises} foods={foods} dishes={dishes} />;

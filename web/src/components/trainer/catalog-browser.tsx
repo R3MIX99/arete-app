@@ -36,54 +36,23 @@ import { MobileFab } from "@/components/trainer/mobile-fab";
 import { FoodDetailSheet } from "@/components/trainer/food-detail-sheet";
 import { ImportFoodsDialog } from "@/components/trainer/import-foods-dialog";
 import {
+  DISH_SORT_OPTIONS,
   DishesTableView,
+  FOOD_SORT_OPTIONS,
   FoodsTableView,
+  parseSort,
+  sortDishes,
+  sortFoods,
+  sortValue,
   type DishSort,
   type FoodSort,
   type FoodSortKey,
-  type SortDirection,
 } from "@/components/trainer/nutrition-table-views";
 
 type Scope = "all" | "favorites" | "custom";
 type ViewMode = "grid" | "table";
 
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
-
-const FOOD_SORT_OPTIONS: { value: string; label: string }[] = [
-  { value: "name_asc", label: "Nombre (A-Z)" },
-  { value: "name_desc", label: "Nombre (Z-A)" },
-  { value: "date_desc", label: "Más reciente" },
-  { value: "date_asc", label: "Menos reciente" },
-  { value: "calories_desc", label: "Más calorías" },
-  { value: "calories_asc", label: "Menos calorías" },
-  { value: "protein_desc", label: "Más proteína" },
-  { value: "protein_asc", label: "Menos proteína" },
-  { value: "carbs_desc", label: "Más carbohidratos" },
-  { value: "carbs_asc", label: "Menos carbohidratos" },
-  { value: "fat_desc", label: "Más grasa" },
-  { value: "fat_asc", label: "Menos grasa" },
-];
-
-const DISH_SORT_OPTIONS = FOOD_SORT_OPTIONS.slice(0, 4);
-
-function parseSort<K extends string>(value: string): { key: K; dir: SortDirection } {
-  const [key, dir] = value.split("_");
-  return { key: key as K, dir: dir === "desc" ? "desc" : "asc" };
-}
-
-function sortValue(sort: { key: string; dir: SortDirection }): string {
-  return `${sort.key}_${sort.dir}`;
-}
-
-const FOOD_NUMERIC_FIELDS: Record<
-  Exclude<FoodSortKey, "name" | "date">,
-  "calories_per_100g" | "protein_per_100g" | "carbs_per_100g" | "fat_per_100g"
-> = {
-  calories: "calories_per_100g",
-  protein: "protein_per_100g",
-  carbs: "carbs_per_100g",
-  fat: "fat_per_100g",
-};
 
 export function CatalogBrowser({
   trainerId,
@@ -121,19 +90,7 @@ export function CatalogBrowser({
       if (q && !f.name.toLowerCase().includes(q)) return false;
       return true;
     });
-    const factor = foodSort.dir === "asc" ? 1 : -1;
-    return [...result].sort((a, b) => {
-      switch (foodSort.key) {
-        case "name":
-          return factor * a.name.localeCompare(b.name);
-        case "date":
-          return factor * (a.created_at ?? "").localeCompare(b.created_at ?? "");
-        default: {
-          const field = FOOD_NUMERIC_FIELDS[foodSort.key];
-          return factor * (a[field] - b[field]) || a.name.localeCompare(b.name);
-        }
-      }
-    });
+    return sortFoods(result, foodSort);
   }, [foods, query, categoryId, scope, favoriteIds, trainerId, foodSort]);
 
   const filteredDishes = React.useMemo(() => {
@@ -144,12 +101,7 @@ export function CatalogBrowser({
       if (q && !d.name.toLowerCase().includes(q)) return false;
       return true;
     });
-    const factor = dishSort.dir === "asc" ? 1 : -1;
-    return [...result].sort((a, b) =>
-      dishSort.key === "date"
-        ? factor * (a.created_at ?? "").localeCompare(b.created_at ?? "")
-        : factor * a.name.localeCompare(b.name),
-    );
+    return sortDishes(result, dishSort);
   }, [dishes, query, scope, mealType, trainerId, dishSort]);
 
   async function toggleFavorite(event: React.MouseEvent, food: FoodOption) {

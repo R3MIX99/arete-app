@@ -23,6 +23,65 @@ export interface DishSort {
   dir: SortDirection;
 }
 
+export const FOOD_SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "name_asc", label: "Nombre (A-Z)" },
+  { value: "name_desc", label: "Nombre (Z-A)" },
+  { value: "date_desc", label: "Más reciente" },
+  { value: "date_asc", label: "Menos reciente" },
+  { value: "calories_desc", label: "Más calorías" },
+  { value: "calories_asc", label: "Menos calorías" },
+  { value: "protein_desc", label: "Más proteína" },
+  { value: "protein_asc", label: "Menos proteína" },
+  { value: "carbs_desc", label: "Más carbohidratos" },
+  { value: "carbs_asc", label: "Menos carbohidratos" },
+  { value: "fat_desc", label: "Más grasa" },
+  { value: "fat_asc", label: "Menos grasa" },
+];
+
+export const DISH_SORT_OPTIONS = FOOD_SORT_OPTIONS.slice(0, 4);
+
+/** "calories_desc" -> { key: "calories", dir: "desc" } */
+export function parseSort<K extends string>(value: string): { key: K; dir: SortDirection } {
+  const [key, dir] = value.split("_");
+  return { key: key as K, dir: dir === "desc" ? "desc" : "asc" };
+}
+
+export function sortValue(sort: { key: string; dir: SortDirection }): string {
+  return `${sort.key}_${sort.dir}`;
+}
+
+const FOOD_NUMERIC_FIELDS = {
+  calories: "calories_per_100g",
+  protein: "protein_per_100g",
+  carbs: "carbs_per_100g",
+  fat: "fat_per_100g",
+} as const;
+
+export function sortFoods(foods: FoodOption[], sort: FoodSort): FoodOption[] {
+  const factor = sort.dir === "asc" ? 1 : -1;
+  return [...foods].sort((a, b) => {
+    switch (sort.key) {
+      case "name":
+        return factor * a.name.localeCompare(b.name);
+      case "date":
+        return factor * (a.created_at ?? "").localeCompare(b.created_at ?? "");
+      default: {
+        const field = FOOD_NUMERIC_FIELDS[sort.key];
+        return factor * (a[field] - b[field]) || a.name.localeCompare(b.name);
+      }
+    }
+  });
+}
+
+export function sortDishes(dishes: DishOption[], sort: DishSort): DishOption[] {
+  const factor = sort.dir === "asc" ? 1 : -1;
+  return [...dishes].sort((a, b) =>
+    sort.key === "date"
+      ? factor * (a.created_at ?? "").localeCompare(b.created_at ?? "")
+      : factor * a.name.localeCompare(b.name),
+  );
+}
+
 /** Al pulsar un encabezado: si ya es la columna activa se invierte el
  * sentido; si no, arranca en el que tiene más sentido para esa columna
  * (nombre de A a Z; fechas y cantidades de mayor a menor). */
@@ -68,12 +127,15 @@ export function FoodsTableView({
   onToggleFavorite,
 }: {
   foods: FoodOption[];
-  favoriteIds: Set<string>;
+  /** Sin favoritos (p. ej. el catálogo global del superadmin) se omite la
+   * columna de la estrella. */
+  favoriteIds?: Set<string>;
   sort: FoodSort;
   onSortChange: (next: FoodSort) => void;
   onOpen: (food: FoodOption) => void;
-  onToggleFavorite: (event: React.MouseEvent, food: FoodOption) => void;
+  onToggleFavorite?: (event: React.MouseEvent, food: FoodOption) => void;
 }) {
+  const showFavorites = Boolean(favoriteIds && onToggleFavorite);
   const header = (key: FoodSortKey, label: string, className?: string) => (
     <SortableHeader
       label={label}
@@ -89,7 +151,7 @@ export function FoodsTableView({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-foreground/[0.02] text-left text-xs text-muted-foreground uppercase">
-            <th className="w-10 px-3 py-2" />
+            {showFavorites ? <th className="w-10 px-3 py-2" /> : null}
             {header("name", "Alimento")}
             <th className="px-3 py-2 font-medium">Categoría</th>
             {header("calories", "Kcal", "whitespace-nowrap")}
@@ -106,18 +168,19 @@ export function FoodsTableView({
             const imageUrl = food.image_path
               ? createClient().storage.from("food-images").getPublicUrl(food.image_path).data.publicUrl
               : null;
-            const isFavorite = favoriteIds.has(food.id);
+            const isFavorite = favoriteIds?.has(food.id) ?? false;
             return (
               <tr
                 key={food.id}
                 onClick={() => onOpen(food)}
                 className="cursor-pointer border-b last:border-b-0 hover:bg-foreground/[0.02]"
               >
+                {showFavorites ? (
                 <td className="px-3 py-2.5">
                   <button
                     type="button"
                     aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
-                    onClick={(e) => onToggleFavorite(e, food)}
+                    onClick={(e) => onToggleFavorite?.(e, food)}
                     className="flex size-6 items-center justify-center text-muted-foreground hover:text-foreground"
                   >
                     <Star
@@ -127,6 +190,7 @@ export function FoodsTableView({
                     />
                   </button>
                 </td>
+                ) : null}
                 <td className="px-3 py-2.5">
                   <div className="flex min-w-0 items-center gap-2.5">
                     <Thumb imageUrl={imageUrl} Icon={Icon} />
@@ -166,10 +230,12 @@ export function DishesTableView({
   dishes,
   sort,
   onSortChange,
+  hrefBase = "/entrenador/nutricion/platillos",
 }: {
   dishes: DishOption[];
   sort: DishSort;
   onSortChange: (next: DishSort) => void;
+  hrefBase?: string;
 }) {
   const header = (key: DishSortKey, label: string, className?: string) => (
     <SortableHeader
@@ -202,7 +268,7 @@ export function DishesTableView({
               <tr key={dish.id} className="border-b last:border-b-0 hover:bg-foreground/[0.02]">
                 <td className="px-3 py-2.5">
                   <Link
-                    href={`/entrenador/nutricion/platillos/${dish.id}`}
+                    href={`${hrefBase}/${dish.id}`}
                     className="flex min-w-0 items-center gap-2.5"
                   >
                     <Thumb imageUrl={imageUrl} Icon={Icon} />
