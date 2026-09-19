@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 export type ExerciseSortOption = "name_asc" | "name_desc" | "date_desc" | "date_asc";
 
-function SortableHeader({
+export function SortableHeader({
   label,
   className,
   active,

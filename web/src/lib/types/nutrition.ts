@@ -25,6 +25,7 @@ export interface FoodOption {
   // Del alimento (esencial o de otro entrenador) del que se copió éste,
   // si aplica. Ver migración 20260814150000_catalog_community_sharing.
   forked_from: string | null;
+  created_at?: string;
 }
 
 export interface DishOption {
@@ -35,6 +36,7 @@ export interface DishOption {
   trainer_id: string | null;
   image_path: string | null;
   forked_from: string | null;
+  created_at?: string;
 }
 
 /** Un alimento tal como aparece en la pestaña Comunidad: de cualquier

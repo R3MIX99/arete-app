@@ -10,24 +10,80 @@ import {
   Apple as AppleIcon,
   FilterX,
   Star,
-  UserRound,
   SlidersHorizontal,
   FileSpreadsheet,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { mealTypeLabel } from "@/lib/format";
 import { foodCategoryIcon, mealTypeIcon } from "@/lib/food-icons";
 import { createClient } from "@/lib/supabase/client";
-import type { DishOption, FoodCategory, FoodOption } from "@/lib/types/nutrition";
+import type { DishOption, FoodCategory, FoodOption, MealType } from "@/lib/types/nutrition";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { MobileFab } from "@/components/trainer/mobile-fab";
 import { FoodDetailSheet } from "@/components/trainer/food-detail-sheet";
 import { ImportFoodsDialog } from "@/components/trainer/import-foods-dialog";
+import {
+  DishesTableView,
+  FoodsTableView,
+  type DishSort,
+  type FoodSort,
+  type FoodSortKey,
+  type SortDirection,
+} from "@/components/trainer/nutrition-table-views";
+
+type Scope = "all" | "favorites" | "custom";
+type ViewMode = "grid" | "table";
+
+const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
+
+const FOOD_SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "name_asc", label: "Nombre (A-Z)" },
+  { value: "name_desc", label: "Nombre (Z-A)" },
+  { value: "date_desc", label: "Más reciente" },
+  { value: "date_asc", label: "Menos reciente" },
+  { value: "calories_desc", label: "Más calorías" },
+  { value: "calories_asc", label: "Menos calorías" },
+  { value: "protein_desc", label: "Más proteína" },
+  { value: "protein_asc", label: "Menos proteína" },
+  { value: "carbs_desc", label: "Más carbohidratos" },
+  { value: "carbs_asc", label: "Menos carbohidratos" },
+  { value: "fat_desc", label: "Más grasa" },
+  { value: "fat_asc", label: "Menos grasa" },
+];
+
+const DISH_SORT_OPTIONS = FOOD_SORT_OPTIONS.slice(0, 4);
+
+function parseSort<K extends string>(value: string): { key: K; dir: SortDirection } {
+  const [key, dir] = value.split("_");
+  return { key: key as K, dir: dir === "desc" ? "desc" : "asc" };
+}
+
+function sortValue(sort: { key: string; dir: SortDirection }): string {
+  return `${sort.key}_${sort.dir}`;
+}
+
+const FOOD_NUMERIC_FIELDS: Record<
+  Exclude<FoodSortKey, "name" | "date">,
+  "calories_per_100g" | "protein_per_100g" | "carbs_per_100g" | "fat_per_100g"
+> = {
+  calories: "calories_per_100g",
+  protein: "protein_per_100g",
+  carbs: "carbs_per_100g",
+  fat: "fat_per_100g",
+};
 
 export function CatalogBrowser({
   trainerId,
@@ -43,9 +99,12 @@ export function CatalogBrowser({
   const router = useRouter();
   const [tab, setTab] = React.useState<"foods" | "dishes">("foods");
   const [query, setQuery] = React.useState("");
+  const [view, setView] = React.useState<ViewMode>("grid");
+  const [scope, setScope] = React.useState<Scope>("all");
   const [categoryId, setCategoryId] = React.useState<string | null>(null);
-  const [favoritesOnly, setFavoritesOnly] = React.useState(false);
-  const [customOnly, setCustomOnly] = React.useState(false);
+  const [mealType, setMealType] = React.useState<MealType | null>(null);
+  const [foodSort, setFoodSort] = React.useState<FoodSort>({ key: "name", dir: "asc" });
+  const [dishSort, setDishSort] = React.useState<DishSort>({ key: "name", dir: "asc" });
   const [selectedFood, setSelectedFood] = React.useState<FoodOption | null>(null);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [importOpen, setImportOpen] = React.useState(false);
@@ -55,20 +114,43 @@ export function CatalogBrowser({
 
   const filteredFoods = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    return foods.filter((f) => {
-      if (favoritesOnly && !favoriteIds.has(f.id)) return false;
-      if (customOnly && f.trainer_id !== trainerId) return false;
+    const result = foods.filter((f) => {
+      if (scope === "favorites" && !favoriteIds.has(f.id)) return false;
+      if (scope === "custom" && f.trainer_id !== trainerId) return false;
       if (categoryId && f.food_category_id !== categoryId) return false;
       if (q && !f.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [foods, query, categoryId, favoritesOnly, favoriteIds, customOnly, trainerId]);
+    const factor = foodSort.dir === "asc" ? 1 : -1;
+    return [...result].sort((a, b) => {
+      switch (foodSort.key) {
+        case "name":
+          return factor * a.name.localeCompare(b.name);
+        case "date":
+          return factor * (a.created_at ?? "").localeCompare(b.created_at ?? "");
+        default: {
+          const field = FOOD_NUMERIC_FIELDS[foodSort.key];
+          return factor * (a[field] - b[field]) || a.name.localeCompare(b.name);
+        }
+      }
+    });
+  }, [foods, query, categoryId, scope, favoriteIds, trainerId, foodSort]);
 
   const filteredDishes = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return dishes;
-    return dishes.filter((d) => d.name.toLowerCase().includes(q));
-  }, [dishes, query]);
+    const result = dishes.filter((d) => {
+      if (scope === "custom" && d.trainer_id !== trainerId) return false;
+      if (mealType && d.meal_type !== mealType) return false;
+      if (q && !d.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    const factor = dishSort.dir === "asc" ? 1 : -1;
+    return [...result].sort((a, b) =>
+      dishSort.key === "date"
+        ? factor * (a.created_at ?? "").localeCompare(b.created_at ?? "")
+        : factor * a.name.localeCompare(b.name),
+    );
+  }, [dishes, query, scope, mealType, trainerId, dishSort]);
 
   async function toggleFavorite(event: React.MouseEvent, food: FoodOption) {
     event.preventDefault();
@@ -109,16 +191,101 @@ export function CatalogBrowser({
     tab === "foods" ? "/entrenador/nutricion/alimentos/nuevo" : "/entrenador/nutricion/platillos/nuevo";
   const newLabel = tab === "foods" ? "Nuevo alimento" : "Nuevo platillo";
 
+  const hasActiveFilters =
+    scope !== "all" || (tab === "foods" ? categoryId !== null : mealType !== null);
+
+  function clearFilters() {
+    setScope("all");
+    setCategoryId(null);
+    setMealType(null);
+  }
+
+  function switchTab(next: "foods" | "dishes") {
+    setTab(next);
+    setQuery("");
+    setScope("all");
+  }
+
+  // Los mismos selectores se dibujan en la barra (escritorio) y en el
+  // cajón de filtros (teléfono); solo cambia el ancho del disparador.
+  function filterControls(triggerClass: string) {
+    return (
+      <>
+        <Select value={scope} onValueChange={(v) => setScope(v as Scope)}>
+          <SelectTrigger className={triggerClass}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            {tab === "foods" ? <SelectItem value="favorites">Favoritos</SelectItem> : null}
+            <SelectItem value="custom">Personalizados</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {tab === "foods" ? (
+          <Select
+            value={categoryId ?? "all"}
+            onValueChange={(v) => setCategoryId(v === "all" ? null : v)}
+          >
+            <SelectTrigger className={triggerClass}>
+              <SelectValue placeholder="Categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las categorías</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Select
+            value={mealType ?? "all"}
+            onValueChange={(v) => setMealType(v === "all" ? null : (v as MealType))}
+          >
+            <SelectTrigger className={triggerClass}>
+              <SelectValue placeholder="Tipo de comida" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los tipos</SelectItem>
+              {MEAL_TYPES.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {mealTypeLabel(type)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        <Select
+          value={sortValue(tab === "foods" ? foodSort : dishSort)}
+          onValueChange={(v) =>
+            tab === "foods" ? setFoodSort(parseSort<FoodSortKey>(v)) : setDishSort(parseSort<"name" | "date">(v))
+          }
+        >
+          <SelectTrigger className={triggerClass}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(tab === "foods" ? FOOD_SORT_OPTIONS : DISH_SORT_OPTIONS).map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6 pt-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-lg bg-foreground/[0.04] p-1">
           <button
             type="button"
-            onClick={() => {
-              setTab("foods");
-              setQuery("");
-            }}
+            onClick={() => switchTab("foods")}
             className={
               tab === "foods"
                 ? "rounded-md bg-card px-3 py-1.5 text-sm font-medium shadow-sm"
@@ -129,10 +296,7 @@ export function CatalogBrowser({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setTab("dishes");
-              setQuery("");
-            }}
+            onClick={() => switchTab("dishes")}
             className={
               tab === "dishes"
                 ? "rounded-md bg-card px-3 py-1.5 text-sm font-medium shadow-sm"
@@ -142,6 +306,7 @@ export function CatalogBrowser({
             Platillos
           </button>
         </div>
+
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs">
           <div className="relative min-w-0 flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -152,20 +317,28 @@ export function CatalogBrowser({
               className="pl-9"
             />
           </div>
-          {tab === "foods" && (
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Filtros"
-              className="relative shrink-0"
-              onClick={() => setFiltersOpen(true)}
-            >
-              <SlidersHorizontal className="size-4" />
-              {(categoryId || favoritesOnly || customOnly) && (
-                <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
-              )}
-            </Button>
-          )}
+          {/* Teléfono: los filtros y el orden viven en un cajón. */}
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Filtros"
+            className="relative shrink-0 md:hidden"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <SlidersHorizontal className="size-4" />
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary" />
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={view === "grid" ? "Ver como tabla" : "Ver como tarjetas"}
+            className="shrink-0 md:hidden"
+            onClick={() => setView(view === "grid" ? "table" : "grid")}
+          >
+            {view === "grid" ? <List className="size-4" /> : <LayoutGrid className="size-4" />}
+          </Button>
           {tab === "foods" && (
             <Button
               variant="outline"
@@ -178,7 +351,42 @@ export function CatalogBrowser({
             </Button>
           )}
         </div>
+
+        {/* Computadora: selectores de filtro y orden en la misma barra. */}
+        <div className="hidden items-center gap-2 md:flex">
+          {filterControls("w-auto min-w-0 whitespace-nowrap")}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            disabled={!hasActiveFilters}
+            onClick={clearFilters}
+          >
+            <FilterX /> Limpiar filtros
+          </Button>
+        </div>
+
         <div className="ml-auto hidden items-center gap-2 md:flex">
+          <div className="flex items-center rounded-lg border p-0.5">
+            <Button
+              variant={view === "grid" ? "secondary" : "ghost"}
+              size="icon"
+              className="size-8"
+              aria-label="Vista de tarjetas"
+              onClick={() => setView("grid")}
+            >
+              <LayoutGrid className="size-4" />
+            </Button>
+            <Button
+              variant={view === "table" ? "secondary" : "ghost"}
+              size="icon"
+              className="size-8"
+              aria-label="Vista de tabla"
+              onClick={() => setView("table")}
+            >
+              <List className="size-4" />
+            </Button>
+          </div>
           {tab === "foods" && (
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <FileSpreadsheet />
@@ -204,48 +412,13 @@ export function CatalogBrowser({
       <MobileFab href={newHref} icon={Plus} label={newLabel} />
 
       <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
-        <div className="flex flex-wrap gap-2">
-          <Badge
-            variant={favoritesOnly ? "default" : "outline"}
-            className="h-7 cursor-pointer gap-1 px-3"
-            onClick={() => setFavoritesOnly((v) => !v)}
-          >
-            <Star className="size-3" fill={favoritesOnly ? "currentColor" : "none"} />
-            Favoritos
-          </Badge>
-          <Badge
-            variant={customOnly ? "default" : "outline"}
-            className="h-7 cursor-pointer gap-1 px-3"
-            onClick={() => setCustomOnly((v) => !v)}
-          >
-            <UserRound className="size-3" />
-            Personalizados
-          </Badge>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <Badge
-              key={category.id}
-              variant={categoryId === category.id ? "default" : "outline"}
-              className="h-7 cursor-pointer px-3"
-              onClick={() =>
-                setCategoryId((c) => (c === category.id ? null : category.id))
-              }
-            >
-              {category.name}
-            </Badge>
-          ))}
-        </div>
+        {filterControls("w-full")}
         <Button
           variant="ghost"
           size="sm"
           className="w-fit text-muted-foreground"
-          disabled={!categoryId && !favoritesOnly && !customOnly}
-          onClick={() => {
-            setCategoryId(null);
-            setFavoritesOnly(false);
-            setCustomOnly(false);
-          }}
+          disabled={!hasActiveFilters}
+          onClick={clearFilters}
         >
           <FilterX /> Limpiar filtros
         </Button>
@@ -254,6 +427,15 @@ export function CatalogBrowser({
       {tab === "foods" ? (
         filteredFoods.length === 0 ? (
           <EmptyState icon={AppleIcon} empty={foods.length === 0} what="alimentos" />
+        ) : view === "table" ? (
+          <FoodsTableView
+            foods={filteredFoods}
+            favoriteIds={favoriteIds}
+            sort={foodSort}
+            onSortChange={setFoodSort}
+            onOpen={setSelectedFood}
+            onToggleFavorite={toggleFavorite}
+          />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
             {filteredFoods.map((food) => {
@@ -315,6 +497,8 @@ export function CatalogBrowser({
         )
       ) : filteredDishes.length === 0 ? (
         <EmptyState icon={Utensils} empty={dishes.length === 0} what="platillos" />
+      ) : view === "table" ? (
+        <DishesTableView dishes={filteredDishes} sort={dishSort} onSortChange={setDishSort} />
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
           {filteredDishes.map((dish) => {

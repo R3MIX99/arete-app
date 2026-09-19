@@ -24,6 +24,7 @@ interface FoodRow {
   trainer_id: string | null;
   image_path: string | null;
   forked_from: string | null;
+  created_at: string;
   food_categories: { name: string; slug: string } | { name: string; slug: string }[] | null;
   profiles: { full_name: string } | { full_name: string }[] | null;
 }
@@ -36,6 +37,7 @@ interface DishRow {
   trainer_id: string | null;
   image_path: string | null;
   forked_from: string | null;
+  created_at: string;
   profiles: { full_name: string } | { full_name: string }[] | null;
 }
 
@@ -59,13 +61,13 @@ export default async function NutritionPage() {
       supabase
         .from("foods")
         .select(
-          "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, forked_from, food_categories(name, slug), profiles!foods_trainer_id_fkey(full_name)",
+          "id, name, food_category_id, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, household_unit_name, household_unit_grams, trainer_id, image_path, forked_from, created_at, food_categories(name, slug), profiles!foods_trainer_id_fkey(full_name)",
         )
         .order("name"),
       supabase
         .from("dishes")
         .select(
-          "id, name, description, meal_type, trainer_id, image_path, forked_from, profiles!dishes_trainer_id_fkey(full_name)",
+          "id, name, description, meal_type, trainer_id, image_path, forked_from, created_at, profiles!dishes_trainer_id_fkey(full_name)",
         )
         .order("name"),
       supabase.from("food_categories").select("id, slug, name, sort_order").order("sort_order"),
@@ -103,6 +105,7 @@ export default async function NutritionPage() {
       image_path: f.image_path,
       is_favorite: favoriteIds.has(f.id),
       forked_from: f.forked_from,
+      created_at: f.created_at,
     };
   };
 
@@ -114,6 +117,7 @@ export default async function NutritionPage() {
     trainer_id: d.trainer_id,
     image_path: d.image_path,
     forked_from: d.forked_from,
+    created_at: d.created_at,
   });
 
   const myFoods: FoodOption[] = allFoodRows
