@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
 
       <div>
         <h1 className="text-2xl font-bold">Política de privacidad</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Última actualización: 18 de agosto de 2026</p>
+        <p className="mt-1 text-sm text-muted-foreground">Última actualización: 20 de septiembre de 2026</p>
       </div>
 
       <div className="flex flex-col gap-6 text-sm leading-relaxed text-foreground">
@@ -52,7 +52,8 @@ export default function PrivacyPolicyPage() {
           <ul className="list-disc space-y-1.5 pl-5">
             <li>
               <strong>Datos de cuenta:</strong> nombre, correo, teléfono y contraseña (cifrada, nunca la vemos en
-              texto plano).
+              texto plano). Si inicias sesión con Google, recibimos de Google únicamente tu nombre, tu correo y tu
+              foto de perfil; nunca recibimos tu contraseña de Google.
             </li>
             <li>
               <strong>Datos de salud y condición física</strong> (solo clientes): peso, estatura, género, objetivo,
@@ -70,6 +71,10 @@ export default function PrivacyPolicyPage() {
               tus clientes.
             </li>
             <li>
+              <strong>Mensajes de soporte</strong> (solo entrenadores): el contenido de tus consultas y
+              conversaciones con nuestro equipo de soporte.
+            </li>
+            <li>
               <strong>Datos técnicos:</strong> tipo de dispositivo, sistema operativo, y registros de uso básicos
               para poder dar soporte y corregir errores.
             </li>
@@ -85,7 +90,7 @@ export default function PrivacyPolicyPage() {
               cuando tú o tu entrenador lo solicitan.
             </li>
             <li>Enviarte notificaciones dentro de la app sobre cambios en tu rutina o plan.</li>
-            <li>Dar soporte cuando nos contactas.</li>
+            <li>Dar soporte cuando nos contactas, incluido el chat de soporte para entrenadores.</li>
             <li>Mejorar la aplicación y corregir errores.</li>
           </ul>
         </section>
@@ -108,16 +113,37 @@ export default function PrivacyPolicyPage() {
               <strong>Anthropic (Claude)</strong> — procesa la información necesaria (objetivo, historial de
               entrenamiento) para generar rutinas y planes nutricionales cuando usas esa función.
             </li>
+            <li>
+              <strong>Google</strong> — si eliges iniciar sesión con tu cuenta de Google, para verificar tu
+              identidad.
+            </li>
+            <li>
+              <strong>YouTube</strong> — los videos de los ejercicios se reproducen desde YouTube, que puede
+              recopilar datos técnicos al reproducirlos según su propia política.
+            </li>
+            <li>
+              <strong>Stripe</strong> — procesa los pagos de las suscripciones, que se gestionan únicamente en
+              nuestro sitio web y no dentro de la aplicación. Nosotros no almacenamos los datos de tu tarjeta.
+            </li>
           </ul>
+          <p>
+            No usamos publicidad, no incluimos rastreadores de terceros con fines publicitarios y no vendemos ni
+            compartimos tus datos con anunciantes.
+          </p>
           <p>Si eres cliente, tu entrenador asignado también tiene acceso a tu información de entrenamiento y nutrición — es necesario para que pueda darte seguimiento.</p>
         </section>
 
         <section className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold">5. Cuánto tiempo conservamos tu información</h2>
           <p>
-            Mientras tu cuenta esté activa. Si solicitas eliminar tu cuenta, borramos o anonimizamos tus datos
-            personales dentro de un plazo razonable, salvo la información que estemos obligados a conservar por
-            ley.
+            Mientras tu cuenta esté activa. Puedes eliminarla en cualquier momento desde la aplicación, en{" "}
+            <strong>Configuración</strong>, o solicitándolo en{" "}
+            <Link href="/eliminar-cuenta" className="text-primary underline">
+              la página de eliminación de cuenta
+            </Link>
+            . Al hacerlo, anonimizamos tus datos personales y borramos tus archivos (como fotos de progreso y
+            logos). Podemos conservar de forma anónima datos agregados que no te identifican, y la información que
+            estemos obligados a conservar por ley.
           </p>
         </section>
 
@@ -144,17 +170,27 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">8. Menores de edad</h2>
+          <h2 className="text-lg font-semibold">8. Aviso sobre salud</h2>
+          <p>
+            Aretia genera y organiza rutinas de entrenamiento y planes de alimentación con fines de
+            entrenamiento general. No ofrece diagnósticos ni tratamientos médicos ni sustituye la opinión de un
+            profesional de la salud. Si tienes una lesión o una condición médica, consulta a un profesional
+            antes de seguir una rutina o un plan de alimentación.
+          </p>
+        </section>
+
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold">9. Menores de edad</h2>
           <p>Aretia no está dirigida a menores de 18 años sin la supervisión de un entrenador o tutor responsable de su cuenta.</p>
         </section>
 
         <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">9. Cambios a esta política</h2>
+          <h2 className="text-lg font-semibold">10. Cambios a esta política</h2>
           <p>Podemos actualizar esta política ocasionalmente. Si hacemos cambios importantes, te avisaremos dentro de la aplicación.</p>
         </section>
 
         <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">10. Contacto</h2>
+          <h2 className="text-lg font-semibold">11. Contacto</h2>
           <p>
             <a href="mailto:equipo@codeal.ai" className="text-primary underline">
               equipo@codeal.ai
