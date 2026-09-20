@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 export function SupportUnreadBadge({ className }: { className?: string }) {
   const supabase = React.useMemo(() => createClient(), []);
   const [count, setCount] = React.useState(0);
+  const instanceId = React.useId();
 
   React.useEffect(() => {
     let cancelled = false;
@@ -25,7 +26,9 @@ export function SupportUnreadBadge({ className }: { className?: string }) {
     const onRead = () => void refresh();
     window.addEventListener("support-read", onRead);
     const channel = supabase
-      .channel("support-unread-badge")
+      // Nombre único por instancia: el menú de escritorio y el de móvil pueden
+      // estar montados a la vez, y reusar un canal ya suscrito lanza error.
+      .channel(`support-unread-badge-${instanceId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => {
         void refresh();
       })
@@ -36,7 +39,7 @@ export function SupportUnreadBadge({ className }: { className?: string }) {
       window.removeEventListener("support-read", onRead);
       void supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, instanceId]);
 
   if (count === 0) return null;
 
