@@ -6,6 +6,8 @@ import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { logActivity } from "@/lib/log-activity";
+import { isNativeApp } from "@/lib/hooks/use-is-native-app";
+import { startNativeGoogleLogin } from "@/lib/native-oauth";
 import { Button } from "@/components/ui/button";
 
 function GoogleIcon() {
@@ -53,6 +55,28 @@ export function GoogleSignInButton({
 
   async function handleClick() {
     setLoading(true);
+
+    // App de Android/iOS: Google no deja iniciar sesión dentro de un WebView,
+    // así que se abre en el navegador del sistema y se regresa por un enlace
+    // profundo (ver lib/native-oauth.ts).
+    if (isNativeApp()) {
+      const { error } = await startNativeGoogleLogin({ next, intent });
+      // El navegador ya se abrió: se libera el botón para poder reintentar
+      // si el usuario cierra esa ventana sin terminar.
+      setLoading(false);
+      if (error) {
+        toast.error("No se pudo conectar con Google. Intenta de nuevo.");
+        logActivity({
+          action: "auth.login_failed",
+          category: "auth",
+          severity: "warning",
+          message: "No se pudo iniciar el flujo de Google en la app nativa",
+          context: { provider: "google", native: true, reason: error },
+        });
+      }
+      return;
+    }
+
     const supabase = createClient();
     const params = new URLSearchParams();
     if (next) params.set("next", next);

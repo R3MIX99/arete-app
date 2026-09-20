@@ -18,6 +18,16 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Regreso del login con Google: el navegador del sistema (Chrome
+                 Custom Tabs) termina en mx.aretia.app://auth?code=... y Android
+                 abre la app con ese enlace. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="mx.aretia.app" android:host="auth" />
+            </intent-filter>
         </activity>
 
         <provider

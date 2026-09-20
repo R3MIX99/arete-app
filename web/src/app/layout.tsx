@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { NativeAuthLinkHandler } from "@/components/auth/native-auth-link-handler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           <TooltipProvider delayDuration={150}>{children}</TooltipProvider>
           <Toaster />
+          <NativeAuthLinkHandler />
         </ThemeProvider>
       </body>
     </html>
