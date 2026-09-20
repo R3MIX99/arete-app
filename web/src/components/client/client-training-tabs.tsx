@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
-import { ProgressPhotoThumbnail } from "@/components/trainer/progress-photo-thumbnail";
+import { ProgressPhotoGallery } from "@/components/progress/progress-photo-gallery";
 import { ClientExerciseEvolution } from "@/components/client/client-exercise-evolution";
 import { DateRangeFilter, type SessionDateRange } from "@/components/client/date-range-filter";
 
@@ -195,15 +195,7 @@ export function ClientTrainingTabs({
               <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Fotos de progreso
               </h2>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {orderedPhotos.map((entry) => (
-                  <ProgressPhotoThumbnail
-                    key={entry.id}
-                    photoPath={entry.photo_path!}
-                    date={entry.entry_date}
-                  />
-                ))}
-              </div>
+              <ProgressPhotoGallery photos={orderedPhotos} />
             </div>
           ) : null}
         </TabsContent>

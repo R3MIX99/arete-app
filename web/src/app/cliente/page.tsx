@@ -7,6 +7,7 @@ import {
   fetchClientNutritionPlan,
   fetchSubstitutionsForDate,
 } from "@/lib/server/client-nutrition-data";
+import type { ProgressPhotoEntry } from "@/lib/types/progress";
 import { ClientHomeToday } from "@/components/client/client-home-today";
 import { ClientDeactivatedNotice } from "@/components/client/client-deactivated-notice";
 import { fetchRoutineCardMeta } from "@/lib/server/routine-card-meta";
@@ -116,6 +117,7 @@ export default async function ClientHomePage() {
     { data: setLogRows },
     { data: weightSetLogRows },
     { data: weightRows },
+    { data: photoRows },
     routineMeta,
   ] = await Promise.all([
       Promise.resolve({ data: ownProfile }),
@@ -173,6 +175,13 @@ export default async function ClientHomePage() {
         .eq("client_id", user.id)
         .eq("metric_key", "weight_kg")
         .order("entry_date"),
+      supabase
+        .from("progress_entries")
+        .select("id, entry_date, photo_path, notes")
+        .eq("client_id", user.id)
+        .not("photo_path", "is", null)
+        .order("entry_date", { ascending: false })
+        .order("created_at", { ascending: false }),
       fetchRoutineCardMeta(supabase),
     ]);
 
@@ -306,6 +315,9 @@ export default async function ClientHomePage() {
       nutritionSubstitutions={nutritionSubstitutions}
       calorieTarget={calorieTarget}
       routineMeta={routineMeta}
+      clientId={user.id}
+      trainerId={ownProfile?.trainer_id ?? null}
+      progressPhotos={(photoRows ?? []) as ProgressPhotoEntry[]}
     />
   );
 }

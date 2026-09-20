@@ -7,7 +7,7 @@ import type {
   ClientTrainingAssignment,
   ClientDietPlanAssignment,
 } from "@/lib/types/client";
-import type { ExerciseProgressSummary, ProgressMeasurement } from "@/lib/types/progress";
+import type { ExerciseProgressSummary, ProgressMeasurement, ProgressPhotoEntry } from "@/lib/types/progress";
 import type { CompletedSessionRow } from "@/lib/types/client-panel";
 import { muscleGroupLabel } from "@/lib/format";
 import type { CalendarAssignment } from "@/lib/calendar-logic";
@@ -83,6 +83,7 @@ export default async function ClientDetailPage({
     { data: dietPlanRows },
     { data: canManageRoutines },
     { data: canManageNutrition },
+    { data: photoRows },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -146,6 +147,13 @@ export default async function ClientDetailPage({
       .order("name"),
     supabase.rpc("can_manage_client", { p_client_id: id }),
     supabase.rpc("can_manage_client_nutrition", { p_client_id: id }),
+    supabase
+      .from("progress_entries")
+      .select("id, entry_date, photo_path, notes")
+      .eq("client_id", id)
+      .not("photo_path", "is", null)
+      .order("entry_date", { ascending: false })
+      .order("created_at", { ascending: false }),
   ]);
 
   // Aparte del Promise.all de arriba: la agenda completa (programa +
@@ -388,6 +396,7 @@ export default async function ClientDetailPage({
       dietPlans={dietPlans}
       canManageRoutines={Boolean(canManageRoutines)}
       canManageNutrition={Boolean(canManageNutrition)}
+      photos={(photoRows ?? []) as ProgressPhotoEntry[]}
     />
   );
 }

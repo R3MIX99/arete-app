@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   CalendarClock,
   CalendarRange,
+  Camera,
   Dumbbell,
   Loader2,
   Pencil,
@@ -25,7 +26,12 @@ import { initialsOf, goalLabel, formatDate } from "@/lib/format";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 import { isCardioGroup } from "@/lib/client-exercise-target";
 import { MEASUREMENT_FIELDS, type MeasurementKey } from "@/lib/types/progress";
-import type { ExerciseProgressSummary, ProgressMeasurement } from "@/lib/types/progress";
+import type {
+  ExerciseProgressSummary,
+  ProgressMeasurement,
+  ProgressPhotoEntry,
+} from "@/lib/types/progress";
+import { ProgressPhotoGallery } from "@/components/progress/progress-photo-gallery";
 import type { CompletedSessionRow } from "@/lib/types/client-panel";
 import type { CalendarAssignment } from "@/lib/calendar-logic";
 import type {
@@ -93,6 +99,7 @@ export function ClientProfile({
   dietPlans,
   canManageRoutines,
   canManageNutrition,
+  photos,
 }: {
   trainerId: string;
   client: ClientProfileType;
@@ -116,6 +123,8 @@ export function ClientProfile({
    *  del botón de cambiar. */
   canManageRoutines: boolean;
   canManageNutrition: boolean;
+  /** Fotos de progreso del cliente, de la más reciente a la más antigua. */
+  photos: ProgressPhotoEntry[];
 }) {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -572,6 +581,7 @@ export function ClientProfile({
               <TabsTrigger value="historial">Historial</TabsTrigger>
               <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
               <TabsTrigger value="evolucion">Evolución</TabsTrigger>
+              <TabsTrigger value="fotos">Fotos</TabsTrigger>
             </TabsList>
 
             <TabsContent value="historial" className="mt-3">
@@ -676,6 +686,19 @@ export function ClientProfile({
                     </tbody>
                   </table>
                 </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="fotos" className="mt-3">
+              {photos.length === 0 ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
+                    <Camera className="size-6" />
+                    <p className="text-sm">Este cliente todavía no ha subido fotos de progreso.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <ProgressPhotoGallery photos={photos} viewer="trainer" />
               )}
             </TabsContent>
           </Tabs>

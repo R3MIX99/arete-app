@@ -32,7 +32,7 @@ import {
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { AddMeasurementDialog } from "@/components/trainer/add-measurement-dialog";
 import { EditMeasurementDialog } from "@/components/trainer/edit-measurement-dialog";
-import { ProgressPhotoThumbnail } from "@/components/trainer/progress-photo-thumbnail";
+import { ProgressPhotoGallery } from "@/components/progress/progress-photo-gallery";
 import { ClientPickerDialog } from "@/components/trainer/client-picker-dialog";
 import { MeasurementEntriesTable } from "@/components/trainer/measurement-entries-table";
 
@@ -311,15 +311,7 @@ export function ProgressTrackingView({
               <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Fotos de progreso
               </h2>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {clientPhotos.map((entry) => (
-                  <ProgressPhotoThumbnail
-                    key={entry.id}
-                    photoPath={entry.photo_path!}
-                    date={entry.entry_date}
-                  />
-                ))}
-              </div>
+              <ProgressPhotoGallery photos={clientPhotos} viewer="trainer" />
             </div>
           )}
 

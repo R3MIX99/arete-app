@@ -23,6 +23,8 @@ import {
   type PersonalRecord,
   type WeightPoint,
 } from "@/components/client/client-highlights";
+import type { ProgressPhotoEntry } from "@/lib/types/progress";
+import { ProgressPhotosCard } from "@/components/progress/progress-photos-card";
 import { ClientNutritionSummary } from "@/components/client/client-nutrition-summary";
 import {
   RoutineSessionCard,
@@ -72,6 +74,9 @@ export function ClientHomeToday({
   nutritionSubstitutions,
   calorieTarget,
   routineMeta,
+  clientId,
+  trainerId,
+  progressPhotos,
 }: {
   firstName: string;
   /** false si el entrenador no puso nombre ni logo de negocio — en ese
@@ -92,6 +97,10 @@ export function ClientHomeToday({
   nutritionPlan: ClientNutritionPlan | null;
   nutritionSubstitutions: SubstitutionWithFood[];
   calorieTarget: number | null;
+  clientId: string;
+  /** Sin entrenador no hay a quién mostrarle las fotos, así que no se ofrece subirlas. */
+  trainerId: string | null;
+  progressPhotos: ProgressPhotoEntry[];
 }) {
   const today = useMemo(() => todayKey(), []);
   const todaySessions = useMemo(
@@ -230,6 +239,10 @@ export function ClientHomeToday({
         completedSessions={monthCompletedSessions}
         completedSetDates={completedSetDates}
       />
+
+      {trainerId ? (
+        <ProgressPhotosCard clientId={clientId} trainerId={trainerId} photos={progressPhotos} />
+      ) : null}
 
       <ClientRecords records={records} />
 
