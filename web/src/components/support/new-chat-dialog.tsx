@@ -6,6 +6,7 @@ import { Loader2, MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { useIsNativeApp } from "@/lib/hooks/use-is-native-app";
 import { supportCategoryLabels } from "@/lib/types/support";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const CATEGORIES = Object.entries(supportCategoryLabels).filter(
+const ALL_CATEGORIES = Object.entries(supportCategoryLabels).filter(
   ([value]) => value !== "eliminar_cuenta",
 );
 
@@ -40,6 +41,8 @@ export function NewChatDialog({
   profile: { id: string; full_name: string; email: string };
 }) {
   const router = useRouter();
+  const native = useIsNativeApp();
+  const CATEGORIES = native ? ALL_CATEGORIES.filter(([value]) => value !== "pagos") : ALL_CATEGORIES;
   const [category, setCategory] = React.useState("otro");
   const [subject, setSubject] = React.useState("");
   const [message, setMessage] = React.useState("");

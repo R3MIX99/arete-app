@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { useIsNativeApp } from "@/lib/hooks/use-is-native-app";
 import { formatDateTime } from "@/lib/format";
 import { helpArticles, searchHelpArticles, type HelpArticle } from "@/lib/support-content";
 import {
@@ -157,9 +158,17 @@ export function SupportCenter({
   const [section, setSection] = React.useState<"all" | "guia" | "faq">("all");
   const [chatOpen, setChatOpen] = React.useState(false);
 
+  const native = useIsNativeApp();
+  const visibleArticles = React.useMemo(
+    () => helpArticles.filter((a) => !(native && a.hideOnNative)),
+    [native],
+  );
   const results = React.useMemo(
-    () => searchHelpArticles(query).filter((a) => section === "all" || a.kind === section),
-    [query, section],
+    () =>
+      searchHelpArticles(query).filter(
+        (a) => !(native && a.hideOnNative) && (section === "all" || a.kind === section),
+      ),
+    [query, section, native],
   );
   const guides = results.filter((a) => a.kind === "guia");
   const faqs = results.filter((a) => a.kind === "faq");
@@ -265,7 +274,7 @@ export function SupportCenter({
             <BookOpen className="size-8 text-primary" />
             <span className="font-semibold">Guías</span>
             <span className="text-sm text-muted-foreground">
-              Paso a paso ({helpArticles.filter((a) => a.kind === "guia").length})
+              Paso a paso ({visibleArticles.filter((a) => a.kind === "guia").length})
             </span>
           </button>
           <button
@@ -279,7 +288,7 @@ export function SupportCenter({
             <HelpCircle className="size-8 text-primary" />
             <span className="font-semibold">Preguntas frecuentes</span>
             <span className="text-sm text-muted-foreground">
-              Respuestas rápidas ({helpArticles.filter((a) => a.kind === "faq").length})
+              Respuestas rápidas ({visibleArticles.filter((a) => a.kind === "faq").length})
             </span>
           </button>
           <div className="flex flex-col items-center gap-2 rounded-xl border p-6 text-center">

@@ -22,6 +22,7 @@ import { initialsOf, goalLabel, formatDate } from "@/lib/format";
 import { subscriptionPlanLabels, type SubscriptionPlan } from "@/lib/types/settings";
 import type { ClientUsage } from "@/lib/types/plans";
 import { PlansDialog } from "@/components/trainer/plans-dialog";
+import { useIsNativeApp } from "@/lib/hooks/use-is-native-app";
 import type { ClientProfile, PendingInvitation } from "@/lib/types/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -370,6 +371,7 @@ export function ClientsBrowser({
 
   const hasActiveFilters = query.trim() !== "" || status !== null || goal !== null;
 
+  const native = useIsNativeApp();
   const atLimit = usage.limit !== null && usage.activeClients >= usage.limit;
   const overLimit = usage.limit !== null && usage.activeClients > usage.limit;
   const [plansOpen, setPlansOpen] = React.useState(false);
@@ -388,22 +390,26 @@ export function ClientsBrowser({
             <span className="tabular-nums font-semibold text-foreground">
               {usage.activeClients} / {usage.limit}
             </span>{" "}
-            clientes activos · plan {subscriptionPlanLabels[planKey]}
+            clientes activos{native ? "" : ` · plan ${subscriptionPlanLabels[planKey]}`}
             {overLimit && usage.overLimitGraceUntil && (
               <>
                 {" — "}
                 <span className="text-warning">
                   estás por encima del límite. Tienes hasta el{" "}
-                  {formatDate(usage.overLimitGraceUntil.slice(0, 10))} para bajar de plan o
-                  desactivar a los clientes de más.
+                  {formatDate(usage.overLimitGraceUntil.slice(0, 10))} para{" "}
+                  {native ? "desactivar a los clientes de más" : "bajar de plan o desactivar a los clientes de más"}.
                 </span>
               </>
             )}
             {atLimit && !overLimit && (
-              <> — llegaste al tope. Sube de plan o contrata un bloque de 5 para agregar más.</>
+              <>
+                {native
+                  ? " — llegaste al tope. Desactiva a algún cliente para agregar más."
+                  : " — llegaste al tope. Sube de plan o contrata un bloque de 5 para agregar más."}
+              </>
             )}
           </p>
-          {atLimit && (
+          {atLimit && !native && (
             <Button
               size="sm"
               variant="outline"

@@ -3,6 +3,8 @@ export interface HelpArticle {
   kind: "guia" | "faq";
   topic: string;
   title: string;
+  /** No se muestra dentro de la app de Android/iOS (habla de planes y pagos). */
+  hideOnNative?: boolean;
   /** Pasos (guías) o respuesta corta (preguntas frecuentes). */
   steps?: string[];
   answer?: string;
@@ -105,6 +107,7 @@ export const helpArticles: HelpArticle[] = [
   {
     id: "f-plan-limite",
     kind: "faq",
+    hideOnNative: true,
     topic: "Cuenta y planes",
     title: "¿Cómo cambio de plan o aumento mi límite de clientes?",
     answer:

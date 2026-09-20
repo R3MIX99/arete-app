@@ -7,6 +7,7 @@ import { ArrowLeft, Copy, Loader2, Lock, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { isNativeApp, useIsNativeApp } from "@/lib/hooks/use-is-native-app";
 import { subscriptionPlanLabels, type SubscriptionPlan } from "@/lib/types/settings";
 import type { ClientUsage } from "@/lib/types/plans";
 import { PlansView } from "@/components/trainer/plans-view";
@@ -40,6 +41,7 @@ export function NewClientForm({
   planKey: SubscriptionPlan;
 }) {
   const router = useRouter();
+  const native = useIsNativeApp();
   const atLimit = usage.limit !== null && usage.activeClients >= usage.limit;
   const [fullName, setFullName] = React.useState("");
   const [email, setEmail] = React.useState("");
@@ -78,7 +80,9 @@ export function NewClientForm({
       const message = raw.includes("duplicate")
         ? "Ya existe una invitación pendiente para ese correo."
         : isLimit
-          ? `Llegaste al límite de clientes de tu plan ${subscriptionPlanLabels[planKey]} (${usage.limit}). Sube de plan o contrata un bloque de 5 clientes más.`
+          ? isNativeApp()
+            ? `Llegaste al límite de clientes activos de tu cuenta (${usage.limit}).`
+            : `Llegaste al límite de clientes de tu plan ${subscriptionPlanLabels[planKey]} (${usage.limit}). Sube de plan o contrata un bloque de 5 clientes más.`
           : "No se pudo crear la invitación. Intenta de nuevo.";
       setError(message);
       toast.error(message);
@@ -154,15 +158,22 @@ export function NewClientForm({
           <div>
             <h2 className="text-lg font-semibold">Llegaste al límite de tu plan</h2>
             <p className="text-sm text-muted-foreground">
-              Tu plan {subscriptionPlanLabels[planKey]} incluye {usage.limit} clientes activos y
-              ya los tienes ocupados.
+              {native
+                ? `Tu cuenta incluye ${usage.limit} clientes activos y ya los tienes ocupados.`
+                : `Tu plan ${subscriptionPlanLabels[planKey]} incluye ${usage.limit} clientes activos y ya los tienes ocupados.`}
             </p>
           </div>
         </div>
-        <PlansView
-          currentPlan={planKey}
-          reason="Para agregar a más clientes, sube de plan o contrata un bloque de 5 clientes más. También puedes desactivar a alguien que ya no atiendas."
-        />
+        {native ? (
+          <p className="text-sm text-muted-foreground">
+            Puedes desactivar a alguien que ya no atiendas para agregar a otro cliente.
+          </p>
+        ) : (
+          <PlansView
+            currentPlan={planKey}
+            reason="Para agregar a más clientes, sube de plan o contrata un bloque de 5 clientes más. También puedes desactivar a alguien que ya no atiendas."
+          />
+        )}
       </div>
     );
   }
@@ -184,8 +195,8 @@ export function NewClientForm({
             {usage.limit !== null && (
               <>
                 {" "}
-                Vas <strong>{usage.activeClients} de {usage.limit}</strong> clientes de tu plan{" "}
-                {subscriptionPlanLabels[planKey]}.
+                Vas <strong>{usage.activeClients} de {usage.limit}</strong> clientes activos
+                {native ? "" : ` de tu plan ${subscriptionPlanLabels[planKey]}`}.
               </>
             )}
           </CardDescription>

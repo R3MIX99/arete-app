@@ -22,9 +22,11 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ThemePicker } from "@/components/theme-picker";
 import { DeleteAccountCard } from "@/components/account/delete-account-card";
+import { useIsNativeApp } from "@/lib/hooks/use-is-native-app";
 
 export function TrainerSettingsForm({ settings }: { settings: TrainerSettings }) {
   const router = useRouter();
+  const native = useIsNativeApp();
   const [fullName, setFullName] = React.useState(settings.full_name);
   const [phone, setPhone] = React.useState(settings.phone ?? "");
   const [businessName, setBusinessName] = React.useState(settings.business_name ?? "");
@@ -322,10 +324,12 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
                 </Badge>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              La gestión de planes y pagos todavía no está conectada — vas a poder cambiar de
-              plan directamente desde aquí más adelante.
-            </p>
+            {native ? null : (
+              <p className="text-sm text-muted-foreground">
+                La gestión de planes y pagos todavía no está conectada — vas a poder cambiar de
+                plan directamente desde aquí más adelante.
+              </p>
+            )}
           </CardContent>
         </Card>
 
