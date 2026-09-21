@@ -5,7 +5,7 @@ import { Dumbbell, Flame, Layers, Timer } from "lucide-react";
 
 import { addDays, compareKeys, sessionsInRange, toKey, type CalendarAssignment } from "@/lib/calendar-logic";
 import { cn } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
+import { HomeSectionTitle } from "@/components/client/home-section-title";
 
 export interface CompletedSessionDay {
   date: string;
@@ -117,12 +117,11 @@ export function ClientMonthActivity({
   );
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-4 p-4">
+    <section className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold capitalize">{MONTH_NAMES[month - 1]}</p>
-            <p className="text-xs text-muted-foreground">
+            <HomeSectionTitle className="capitalize">{MONTH_NAMES[month - 1]}</HomeSectionTitle>
+            <p className="mt-2 text-sm text-muted-foreground">
               {monthCompleted.length}{" "}
               {monthCompleted.length === 1 ? "entrenamiento" : "entrenamientos"} este mes
             </p>
@@ -151,7 +150,7 @@ export function ClientMonthActivity({
                     : "descanso"
               }`}
               className={cn(
-                "flex aspect-square items-center justify-center rounded-md text-[11px] font-medium tabular-nums transition-colors",
+                "flex aspect-square items-center justify-center rounded-xl text-xs font-medium tabular-nums transition-colors",
                 day.done
                   ? "bg-primary text-primary-foreground"
                   : day.scheduled && day.isPast
@@ -181,13 +180,12 @@ export function ClientMonthActivity({
           </span>
         </div>
 
-        <div className="grid grid-cols-3 divide-x rounded-xl bg-muted/40">
+        <div className="grid grid-cols-3 divide-x rounded-2xl bg-muted/40">
           <Stat icon={Dumbbell} value={String(monthCompleted.length)} label="Sesiones" />
           <Stat icon={Timer} value={`${totalMinutes}`} label="Minutos" />
           <Stat icon={Layers} value={String(totalSets)} label="Series" />
         </div>
-      </CardContent>
-    </Card>
+    </section>
   );
 }
 

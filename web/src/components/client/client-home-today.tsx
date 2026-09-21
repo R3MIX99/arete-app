@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { CalendarDays, Dumbbell } from "lucide-react";
+import { CalendarCheck, CalendarDays } from "lucide-react";
 
 import {
   addDays,
@@ -12,17 +12,17 @@ import {
   type CalendarAssignment,
 } from "@/lib/calendar-logic";
 import { formatDate } from "@/lib/format";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   ClientMonthActivity,
   type CompletedSessionDay,
 } from "@/components/client/client-month-activity";
 import {
-  ClientRecords,
-  ClientWeightTrend,
+  ClientProgressSection,
   type PersonalRecord,
   type WeightPoint,
 } from "@/components/client/client-highlights";
+import { ClientBrandBlock, type ClientBranding } from "@/components/client/client-brand-block";
+import { ClientHomeHeader } from "@/components/client/client-home-header";
 import { ProgressPhotosCard } from "@/components/progress/progress-photos-card";
 import { ClientNutritionSummary } from "@/components/client/client-nutrition-summary";
 import {
@@ -58,10 +58,7 @@ interface SessionRef {
  */
 export function ClientHomeToday({
   firstName,
-  hasBusinessBranding,
-  businessName,
-  businessLogoUrl,
-  trainerName,
+  branding,
   assignments,
   inProgressSessions,
   recentCompletedSessions,
@@ -77,13 +74,10 @@ export function ClientHomeToday({
   trainerId,
 }: {
   firstName: string;
+  branding: ClientBranding;
   /** false si el entrenador no puso nombre ni logo de negocio — en ese
    * caso no hay nada propio que mostrar, así que todo el bloque de
    * abajo (logo + nombre + entrenador) no se renderiza. */
-  hasBusinessBranding: boolean;
-  businessName: string;
-  businessLogoUrl: string | null;
-  trainerName: string | null;
   assignments: CalendarAssignment[];
   routineMeta: Record<string, RoutineCardMeta>;
   inProgressSessions: SessionRef[];
@@ -109,13 +103,17 @@ export function ClientHomeToday({
   // servidor manda una ventana de días alrededor de SU fecha (corre en
   // UTC), y hay que quedarse con las sustituciones del día real del
   // cliente — las permanentes valen siempre.
-  const nutritionTotals = useMemo(() => {
+  const todayPlan = useMemo(() => {
     if (!nutritionPlan) return null;
     const forToday = nutritionSubstitutions.filter(
       (s) => s.isPermanent || s.substitutionDate === today,
     );
-    return roundTotals(planTotals(applySubstitutions(nutritionPlan, forToday)));
+    return applySubstitutions(nutritionPlan, forToday);
   }, [nutritionPlan, nutritionSubstitutions, today]);
+  const nutritionTotals = useMemo(
+    () => (todayPlan ? roundTotals(planTotals(todayPlan)) : null),
+    [todayPlan],
+  );
 
   // La siguiente sesión programada, para que un día de descanso no sea
   // un callejón sin salida. Se mira un mes hacia adelante: si en 30 días
@@ -143,43 +141,15 @@ export function ClientHomeToday({
   );
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-5 p-4">
-      {/* Logo y nombre del negocio del entrenador, grandes — antes vivían
-          chicos en la esquina de la barra superior (ahí ahora va la
-          campana de notificaciones). El nombre del entrenador va debajo
-          del nombre del negocio. Si el entrenador no puso ni nombre ni
-          logo propio, no hay nada que mostrar aquí — se oculta todo el
-          bloque en vez de caer a un "Aretia" genérico sin razón de
-          estar. */}
-      {hasBusinessBranding ? (
-        <div className="flex items-center gap-3">
-          {businessLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={businessLogoUrl}
-              alt={businessName}
-              className="size-14 shrink-0 rounded-xl object-cover"
-            />
-          ) : (
-            <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Dumbbell className="size-7" />
-            </div>
-          )}
-          <div className="min-w-0">
-            <p className="truncate text-lg font-bold">{businessName}</p>
-            {trainerName ? <p className="truncate text-sm text-muted-foreground">{trainerName}</p> : null}
-          </div>
-        </div>
-      ) : null}
-
-      <div>
-        <p className="text-sm text-muted-foreground">Hola{firstName ? `, ${firstName}` : ""} 👋</p>
-        <h1 className="text-xl font-semibold">Tu entrenamiento de hoy</h1>
+    <div className="mx-auto flex max-w-md flex-col gap-8 px-5 pb-4">
+      <div className="flex flex-col gap-5">
+        <ClientHomeHeader firstName={firstName} />
+        <ClientBrandBlock branding={branding} />
       </div>
 
-      {todaySessions.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
+      <div className="flex flex-col gap-4">
+        {todaySessions.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 rounded-2xl bg-card px-4 py-10 text-center">
             <CalendarDays className="size-8 text-muted-foreground" />
             <p className="font-medium">Hoy es día de descanso</p>
             <p className="text-sm text-muted-foreground">
@@ -192,42 +162,47 @@ export function ClientHomeToday({
                 <span className="text-xs text-primary">{formatDate(nextSession.date)}</span>
               </div>
             ) : null}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {todaySessions.map((session) => {
-            const key = `${session.assignmentId}:${session.routineId}:${session.date}`;
-            const inProgressId = inProgressByKey.get(key);
-            const completedSessionId = completedByKey.get(key);
-            const href = completedSessionId
-              ? `/cliente/entrenamiento/sesion/${completedSessionId}`
-              : `/cliente/entrenamiento/sesion/preview?assignment=${session.assignmentId}&routine=${session.routineId}&date=${session.date}`;
-            return (
-              <RoutineSessionCard
-                key={key}
-                href={href}
-                routineName={session.routineName}
-                subtitle={session.isProgram ? (session.programName ?? null) : null}
-                meta={routineMeta[session.routineId]}
-                status={
-                  completedSessionId ? "completed" : inProgressId ? "in_progress" : "not_started"
-                }
-              />
-            );
-          })}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {todaySessions.map((session) => {
+              const key = `${session.assignmentId}:${session.routineId}:${session.date}`;
+              const inProgressId = inProgressByKey.get(key);
+              const completedSessionId = completedByKey.get(key);
+              const href = completedSessionId
+                ? `/cliente/entrenamiento/sesion/${completedSessionId}`
+                : `/cliente/entrenamiento/sesion/preview?assignment=${session.assignmentId}&routine=${session.routineId}&date=${session.date}`;
+              return (
+                <RoutineSessionCard
+                  key={key}
+                  href={href}
+                  routineName={session.routineName}
+                  subtitle={session.isProgram ? (session.programName ?? null) : null}
+                  meta={routineMeta[session.routineId]}
+                  status={
+                    completedSessionId ? "completed" : inProgressId ? "in_progress" : "not_started"
+                  }
+                />
+              );
+            })}
+          </div>
+        )}
 
-      <Link
-        href="/cliente/agenda"
-        className="text-center text-sm font-medium text-primary hover:underline"
-      >
-        Ver agenda de entrenamiento
-      </Link>
+        <Link
+          href="/cliente/agenda"
+          className="flex items-center justify-center gap-2 text-sm font-medium hover:text-primary"
+        >
+          <CalendarCheck className="size-[18px]" />
+          Ver agenda
+        </Link>
+      </div>
 
-      {nutritionTotals ? (
-        <ClientNutritionSummary totals={nutritionTotals} calorieTarget={calorieTarget} />
+      {todayPlan && nutritionTotals ? (
+        <ClientNutritionSummary
+          plan={todayPlan}
+          totals={nutritionTotals}
+          calorieTarget={calorieTarget}
+        />
       ) : null}
 
       <ClientMonthActivity
@@ -237,13 +212,9 @@ export function ClientHomeToday({
         completedSetDates={completedSetDates}
       />
 
-      {trainerId ? (
-        <ProgressPhotosCard clientId={clientId} trainerId={trainerId} />
-      ) : null}
+      {trainerId ? <ProgressPhotosCard clientId={clientId} trainerId={trainerId} /> : null}
 
-      <ClientRecords records={records} />
-
-      <ClientWeightTrend points={weightPoints} />
+      <ClientProgressSection points={weightPoints} records={records} />
     </div>
   );
 }

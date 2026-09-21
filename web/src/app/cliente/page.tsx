@@ -7,6 +7,8 @@ import {
   fetchClientNutritionPlan,
   fetchSubstitutionsForDate,
 } from "@/lib/server/client-nutrition-data";
+import { DEFAULT_BRANDING, type ClientBranding } from "@/components/client/client-brand-block";
+import { ClientHomeHeader } from "@/components/client/client-home-header";
 import { ClientHomeToday } from "@/components/client/client-home-today";
 import { ClientDeactivatedNotice } from "@/components/client/client-deactivated-notice";
 import { fetchRoutineCardMeta } from "@/lib/server/routine-card-meta";
@@ -100,7 +102,8 @@ export default async function ClientHomePage() {
   // suyo sin importar si su entrenador lo está atendiendo ahora mismo.
   if (ownProfile?.status === "inactive") {
     return (
-      <div className="mx-auto flex max-w-md flex-col gap-5 p-4">
+      <div className="mx-auto flex max-w-md flex-col gap-5 px-5">
+        <ClientHomeHeader firstName={(ownProfile.full_name || "").trim().split(" ")[0] || ""} />
         <ClientDeactivatedNotice description="Por ahora no puedes ver tu entrenamiento de hoy ni tu plan nutricional. Tu historial sigue disponible en la pestaña Historial — contacta a tu entrenador si crees que es un error." />
       </div>
     );
@@ -122,7 +125,7 @@ export default async function ClientHomePage() {
       ownProfile?.trainer_id
         ? supabase
             .from("profiles")
-            .select("full_name, business_name, business_logo_path")
+            .select("full_name, business_name, business_logo_path, business_tagline")
             .eq("id", ownProfile.trainer_id)
             .single()
         : Promise.resolve({ data: null }),
@@ -214,17 +217,21 @@ export default async function ClientHomePage() {
 
   const firstName = (profile?.full_name || "").trim().split(" ")[0] || "";
 
-  // Si el entrenador no puso ni nombre ni logo de negocio, no hay nada
-  // propio que mostrar arriba de "Hola, ..." — se oculta ese bloque por
-  // completo en vez de caer a un "Aretia" genérico sin razón de estar
-  // ahí (ver ClientHomeToday).
-  const hasBusinessBranding = Boolean(trainerProfile?.business_name || trainerProfile?.business_logo_path);
-  const businessName = trainerProfile?.business_name || "Aretia";
-  const businessLogoUrl = trainerProfile?.business_logo_path
-    ? supabase.storage.from("business-logos").getPublicUrl(trainerProfile.business_logo_path).data
-        .publicUrl
-    : null;
-  const trainerName = trainerProfile?.full_name || null;
+  // Marca del entrenador: si puso nombre o logo propios se muestran (con su
+  // subtítulo, si lo hay); si no, la de Aretia.
+  const hasCustomBranding = Boolean(
+    trainerProfile?.business_name || trainerProfile?.business_logo_path,
+  );
+  const branding: ClientBranding = hasCustomBranding
+    ? {
+        name: trainerProfile?.business_name || trainerProfile?.full_name || DEFAULT_BRANDING.name,
+        logoUrl: trainerProfile?.business_logo_path
+          ? supabase.storage.from("business-logos").getPublicUrl(trainerProfile.business_logo_path)
+              .data.publicUrl
+          : null,
+        tagline: trainerProfile?.business_tagline || null,
+      }
+    : DEFAULT_BRANDING;
 
   // Récords: recorriendo los registros en orden cronológico, cada vez
   // que un ejercicio supera su propio máximo anterior cuenta como
@@ -286,10 +293,7 @@ export default async function ClientHomePage() {
   return (
     <ClientHomeToday
       firstName={firstName}
-      hasBusinessBranding={hasBusinessBranding}
-      businessName={businessName}
-      businessLogoUrl={businessLogoUrl}
-      trainerName={trainerName}
+      branding={branding}
       assignments={assignments}
       inProgressSessions={inProgressSessions ?? []}
       recentCompletedSessions={completedSessions ?? []}

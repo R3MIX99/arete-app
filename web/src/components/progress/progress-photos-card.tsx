@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Camera, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HomeSectionTitle } from "@/components/client/home-section-title";
 import { ProgressPhotoEditor } from "@/components/progress/progress-photo-editor";
 
 const MAX_FILE_BYTES = 40 * 1024 * 1024;
@@ -40,50 +40,42 @@ export function ProgressPhotosCard({
     setFile(picked);
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Fotos de progreso</CardTitle>
-        <CardDescription>
-          Sube una foto para comparar tu avance con el tiempo. Solo tú y tu entrenador pueden verlas.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => cameraInput.current?.click()}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl border bg-card px-3 py-5 text-sm font-medium transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            <Camera className="size-6" />
-            Tomar foto
-          </button>
-          <button
-            type="button"
-            onClick={() => galleryInput.current?.click()}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl border bg-card px-3 py-5 text-sm font-medium transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            <ImagePlus className="size-6" />
-            Elegir de la galería
-          </button>
-        </div>
+  const boxClass =
+    "flex h-24 w-[118px] flex-col items-center justify-center gap-2.5 rounded-2xl border bg-card px-2 text-center text-xs font-medium transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
 
-        <input
-          ref={cameraInput}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={handlePicked}
-        />
-        <input
-          ref={galleryInput}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handlePicked}
-        />
-      </CardContent>
+  return (
+    <section className="flex flex-col gap-4">
+      <HomeSectionTitle>Foto de progreso</HomeSectionTitle>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        Sube una foto para comparar tu avance con el tiempo. Solo tú y tu entrenador pueden verlas.
+      </p>
+
+      <div className="flex gap-3">
+        <button type="button" onClick={() => cameraInput.current?.click()} className={boxClass}>
+          <Camera className="size-5" />
+          Tomar foto
+        </button>
+        <button type="button" onClick={() => galleryInput.current?.click()} className={boxClass}>
+          <ImagePlus className="size-5" />
+          Elegir en galería
+        </button>
+      </div>
+
+      <input
+        ref={cameraInput}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handlePicked}
+      />
+      <input
+        ref={galleryInput}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handlePicked}
+      />
 
       <ProgressPhotoEditor
         file={file}
@@ -95,6 +87,6 @@ export function ProgressPhotosCard({
           router.refresh();
         }}
       />
-    </Card>
+    </section>
   );
 }

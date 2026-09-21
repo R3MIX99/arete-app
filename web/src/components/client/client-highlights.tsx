@@ -3,8 +3,7 @@
 import { Trophy, TrendingDown, TrendingUp, Minus, Scale } from "lucide-react";
 
 import { formatDate } from "@/lib/format";
-import { cn } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
+import { HomeSectionTitle } from "@/components/client/home-section-title";
 
 export interface PersonalRecord {
   exerciseId: string;
@@ -18,44 +17,54 @@ export interface WeightPoint {
   value: number;
 }
 
-/** Mini-gráfica de línea sin ejes ni librerías: solo la silueta de la
- * tendencia, que es lo único que aporta en un espacio tan chico. */
+/** Posición (0 a 100) de un valor dentro del rango, con 0 arriba. Si todos
+ * los valores son iguales el rango es 0 y dividir daría NaN: la línea va
+ * plana a media altura. */
+function yPosition(value: number, min: number, max: number): number {
+  return max === min ? 50 : 100 - ((value - min) / (max - min)) * 100;
+}
+
+/** Mini-gráfica de línea sin ejes ni librerías, con un punto en el último
+ * valor. La línea se estira con el ancho; el punto es HTML aparte porque
+ * dentro de un SVG estirado se deformaría en elipse. */
 function Sparkline({ points }: { points: WeightPoint[] }) {
   if (points.length < 2) return null;
   const values = points.map((p) => p.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
-  // Si todos los valores son iguales el rango es 0 y dividir daría NaN:
-  // en ese caso la línea va plana a media altura.
-  const range = max - min || 1;
   const path = points
     .map((p, i) => {
       const x = (i / (points.length - 1)) * 100;
-      const y = max === min ? 50 : 100 - ((p.value - min) / range) * 100;
-      return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
+      return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${yPosition(p.value, min, max).toFixed(2)}`;
     })
     .join(" ");
+  const lastY = yPosition(values[values.length - 1], min, max);
 
   return (
-    <svg
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      className="h-10 w-full"
-      aria-hidden="true"
-    >
-      <path
-        d={path}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={3}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
+    <div className="relative mx-1 h-16 py-2 text-primary">
+      <div className="relative size-full">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="size-full" aria-hidden="true">
+          <path
+            d={path}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        <span
+          aria-hidden
+          className="absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current"
+          style={{ left: "100%", top: `${lastY}%` }}
+        />
+      </div>
+    </div>
   );
 }
 
+/** Sección "Tu progreso": peso actual con su cambio y la gráfica. */
 export function ClientWeightTrend({ points }: { points: WeightPoint[] }) {
   if (points.length === 0) return null;
 
@@ -67,74 +76,83 @@ export function ClientWeightTrend({ points }: { points: WeightPoint[] }) {
   const Icon = rounded > 0 ? TrendingUp : rounded < 0 ? TrendingDown : Minus;
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-2 p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Scale className="size-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground">Tu peso</p>
-            <p className="text-lg leading-tight font-semibold tabular-nums">
-              {last.value} <span className="text-sm font-normal">kg</span>
-            </p>
-          </div>
-          {previous ? (
-            // Subir o bajar no es bueno ni malo por sí solo — depende del
-            // objetivo del cliente — así que se muestra neutro, sin
-            // verde/rojo.
-            <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-              <Icon className="size-3.5" />
-              <span className="tabular-nums">
-                {rounded > 0 ? "+" : ""}
-                {rounded} kg
-              </span>
-            </div>
-          ) : null}
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Scale className="size-5" />
         </div>
-
-        <div className="text-primary">
-          <Sparkline points={points} />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-muted-foreground">Peso</p>
+          <p className="text-2xl leading-tight font-medium tabular-nums">
+            {last.value} <span className="text-base font-normal">kg</span>
+          </p>
         </div>
+        {previous ? (
+          <div className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground">
+            <Icon className="size-4 text-success" />
+            <span className="tabular-nums">
+              {rounded > 0 ? "+" : ""}
+              {rounded} kg
+            </span>
+          </div>
+        ) : null}
+      </div>
 
-        <p className="text-[11px] text-muted-foreground">
-          Último registro: {formatDate(last.date)}
-        </p>
-      </CardContent>
-    </Card>
+      <Sparkline points={points} />
+
+      <p className="text-xs text-muted-foreground">Último registro: {formatDate(last.date)}</p>
+    </div>
   );
 }
 
+/** Récords recientes en lista: viñeta, ejercicio y fecha, peso a la derecha. */
 export function ClientRecords({ records }: { records: PersonalRecord[] }) {
   if (records.length === 0) return null;
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-3 p-4">
-        <div className="flex items-center gap-2">
-          <Trophy className="size-4 text-amber-400" />
-          <p className="text-sm font-medium">Tus récords recientes</p>
-        </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <h3 className="text-lg font-normal">Récords recientes</h3>
+        <Trophy className="size-4 text-amber-400" />
+      </div>
 
-        <div className="flex flex-col gap-2">
-          {records.map((record) => (
-            <div
-              key={`${record.exerciseId}:${record.date}`}
-              className={cn(
-                "flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2",
-              )}
-            >
+      <ul className="flex flex-col gap-3">
+        {records.map((record) => (
+          <li
+            key={`${record.exerciseId}:${record.date}`}
+            className="flex items-center justify-between gap-3"
+          >
+            <div className="flex min-w-0 items-start gap-2.5">
+              <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{record.exerciseName}</p>
-                <p className="text-[11px] text-muted-foreground">{formatDate(record.date)}</p>
+                <p className="truncate text-[15px] leading-snug">{record.exerciseName}</p>
+                <p className="text-xs text-muted-foreground">{formatDate(record.date)}</p>
               </div>
-              <span className="shrink-0 text-sm font-semibold tabular-nums text-primary">
-                {record.weight} kg
-              </span>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            <span className="shrink-0 text-[15px] font-medium tabular-nums text-primary">
+              {record.weight} kg
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Contenedor de la sección "Tu progreso" (peso y récords). */
+export function ClientProgressSection({
+  points,
+  records,
+}: {
+  points: WeightPoint[];
+  records: PersonalRecord[];
+}) {
+  if (points.length === 0 && records.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-5">
+      <HomeSectionTitle>Tu progreso</HomeSectionTitle>
+      <ClientWeightTrend points={points} />
+      <ClientRecords records={records} />
+    </section>
   );
 }

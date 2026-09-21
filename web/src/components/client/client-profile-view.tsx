@@ -159,7 +159,7 @@ export function ClientProfileView({
       </div>
 
       <form onSubmit={handleSubmit}>
-        <Card>
+        <Card id="datos-personales" className="scroll-mt-4">
           <CardHeader>
             <CardTitle className="text-sm">Datos personales</CardTitle>
           </CardHeader>
@@ -305,7 +305,7 @@ export function ClientProfileView({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="ajustes" className="scroll-mt-4">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-sm">Notificaciones</CardTitle>
           {savingNotifications ? (
