@@ -5,30 +5,22 @@ import { useRouter } from "next/navigation";
 import { Camera, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 
-import type { ProgressPhotoEntry } from "@/lib/types/progress";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressPhotoEditor } from "@/components/progress/progress-photo-editor";
-import { ProgressPhotoGallery } from "@/components/progress/progress-photo-gallery";
 
-const VISIBLE_WHEN_COLLAPSED = 6;
 const MAX_FILE_BYTES = 40 * 1024 * 1024;
 
-/** Tarjeta del inicio del cliente: tomar (o elegir) una foto de progreso y
- * ver las que ya subió. */
+/** Tarjeta del inicio del cliente: solo para tomar o elegir una foto nueva.
+ * Las fotos ya subidas se ven en el historial, no aquí. */
 export function ProgressPhotosCard({
   clientId,
   trainerId,
-  photos,
 }: {
   clientId: string;
   trainerId: string;
-  /** De la más reciente a la más antigua. */
-  photos: ProgressPhotoEntry[];
 }) {
   const router = useRouter();
   const [file, setFile] = React.useState<File | null>(null);
-  const [showAll, setShowAll] = React.useState(false);
   const cameraInput = React.useRef<HTMLInputElement>(null);
   const galleryInput = React.useRef<HTMLInputElement>(null);
 
@@ -48,29 +40,32 @@ export function ProgressPhotosCard({
     setFile(picked);
   }
 
-  const visible = showAll ? photos : photos.slice(0, VISIBLE_WHEN_COLLAPSED);
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Fotos de progreso</CardTitle>
         <CardDescription>
-          Compara tu avance con el tiempo. Solo tú y tu entrenador pueden verlas.
+          Sube una foto para comparar tu avance con el tiempo. Solo tú y tu entrenador pueden verlas.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex gap-2">
-          <Button type="button" className="flex-1" onClick={() => cameraInput.current?.click()}>
-            <Camera /> Tomar foto
-          </Button>
-          <Button
+        <div className="grid grid-cols-2 gap-3">
+          <button
             type="button"
-            variant="outline"
-            className="flex-1"
-            onClick={() => galleryInput.current?.click()}
+            onClick={() => cameraInput.current?.click()}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl border bg-card px-3 py-5 text-sm font-medium transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
-            <ImagePlus /> Elegir de la galería
-          </Button>
+            <Camera className="size-6" />
+            Tomar foto
+          </button>
+          <button
+            type="button"
+            onClick={() => galleryInput.current?.click()}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl border bg-card px-3 py-5 text-sm font-medium transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <ImagePlus className="size-6" />
+            Elegir de la galería
+          </button>
         </div>
 
         <input
@@ -88,26 +83,6 @@ export function ProgressPhotosCard({
           className="hidden"
           onChange={handlePicked}
         />
-
-        {photos.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Aún no tienes fotos. Toma la primera para poder comparar tu avance más adelante.
-          </p>
-        ) : (
-          <>
-            <ProgressPhotoGallery photos={visible} />
-            {photos.length > VISIBLE_WHEN_COLLAPSED ? (
-              <Button
-                type="button"
-                variant="ghost"
-                className="self-center"
-                onClick={() => setShowAll((value) => !value)}
-              >
-                {showAll ? "Ver menos" : `Ver todas (${photos.length})`}
-              </Button>
-            ) : null}
-          </>
-        )}
       </CardContent>
 
       <ProgressPhotoEditor
