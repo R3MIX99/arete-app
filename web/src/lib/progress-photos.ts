@@ -2,9 +2,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const PROGRESS_PHOTO_BUCKET = "progress-photos";
 
-/** Lado (px) de la foto que se guarda. Cuadrada: se ve igual en miniatura
- * y ampliada, y pesa poco. */
-export const OUTPUT_SIZE = 1080;
+/** Peso objetivo de la foto guardada. Se baja la calidad (y, si hace falta,
+ * el tamaño) hasta quedar por debajo; la original nunca se sube. */
+const TARGET_BYTES = 100 * 1024;
+/** Lados (px) a probar, de mayor a menor. Cuadrada: se ve igual en miniatura
+ * y ampliada. */
+const OUTPUT_SIZES = [900, 720, 600];
+const JPEG_QUALITIES = [0.8, 0.7, 0.6, 0.5, 0.4];
 /** Lado máximo (px) de la imagen de trabajo del editor. Una foto de cámara
  * ronda los 4000 px; redibujarla completa en cada movimiento sería lento. */
 const WORKING_MAX = 2048;
@@ -89,19 +93,41 @@ export function drawSquare(
   ctx.restore();
 }
 
-export function renderSquareBlob(
-  source: HTMLCanvasElement,
-  adjust: PhotoAdjust,
-): Promise<Blob> {
-  const canvas = document.createElement("canvas");
-  drawSquare(canvas, source, OUTPUT_SIZE, adjust);
+function canvasToJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("blob"))),
       "image/jpeg",
-      0.85,
+      quality,
     );
   });
+}
+
+/** Recorta la imagen a un cuadrado y la comprime al máximo: prueba calidades
+ * de mayor a menor y, si aun así pesa más que el objetivo, reduce el
+ * tamaño. Si nada alcanza, devuelve la versión más pequeña. */
+export async function renderSquareBlob(
+  source: HTMLCanvasElement,
+  adjust: PhotoAdjust,
+): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  let smallest: Blob | null = null;
+  for (const size of OUTPUT_SIZES) {
+    drawSquare(canvas, source, size, adjust);
+    for (const quality of JPEG_QUALITIES) {
+      const blob = await canvasToJpeg(canvas, quality);
+      if (!smallest || blob.size < smallest.size) smallest = blob;
+      if (blob.size <= TARGET_BYTES) return blob;
+    }
+  }
+  return smallest as Blob;
+}
+
+/** Huella SHA-256 del contenido; sirve de nombre de archivo, así la misma
+ * foto siempre cae en la misma ruta y no se puede subir dos veces. */
+async function contentHash(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 /** Fecha local de hoy (YYYY-MM-DD). No se usa toISOString porque es UTC y
@@ -112,18 +138,35 @@ function localDateKey(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-/** Sube la foto a la carpeta del cliente y crea su entrada. Si la entrada
- * falla se quita el archivo, para no dejar fotos huérfanas. */
+/** Sube la foto a la carpeta del cliente y crea su entrada. La ruta sale del
+ * contenido, por lo que una foto idéntica no se duplica: si ya existe, se
+ * avisa con `duplicate`. Si la entrada falla se quita el archivo recién
+ * subido, para no dejar fotos huérfanas. */
 export async function uploadProgressPhoto(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: SupabaseClient<any>,
   { clientId, trainerId, blob }: { clientId: string; trainerId: string; blob: Blob },
-): Promise<{ error: string | null }> {
-  const path = `${clientId}/${crypto.randomUUID()}.jpg`;
+): Promise<{ error: string | null; duplicate?: boolean }> {
+  const path = `${clientId}/${await contentHash(blob)}.jpg`;
   const { error: uploadError } = await supabase.storage
     .from(PROGRESS_PHOTO_BUCKET)
     .upload(path, blob, { contentType: "image/jpeg", upsert: false });
-  if (uploadError) return { error: uploadError.message };
+
+  let uploadedNow = true;
+  if (uploadError) {
+    const alreadyThere = /already exists|duplicate/i.test(uploadError.message);
+    if (!alreadyThere) return { error: uploadError.message };
+    uploadedNow = false;
+    // El archivo existe: si también tiene su entrada, es un duplicado real.
+    // Si no (un borrado anterior quedó a medias), se reutiliza el archivo.
+    const { data: existing } = await supabase
+      .from("progress_entries")
+      .select("id")
+      .eq("client_id", clientId)
+      .eq("photo_path", path)
+      .limit(1);
+    if (existing && existing.length > 0) return { error: null, duplicate: true };
+  }
 
   const { error: insertError } = await supabase.from("progress_entries").insert({
     client_id: clientId,
@@ -132,7 +175,7 @@ export async function uploadProgressPhoto(
     photo_path: path,
   });
   if (insertError) {
-    await supabase.storage.from(PROGRESS_PHOTO_BUCKET).remove([path]);
+    if (uploadedNow) await supabase.storage.from(PROGRESS_PHOTO_BUCKET).remove([path]);
     return { error: insertError.message };
   }
   return { error: null };

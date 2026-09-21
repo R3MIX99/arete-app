@@ -49,6 +49,9 @@ export function ProgressPhotoEditor({
   const [editing, setEditing] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  // `saving` es estado y se actualiza tarde: un doble toque rápido alcanzaría
+  // a lanzar dos subidas. Este cerrojo sí es inmediato.
+  const submitting = React.useRef(false);
   const drag = React.useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
 
   // Cada archivo nuevo empieza de cero (se ajusta durante el render, no en
@@ -118,20 +121,26 @@ export function ProgressPhotoEditor({
   }
 
   async function handleConfirm() {
-    if (!source) return;
+    if (!source || submitting.current) return;
+    submitting.current = true;
     setSaving(true);
     try {
       const blob = await renderSquareBlob(source, adjust);
-      const { error } = await uploadProgressPhoto(createClient(), { clientId, trainerId, blob });
+      const { error, duplicate } = await uploadProgressPhoto(createClient(), {
+        clientId,
+        trainerId,
+        blob,
+      });
       if (error) {
         toast.error("No se pudo guardar la foto. Inténtalo de nuevo.");
         return;
       }
-      toast.success("Foto guardada");
+      toast.success(duplicate ? "Esa foto ya estaba guardada" : "Foto guardada");
       onSaved();
     } catch {
       toast.error("No se pudo guardar la foto. Inténtalo de nuevo.");
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
