@@ -41,9 +41,12 @@ const IMAGE_FADE_MASK =
 
 const STATUS_CHIP: Record<RoutineSessionStatus, { label: string; className: string }> = {
   completed: { label: "Completada", className: "bg-success text-white" },
-  // Índigo más profundo que el primary del botón "Comenzar", para que
+  // Acento más profundo que el primary del botón "Comenzar", para que
   // un entrenamiento a medias no se confunda con uno sin empezar.
-  in_progress: { label: "En progreso", className: "bg-indigo-600 text-white" },
+  in_progress: {
+    label: "En progreso",
+    className: "bg-[color-mix(in_oklab,var(--primary)_78%,black)] text-primary-foreground",
+  },
   not_started: { label: "Comenzar", className: "bg-primary text-primary-foreground" },
 };
 

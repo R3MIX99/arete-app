@@ -8,6 +8,8 @@ export interface TrainerSettings {
   phone: string | null;
   business_name: string | null;
   business_logo_path: string | null;
+  business_tagline: string | null;
+  brand_color: string | null;
   notify_email: boolean;
   notify_push: boolean;
   subscription_plan: SubscriptionPlan;

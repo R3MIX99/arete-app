@@ -593,7 +593,7 @@ function FoodRow({
           <p className="truncate text-sm font-medium">
             {food.name}
             {food.isSubstituted && (
-              <span className="ml-1.5 rounded-full bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:text-indigo-400">
+              <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                 sustituido
               </span>
             )}
@@ -644,7 +644,7 @@ function FoodDetailDrawer({
           </div>
 
           {food.isSubstituted && (
-            <p className="rounded-lg bg-indigo-500/10 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400">
+            <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
               Sustituiste el alimento original por este.
             </p>
           )}

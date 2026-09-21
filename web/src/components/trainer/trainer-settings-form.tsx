@@ -8,6 +8,12 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compress";
 import {
+  BRAND_COLOR_PRESETS,
+  DEFAULT_BRAND_COLOR,
+  normalizeHex,
+} from "@/lib/brand-color";
+import { cn } from "@/lib/utils";
+import {
   subscriptionPlanLabels,
   subscriptionStatusLabels,
   subscriptionStatusVariants,
@@ -21,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ThemePicker } from "@/components/theme-picker";
+import { BrandPreview } from "@/components/trainer/brand-preview";
 import { DeleteAccountCard } from "@/components/account/delete-account-card";
 import { useIsNativeApp } from "@/lib/hooks/use-is-native-app";
 
@@ -30,6 +37,13 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
   const [fullName, setFullName] = React.useState(settings.full_name);
   const [phone, setPhone] = React.useState(settings.phone ?? "");
   const [businessName, setBusinessName] = React.useState(settings.business_name ?? "");
+  const [tagline, setTagline] = React.useState(settings.business_tagline ?? "");
+  const [brandColor, setBrandColor] = React.useState(
+    normalizeHex(settings.brand_color ?? "") ?? DEFAULT_BRAND_COLOR,
+  );
+  // Lo que se está escribiendo en el campo de código, que puede estar a
+  // medias (p. ej. "#EA5") sin ser todavía un color válido.
+  const [brandColorText, setBrandColorText] = React.useState(brandColor);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -44,6 +58,17 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
         .data.publicUrl
     : null;
 
+  function chooseColor(hex: string) {
+    setBrandColor(hex);
+    setBrandColorText(hex);
+  }
+
+  function handleColorText(value: string) {
+    setBrandColorText(value);
+    const valid = normalizeHex(value);
+    if (valid) setBrandColor(valid);
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
@@ -56,6 +81,9 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
         full_name: fullName,
         phone: phone || null,
         business_name: businessName || null,
+        business_tagline: tagline.trim() || null,
+        // Sin color propio se guarda vacío: así el cliente sigue con el índigo de Aretia.
+        brand_color: brandColor === DEFAULT_BRAND_COLOR ? null : brandColor,
       })
       .eq("id", settings.id);
 
@@ -232,6 +260,86 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
                   id="business_name"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="business_tagline">Subtítulo (opcional)</Label>
+                <Input
+                  id="business_tagline"
+                  value={tagline}
+                  maxLength={60}
+                  placeholder="Por ejemplo: By Codeal.ai"
+                  onChange={(e) => setTagline(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Aparece debajo del nombre en la app de tus clientes.
+                </p>
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-col gap-2.5">
+                <Label>Color principal</Label>
+                <div className="flex flex-wrap gap-2">
+                  {BRAND_COLOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset.hex}
+                      type="button"
+                      title={preset.label}
+                      aria-label={preset.label}
+                      aria-pressed={brandColor === preset.hex}
+                      onClick={() => chooseColor(preset.hex)}
+                      className={cn(
+                        "size-8 rounded-full border-2 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                        brandColor === preset.hex ? "border-foreground" : "border-transparent",
+                      )}
+                      style={{ backgroundColor: preset.hex }}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    aria-label="Elegir otro color"
+                    value={brandColor}
+                    onChange={(e) => chooseColor(e.target.value.toUpperCase())}
+                    className="size-9 shrink-0 cursor-pointer rounded-lg border bg-transparent p-0.5"
+                  />
+                  <Input
+                    aria-label="Código del color"
+                    value={brandColorText}
+                    maxLength={7}
+                    onChange={(e) => handleColorText(e.target.value)}
+                    className="w-28 font-mono uppercase"
+                  />
+                  {brandColor !== DEFAULT_BRAND_COLOR ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => chooseColor(DEFAULT_BRAND_COLOR)}
+                    >
+                      Restablecer
+                    </Button>
+                  ) : null}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Reemplaza el índigo de Aretia en botones, íconos y acentos de la app de tus
+                  clientes.
+                </p>
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-col gap-2.5">
+                <Label>Así lo verán tus clientes</Label>
+                <BrandPreview
+                  businessName={businessName}
+                  tagline={tagline}
+                  logoUrl={logoUrl}
+                  color={brandColor}
+                  trainerName={fullName}
                 />
               </div>
             </CardContent>
