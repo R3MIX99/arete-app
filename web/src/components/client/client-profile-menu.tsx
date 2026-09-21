@@ -26,7 +26,14 @@ export const NOTIFICATIONS_READ_EVENT = "client-notifications-read";
 /** Menú del avatar del cliente: perfil, configuración, notificaciones, tema
  * y cerrar sesión. Un punto sobre el avatar avisa que hay notificaciones
  * sin leer. */
-export function ClientProfileMenu({ className }: { className?: string }) {
+export function ClientProfileMenu({
+  className,
+  avatarClassName,
+}: {
+  className?: string;
+  /** Tamaño del avatar; por defecto el grande del inicio. */
+  avatarClassName?: string;
+}) {
   const router = useRouter();
   const { name, avatarUrl } = useClientProfile();
   const supabase = React.useMemo(() => createClient(), []);
@@ -65,10 +72,10 @@ export function ClientProfileMenu({ className }: { className?: string }) {
           className,
         )}
       >
-        <ClientAvatar name={name} avatarUrl={avatarUrl} />
+        <ClientAvatar name={name} avatarUrl={avatarUrl} className={avatarClassName} />
         {unread > 0 ? (
           <span
-            className="absolute top-0 right-0 size-3 rounded-full border-2 border-background bg-primary"
+            className="absolute top-0 right-0 size-2.5 rounded-full border-2 border-background bg-primary"
             aria-label="Tienes notificaciones sin leer"
           />
         ) : null}
