@@ -6,10 +6,18 @@
  * las muestran en miniatura (nunca más de ~300px reales en pantalla),
  * así que se puede comprimir agresivo sin que se note la pérdida de
  * calidad.
+ *
+ * El JPEG no tiene transparencia: lo transparente se vuelve negro. Para
+ * logos, que suelen ser PNG sin fondo, se pide `format: "png"`, que la
+ * conserva.
  */
 export async function compressImage(
   file: File,
-  { maxDimension = 480, quality = 0.6 }: { maxDimension?: number; quality?: number } = {},
+  {
+    maxDimension = 480,
+    quality = 0.6,
+    format = "jpeg",
+  }: { maxDimension?: number; quality?: number; format?: "jpeg" | "png" } = {},
 ): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
 
@@ -25,11 +33,12 @@ export async function compressImage(
   if (!ctx) return file;
   ctx.drawImage(bitmap, 0, 0, width, height);
 
+  const mime = format === "png" ? "image/png" : "image/jpeg";
   const blob: Blob | null = await new Promise((resolve) =>
-    canvas.toBlob(resolve, "image/jpeg", quality),
+    canvas.toBlob(resolve, mime, quality),
   );
   if (!blob) return file;
 
-  const newName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
-  return new File([blob], newName, { type: "image/jpeg" });
+  const newName = file.name.replace(/\.[^.]+$/, "") + (format === "png" ? ".png" : ".jpg");
+  return new File([blob], newName, { type: mime });
 }

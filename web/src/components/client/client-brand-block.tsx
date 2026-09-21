@@ -14,7 +14,7 @@ export function ClientBrandBlock({ branding }: { branding: ClientBranding }) {
     <div className="flex items-center gap-4">
       {branding.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={branding.logoUrl} alt="" className="size-14 shrink-0 rounded-xl object-cover" />
+        <img src={branding.logoUrl} alt="" className="h-14 w-auto max-w-[9rem] shrink-0 object-contain" />
       ) : null}
       <div className="min-w-0">
         <p className="truncate text-xl leading-tight font-medium">{branding.name}</p>

@@ -62,11 +62,11 @@ export function TrainerOnboardingFlow({
     if (!file) return;
 
     setUploadingLogo(true);
-    const compressed = await compressImage(file, { maxDimension: 512 });
-    const path = `${userId}/logo-${Date.now()}.jpg`;
+    const compressed = await compressImage(file, { maxDimension: 512, format: "png" });
+    const path = `${userId}/logo-${Date.now()}.png`;
     const { error } = await supabase.storage
       .from("business-logos")
-      .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
+      .upload(path, compressed, { upsert: true, contentType: "image/png" });
     setUploadingLogo(false);
     if (error) {
       toast.error("No se pudo subir el logo");

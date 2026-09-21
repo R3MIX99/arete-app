@@ -120,12 +120,12 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
 
     setUploadingLogo(true);
     const supabase = createClient();
-    const compressed = await compressImage(file, { maxDimension: 512 });
-    const path = `${settings.id}/logo-${Date.now()}.jpg`;
+    const compressed = await compressImage(file, { maxDimension: 512, format: "png" });
+    const path = `${settings.id}/logo-${Date.now()}.png`;
 
     const { error: uploadError } = await supabase.storage
       .from("business-logos")
-      .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
+      .upload(path, compressed, { upsert: true, contentType: "image/png" });
     if (uploadError) {
       setUploadingLogo(false);
       toast.error("No se pudo subir el logo");
@@ -203,7 +203,7 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
                 <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-foreground/[0.03]">
                   {logoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={logoUrl} alt="Logo del negocio" className="size-full object-cover" />
+                    <img src={logoUrl} alt="Logo del negocio" className="size-full object-contain p-1" />
                   ) : (
                     <Building2 className="size-6 text-muted-foreground" />
                   )}
@@ -245,7 +245,7 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Opcional. Si no configuras tu marca (logo o nombre), tus clientes no ven este bloque.
+                    Opcional. Usa un PNG sin fondo para que se vea sin recuadro. Si no configuras tu marca (logo o nombre), tus clientes no ven este bloque.
                   </p>
                 </div>
               </div>
