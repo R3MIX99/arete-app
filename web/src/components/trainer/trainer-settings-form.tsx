@@ -245,7 +245,7 @@ export function TrainerSettingsForm({ settings }: { settings: TrainerSettings })
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Opcional. Si no subes uno, tus clientes ven el logo de Aretia.
+                    Opcional. Si no configuras tu marca (logo o nombre), tus clientes no ven este bloque.
                   </p>
                 </div>
               </div>

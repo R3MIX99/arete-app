@@ -5,11 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { brandInlineStyle } from "@/lib/brand-color";
 import { outfit } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
-import {
-  ClientBrandBlock,
-  DEFAULT_BRANDING,
-  type ClientBranding,
-} from "@/components/client/client-brand-block";
+import { brandingOf, ClientBrandBlock } from "@/components/client/client-brand-block";
 
 /** Vista previa de cómo verán tus clientes la marca en su app: saludo, logo,
  * nombre, subtítulo y el color de acento en un botón, un ícono y un chip.
@@ -30,16 +26,9 @@ export function BrandPreview({
   trainerName: string;
   className?: string;
 }) {
-  // Misma regla que el inicio del cliente: con nombre o logo propios se usa
-  // esa marca; sin ninguno, la de Aretia.
-  const hasCustom = Boolean(businessName.trim() || logoUrl);
-  const branding: ClientBranding = hasCustom
-    ? {
-        name: businessName.trim() || trainerName || DEFAULT_BRANDING.name,
-        logoUrl,
-        tagline: tagline.trim() || null,
-      }
-    : DEFAULT_BRANDING;
+  // Misma regla que el inicio del cliente: sin nombre ni logo propios no
+  // hay bloque de marca.
+  const branding = brandingOf({ name: businessName, fallbackName: trainerName, logoUrl, tagline });
 
   return (
     <div
@@ -59,9 +48,11 @@ export function BrandPreview({
       </p>
       <p className="mt-0.5 text-sm text-muted-foreground">Tu entrenamiento de hoy</p>
 
-      <div className="mt-4">
-        <ClientBrandBlock branding={branding} />
-      </div>
+      {branding ? (
+        <div className="mt-4">
+          <ClientBrandBlock branding={branding} />
+        </div>
+      ) : null}
 
       <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-card p-3">
         <div className="min-w-0">

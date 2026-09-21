@@ -7,7 +7,7 @@ import {
   fetchClientNutritionPlan,
   fetchSubstitutionsForDate,
 } from "@/lib/server/client-nutrition-data";
-import { DEFAULT_BRANDING, type ClientBranding } from "@/components/client/client-brand-block";
+import { brandingOf } from "@/components/client/client-brand-block";
 import { ClientHomeHeader } from "@/components/client/client-home-header";
 import { ClientHomeToday } from "@/components/client/client-home-today";
 import { ClientDeactivatedNotice } from "@/components/client/client-deactivated-notice";
@@ -217,21 +217,17 @@ export default async function ClientHomePage() {
 
   const firstName = (profile?.full_name || "").trim().split(" ")[0] || "";
 
-  // Marca del entrenador: si puso nombre o logo propios se muestran (con su
-  // subtítulo, si lo hay); si no, la de Aretia.
-  const hasCustomBranding = Boolean(
-    trainerProfile?.business_name || trainerProfile?.business_logo_path,
-  );
-  const branding: ClientBranding = hasCustomBranding
-    ? {
-        name: trainerProfile?.business_name || trainerProfile?.full_name || DEFAULT_BRANDING.name,
-        logoUrl: trainerProfile?.business_logo_path
-          ? supabase.storage.from("business-logos").getPublicUrl(trainerProfile.business_logo_path)
-              .data.publicUrl
-          : null,
-        tagline: trainerProfile?.business_tagline || null,
-      }
-    : DEFAULT_BRANDING;
+  // Marca del entrenador: solo si puso nombre o logo propios; si no, el
+  // inicio no muestra bloque de marca.
+  const branding = brandingOf({
+    name: trainerProfile?.business_name,
+    fallbackName: trainerProfile?.full_name,
+    logoUrl: trainerProfile?.business_logo_path
+      ? supabase.storage.from("business-logos").getPublicUrl(trainerProfile.business_logo_path)
+          .data.publicUrl
+      : null,
+    tagline: trainerProfile?.business_tagline,
+  });
 
   // Récords: recorriendo los registros en orden cronológico, cada vez
   // que un ejercicio supera su propio máximo anterior cuenta como

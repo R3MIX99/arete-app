@@ -74,7 +74,8 @@ export function ClientHomeToday({
   trainerId,
 }: {
   firstName: string;
-  branding: ClientBranding;
+  /** null si el entrenador no configuró su marca: entonces no hay bloque. */
+  branding: ClientBranding | null;
   /** false si el entrenador no puso nombre ni logo de negocio — en ese
    * caso no hay nada propio que mostrar, así que todo el bloque de
    * abajo (logo + nombre + entrenador) no se renderiza. */
@@ -141,10 +142,10 @@ export function ClientHomeToday({
   );
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-8 px-5 pb-4">
+    <div className="mx-auto flex max-w-md flex-col gap-14 px-5 pb-4">
       <div className="flex flex-col gap-5">
         <ClientHomeHeader firstName={firstName} />
-        <ClientBrandBlock branding={branding} />
+        {branding ? <ClientBrandBlock branding={branding} /> : null}
       </div>
 
       <div className="flex flex-col gap-4">
