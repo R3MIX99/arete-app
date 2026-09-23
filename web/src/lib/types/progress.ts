@@ -1,14 +1,24 @@
 export const MEASUREMENT_FIELDS = [
   { key: "weight_kg", label: "Peso", unit: "kg" },
-  { key: "chest_cm", label: "Pecho", unit: "cm" },
+  { key: "cephalic_cm", label: "Cefálico", unit: "cm" },
+  { key: "neck_cm", label: "Cuello", unit: "cm" },
+  // "Brazo" pasó a ser específicamente el relajado; el contraído es una
+  // medida nueva (clave nueva, no un renombre).
+  { key: "arm_cm", label: "Mitad del brazo relajado", unit: "cm" },
+  { key: "bicep_flexed_cm", label: "Mitad del brazo contraído", unit: "cm" },
+  { key: "forearm_cm", label: "Antebrazo", unit: "cm" },
+  { key: "wrist_cm", label: "Muñeca", unit: "cm" },
+  { key: "mesosternal_cm", label: "Mesoesternal", unit: "cm" },
+  { key: "umbilical_cm", label: "Umbilical", unit: "cm" },
   { key: "waist_cm", label: "Cintura", unit: "cm" },
   { key: "hip_cm", label: "Cadera", unit: "cm" },
-  { key: "arm_cm", label: "Brazo", unit: "cm" },
-  { key: "thigh_cm", label: "Muslo", unit: "cm" },
-  { key: "neck_cm", label: "Cuello", unit: "cm" },
-  { key: "shoulder_cm", label: "Hombros", unit: "cm" },
+  { key: "thigh_1cm_cm", label: "Muslo (1cm)", unit: "cm" },
+  // "Muslo" pasó a llamarse "Muslo medio" (mismo dato, mismo historial).
+  { key: "thigh_cm", label: "Muslo medio", unit: "cm" },
   { key: "calf_cm", label: "Pantorrilla", unit: "cm" },
-  { key: "forearm_cm", label: "Antebrazo", unit: "cm" },
+  { key: "ankle_cm", label: "Tobillo", unit: "cm" },
+  { key: "chest_cm", label: "Pecho", unit: "cm" },
+  { key: "shoulder_cm", label: "Hombros", unit: "cm" },
 ] as const;
 
 export type MeasurementKey = (typeof MEASUREMENT_FIELDS)[number]["key"];
