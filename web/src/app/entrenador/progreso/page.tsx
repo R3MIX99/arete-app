@@ -131,7 +131,6 @@ export default async function ProgressPage() {
 
   return (
     <ProgressTrackingView
-      trainerId={user.id}
       clients={((clients ?? []) as ClientRow[]).filter((c) => c.status === "active")}
       assignments={assignments}
       measurements={(measurements ?? []) as (ProgressMeasurement & { client_id: string })[]}

@@ -62,7 +62,6 @@ import {
 } from "@/components/ui/floating-sheet";
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
 import { EditClientDialog } from "@/components/trainer/edit-client-dialog";
-import { AddMeasurementDialog } from "@/components/trainer/add-measurement-dialog";
 import { EditMeasurementDialog } from "@/components/trainer/edit-measurement-dialog";
 import { MeasurementEntriesTable } from "@/components/trainer/measurement-entries-table";
 import { TrainerSessionDetailSheetContent } from "@/components/trainer/trainer-session-detail-sheet-content";
@@ -133,7 +132,6 @@ export function ClientProfile({
   const [removeOpen, setRemoveOpen] = React.useState(false);
   const [removing, setRemoving] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
-  const [addMeasurementOpen, setAddMeasurementOpen] = React.useState(false);
   const [editingMeasurement, setEditingMeasurement] =
     React.useState<ProgressMeasurement | null>(null);
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
@@ -539,13 +537,10 @@ export function ClientProfile({
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle className="text-sm">Progreso físico</CardTitle>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAddMeasurementOpen(true)}
-              >
-                <Plus /> Agregar medición
+              <Button type="button" variant="outline" size="sm" asChild>
+                <Link href={`/entrenador/clientes/${client.id}/medicion/nueva`}>
+                  <Plus /> Agregar medición
+                </Link>
               </Button>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -726,14 +721,6 @@ export function ClientProfile({
         programs={programs}
         dietPlans={dietPlans}
         onChanged={() => router.refresh()}
-      />
-
-      <AddMeasurementDialog
-        open={addMeasurementOpen}
-        onOpenChange={setAddMeasurementOpen}
-        clientId={client.id}
-        trainerId={trainerId}
-        onAdded={() => {}}
       />
 
       <EditMeasurementDialog

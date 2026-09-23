@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronLeft, ChevronRight, ChevronsUpDown, Plus, Users } from "lucide-react";
 
@@ -30,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProgressLineChart } from "@/components/trainer/progress-line-chart";
-import { AddMeasurementDialog } from "@/components/trainer/add-measurement-dialog";
 import { EditMeasurementDialog } from "@/components/trainer/edit-measurement-dialog";
 import { ProgressPhotoGallery } from "@/components/progress/progress-photo-gallery";
 import { ClientPickerDialog } from "@/components/trainer/client-picker-dialog";
@@ -43,14 +43,12 @@ interface ClientRow {
 }
 
 export function ProgressTrackingView({
-  trainerId,
   clients,
   assignments,
   measurements,
   photos,
   completedDatesByClient,
 }: {
-  trainerId: string;
   clients: ClientRow[];
   assignments: CalendarAssignment[];
   measurements: (ProgressMeasurement & { client_id: string })[];
@@ -60,7 +58,6 @@ export function ProgressTrackingView({
   const router = useRouter();
   const [selectedClientId, setSelectedClientId] = React.useState(clients[0]?.id ?? "");
   const [metric, setMetric] = React.useState<MeasurementKey>("weight_kg");
-  const [addOpen, setAddOpen] = React.useState(false);
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [editingMeasurement, setEditingMeasurement] =
     React.useState<ProgressMeasurement | null>(null);
@@ -315,17 +312,11 @@ export function ProgressTrackingView({
             </div>
           )}
 
-          <Button type="button" className="w-fit" onClick={() => setAddOpen(true)}>
-            <Plus /> Agregar registro
+          <Button type="button" className="w-fit" asChild>
+            <Link href={`/entrenador/clientes/${selectedClient.id}/medicion/nueva?back=/entrenador/progreso`}>
+              <Plus /> Agregar registro
+            </Link>
           </Button>
-
-          <AddMeasurementDialog
-            open={addOpen}
-            onOpenChange={setAddOpen}
-            clientId={selectedClient.id}
-            trainerId={trainerId}
-            onAdded={() => {}}
-          />
 
           <EditMeasurementDialog
             open={editingMeasurement !== null}
